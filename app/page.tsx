@@ -1612,7 +1612,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
   const handleXSignIn = async () => {
     setError("");
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'twitter',
+      provider: 'x',
       options: {
         redirectTo: typeof window !== 'undefined'
           ? `${window.location.origin}/auth/callback`
