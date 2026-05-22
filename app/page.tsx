@@ -1315,6 +1315,7 @@ export default function Home() {
       <header className="hero">
         <div className="hero-bg" />
         <h1 className="hero-title">MUSIC CHARTS</h1>
+        <p style={{ margin: "4px 0 12px", fontSize: "18px", fontWeight: "bold", color: "#00d4ff" }}>REVOSONG</p>
         <p className="hero-sub">みんなの音楽ランキング</p>
         <div className="hero-type-badges">
           <span className="hero-type-badge hero-badge-ai">🤖 AI生成楽曲</span>
