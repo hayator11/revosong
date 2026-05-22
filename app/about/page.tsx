@@ -433,6 +433,251 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* おのくんの関連プロジェクト・サービス一覧 */}
+        <section className="site-section">
+          <div className="site-section-header">
+            <div className="site-section-title">おのくんの プロジェクト・サービス</div>
+          </div>
+          <div className="site-section-body">
+            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "16px", lineHeight: 1.7 }}>
+              <strong>ドメインランク向上戦略：</strong> 複数の関連サービスを運営し、相互にリンクを張ることで、検索エンジンからの信頼性を高め、ドメイン全体の認知度とランキングを向上させます。
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+              {/* MUSIC CHARTS - REVOSONG */}
+              <a
+                href="https://revosong-charts.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(0,212,255,0.08)",
+                  border: "1px solid rgba(0,212,255,0.3)",
+                  borderRadius: "12px",
+                  color: "#00d4ff",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(0,212,255,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(0,212,255,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(0,212,255,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(0,212,255,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎵 MUSIC CHARTS / REVOSONG</div>
+                <div style={{ fontSize: "12px", color: "rgba(0,212,255,0.7)" }}>AI生成・オリジナル楽曲ランキングサイト</div>
+              </a>
+
+              {/* レボリストLab */}
+              <a
+                href="https://revolist.earth/revolist-lab"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(255,165,0,0.08)",
+                  border: "1px solid rgba(255,165,0,0.3)",
+                  borderRadius: "12px",
+                  color: "#ffa500",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,165,0,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(255,165,0,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,165,0,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(255,165,0,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🔬 レボリストLab</div>
+                <div style={{ fontSize: "12px", color: "rgba(255,165,0,0.7)" }}>revolist.earth / X @REVOLIST11</div>
+              </a>
+
+              {/* 防災×帽祭 */}
+              <a
+                href="https://revolist.earth/bosai-bosai"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(220,20,60,0.08)",
+                  border: "1px solid rgba(220,20,60,0.3)",
+                  borderRadius: "12px",
+                  color: "#dc143c",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(220,20,60,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(220,20,60,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(220,20,60,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(220,20,60,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎩 防災×帽祭</div>
+                <div style={{ fontSize: "12px", color: "rgba(220,20,60,0.7)" }}>revolist.earth / X @Bosai_Bosai_</div>
+              </a>
+
+              {/* レボリンク */}
+              <a
+                href="https://onokun.com/socially-responsible-sponsorship/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(50,205,50,0.08)",
+                  border: "1px solid rgba(50,205,50,0.3)",
+                  borderRadius: "12px",
+                  color: "#32cd32",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(50,205,50,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(50,205,50,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(50,205,50,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(50,205,50,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🔗 レボリンク</div>
+                <div style={{ fontSize: "12px", color: "rgba(50,205,50,0.7)" }}>Socially Responsible Sponsorship</div>
+              </a>
+
+              {/* レボファンディング */}
+              <a
+                href="https://hayator11.github.io/revofunding/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(138,43,226,0.08)",
+                  border: "1px solid rgba(138,43,226,0.3)",
+                  borderRadius: "12px",
+                  color: "#8a2be2",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(138,43,226,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(138,43,226,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(138,43,226,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(138,43,226,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>💰 レボファンディング</div>
+                <div style={{ fontSize: "12px", color: "rgba(138,43,226,0.7)" }}>Crowdfunding Platform</div>
+              </a>
+
+              {/* レボアート */}
+              <a
+                href="https://hayator11.github.io/revofunding/revo-art.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(255,20,147,0.08)",
+                  border: "1px solid rgba(255,20,147,0.3)",
+                  borderRadius: "12px",
+                  color: "#ff1493",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,20,147,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(255,20,147,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,20,147,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(255,20,147,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎨 レボアート</div>
+                <div style={{ fontSize: "12px", color: "rgba(255,20,147,0.7)" }}>Digital Art & Creator Platform</div>
+              </a>
+
+              {/* レボハット */}
+              <a
+                href="https://onokun.com/hat-model-academy/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(0,191,255,0.08)",
+                  border: "1px solid rgba(0,191,255,0.3)",
+                  borderRadius: "12px",
+                  color: "#00bfff",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(0,191,255,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(0,191,255,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(0,191,255,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(0,191,255,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎓 レボハット</div>
+                <div style={{ fontSize: "12px", color: "rgba(0,191,255,0.7)" }}>Hat Model Academy</div>
+              </a>
+
+              {/* 代表 @hayator */}
+              <a
+                href="https://hayator.socialimagine.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "16px",
+                  background: "rgba(255,192,203,0.08)",
+                  border: "1px solid rgba(255,192,203,0.3)",
+                  borderRadius: "12px",
+                  color: "#ffc0cb",
+                  textDecoration: "none",
+                  transition: "all 0.25s",
+                  cursor: "pointer",
+                  display: "block"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,192,203,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(255,192,203,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,192,203,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(255,192,203,0.3)";
+                }}
+              >
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>👤 代表 @hayator</div>
+                <div style={{ fontSize: "12px", color: "rgba(255,192,203,0.7)" }}>hayator.socialimagine.com / X @Hayator</div>
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* おのくん公式サイトへの大きなCTAブロック */}
         <section
           style={{
