@@ -2,17 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "運営者情報・おのくん | MUSIC CHARTS",
+  title: "About | MUSIC CHARTS - AI生成・オリジナル楽曲ランキング",
   description:
-    "MUSIC CHARTSの運営者、おのくん（onokun）のプロフィールページ。AI音楽・DTM・クリエイティブ分野で活動するおのくんが運営するAI生成楽曲ランキングサイトです。",
-  keywords: ["おのくん", "onokun", "AI音楽", "DTM", "AI生成楽曲", "MUSIC CHARTS", "運営者"],
+    "MUSIC CHARTS（REVOSONG）について。AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotifyなど複数プラットフォームに対応。誰でも無料で投稿・視聴・投票できるオープンなプラットフォーム。",
+  keywords: ["MUSIC CHARTS", "REVOSONG", "AI音楽", "AI生成楽曲", "音楽ランキング", "DTM", "ランキングサイト"],
   authors: [{ name: "おのくん", url: "https://onokun.com/" }],
   openGraph: {
-    title: "運営者情報・おのくん | MUSIC CHARTS",
-    description: "MUSIC CHARTSの運営者、おのくんのプロフィールと活動紹介。",
+    title: "About | MUSIC CHARTS",
+    description: "AI生成・オリジナル楽曲のランキングプラットフォーム「MUSIC CHARTS」について。",
     url: "https://ai-music-charts.vercel.app/about",
     siteName: "MUSIC CHARTS",
-    type: "profile",
+    type: "website",
   },
 };
 
@@ -315,83 +315,12 @@ export default function AboutPage() {
           <Link href="/" className="back-link">
             ← トップページへ戻る
           </Link>
-          <h1 className="page-title">About / 運営者情報</h1>
+          <h1 className="page-title">About MUSIC CHARTS</h1>
           <p className="page-desc">
-            MUSIC CHARTS の運営者とサイトについてご紹介します。
+            MUSIC CHARTS / REVOSONG について。サービスの紹介と利用ガイド。
           </p>
         </header>
 
-        {/* プロフィールカード */}
-        <section className="profile-card">
-          <div className="profile-card-header">
-            <div className="profile-avatar">
-            <img src="/onokun.jpg" alt="おのくん" />
-          </div>
-            <div className="profile-name">おのくん</div>
-            <div className="profile-name-en">onokun</div>
-          </div>
-          <div className="profile-body">
-            <p className="profile-bio">
-              はじめまして、<strong>おのくん</strong>です。
-              AI音楽・DTM・デジタルクリエイティブの分野で活動しています。
-              <br /><br />
-              AI技術が音楽制作にもたらす可能性に魅了され、AI生成楽曲を中心としたクリエイターコミュニティの発展を目指して
-              <strong>「MUSIC CHARTS」</strong>を立ち上げました。
-              誰もが自分の楽曲を気軽に投稿・共有できる場所を作りたいという想いで運営しています。
-              <br /><br />
-              音楽・AI・テクノロジーに関する情報は、公式サイトでも発信しています。ぜひご覧ください。
-            </p>
-
-            {/* 公式サイトリンク（SEOの核心 - dofollow） */}
-            <div className="official-link-section">
-              <div className="section-label">公式サイト</div>
-              <a
-                href="https://onokun.com/"
-                rel="author"
-                target="_blank"
-                className="official-link-card"
-                aria-label="おのくん公式ホームページ"
-              >
-                <div className="official-link-icon">🌐</div>
-                <div className="official-link-text">
-                  <div className="official-link-name">おのくん公式ホームページ</div>
-                  <div className="official-link-url">https://onokun.com/</div>
-                </div>
-                <div className="official-link-arrow">→</div>
-              </a>
-            </div>
-
-            {/* 活動情報グリッド */}
-            <div className="section-label">活動情報</div>
-            <div className="info-grid">
-              <div className="info-card">
-                <div className="info-card-label">活動分野</div>
-                <div className="info-card-value">AI音楽 / DTM / デジタルクリエイティブ</div>
-              </div>
-              <div className="info-card">
-                <div className="info-card-label">運営サービス</div>
-                <div className="info-card-value">MUSIC CHARTS（AI音楽ランキング）</div>
-              </div>
-              <div className="info-card">
-                <div className="info-card-label">公式サイト</div>
-                <div className="info-card-value">
-                  <a
-                    href="https://onokun.com/"
-                    rel="author"
-                    target="_blank"
-                    style={{ color: "#ff2d55", textDecoration: "none" }}
-                  >
-                    onokun.com
-                  </a>
-                </div>
-              </div>
-              <div className="info-card">
-                <div className="info-card-label">サービス開始</div>
-                <div className="info-card-value">2025年</div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* サイト概要 */}
         <section className="site-section">
@@ -433,252 +362,8 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* おのくんの関連プロジェクト・サービス一覧 */}
-        <section className="site-section">
-          <div className="site-section-header">
-            <div className="site-section-title">おのくんの プロジェクト・サービス</div>
-          </div>
-          <div className="site-section-body">
-            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "16px", lineHeight: 1.7 }}>
-              <strong>ドメインランク向上戦略：</strong> 複数の関連サービスを運営し、相互にリンクを張ることで、検索エンジンからの信頼性を高め、ドメイン全体の認知度とランキングを向上させます。
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
-              {/* MUSIC CHARTS - REVOSONG */}
-              <a
-                href="https://revosong-charts.vercel.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(0,212,255,0.08)",
-                  border: "1px solid rgba(0,212,255,0.3)",
-                  borderRadius: "12px",
-                  color: "#00d4ff",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(0,212,255,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(0,212,255,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(0,212,255,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(0,212,255,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎵 MUSIC CHARTS / REVOSONG</div>
-                <div style={{ fontSize: "12px", color: "rgba(0,212,255,0.7)" }}>AI生成・オリジナル楽曲ランキングサイト</div>
-              </a>
 
-              {/* レボリストLab */}
-              <a
-                href="https://revolist.earth/revolist-lab"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(255,165,0,0.08)",
-                  border: "1px solid rgba(255,165,0,0.3)",
-                  borderRadius: "12px",
-                  color: "#ffa500",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,165,0,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(255,165,0,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,165,0,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(255,165,0,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🔬 レボリストLab</div>
-                <div style={{ fontSize: "12px", color: "rgba(255,165,0,0.7)" }}>revolist.earth / X @REVOLIST11</div>
-              </a>
-
-              {/* 防災×帽祭 */}
-              <a
-                href="https://revolist.earth/bosai-bosai"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(220,20,60,0.08)",
-                  border: "1px solid rgba(220,20,60,0.3)",
-                  borderRadius: "12px",
-                  color: "#dc143c",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(220,20,60,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(220,20,60,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(220,20,60,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(220,20,60,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎩 防災×帽祭</div>
-                <div style={{ fontSize: "12px", color: "rgba(220,20,60,0.7)" }}>revolist.earth / X @Bosai_Bosai_</div>
-              </a>
-
-              {/* レボリンク */}
-              <a
-                href="https://onokun.com/socially-responsible-sponsorship/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(50,205,50,0.08)",
-                  border: "1px solid rgba(50,205,50,0.3)",
-                  borderRadius: "12px",
-                  color: "#32cd32",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(50,205,50,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(50,205,50,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(50,205,50,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(50,205,50,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🔗 レボリンク</div>
-                <div style={{ fontSize: "12px", color: "rgba(50,205,50,0.7)" }}>Socially Responsible Sponsorship</div>
-              </a>
-
-              {/* レボファンディング */}
-              <a
-                href="https://hayator11.github.io/revofunding/index.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(138,43,226,0.08)",
-                  border: "1px solid rgba(138,43,226,0.3)",
-                  borderRadius: "12px",
-                  color: "#8a2be2",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(138,43,226,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(138,43,226,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(138,43,226,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(138,43,226,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>💰 レボファンディング</div>
-                <div style={{ fontSize: "12px", color: "rgba(138,43,226,0.7)" }}>Crowdfunding Platform</div>
-              </a>
-
-              {/* レボアート */}
-              <a
-                href="https://hayator11.github.io/revofunding/revo-art.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(255,20,147,0.08)",
-                  border: "1px solid rgba(255,20,147,0.3)",
-                  borderRadius: "12px",
-                  color: "#ff1493",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,20,147,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(255,20,147,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,20,147,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(255,20,147,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎨 レボアート</div>
-                <div style={{ fontSize: "12px", color: "rgba(255,20,147,0.7)" }}>Digital Art & Creator Platform</div>
-              </a>
-
-              {/* レボハット */}
-              <a
-                href="https://onokun.com/hat-model-academy/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(0,191,255,0.08)",
-                  border: "1px solid rgba(0,191,255,0.3)",
-                  borderRadius: "12px",
-                  color: "#00bfff",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(0,191,255,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(0,191,255,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(0,191,255,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(0,191,255,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>🎓 レボハット</div>
-                <div style={{ fontSize: "12px", color: "rgba(0,191,255,0.7)" }}>Hat Model Academy</div>
-              </a>
-
-              {/* 代表 @hayator */}
-              <a
-                href="https://hayator.socialimagine.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "16px",
-                  background: "rgba(255,192,203,0.08)",
-                  border: "1px solid rgba(255,192,203,0.3)",
-                  borderRadius: "12px",
-                  color: "#ffc0cb",
-                  textDecoration: "none",
-                  transition: "all 0.25s",
-                  cursor: "pointer",
-                  display: "block"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,192,203,0.12)";
-                  e.currentTarget.style.borderColor = "rgba(255,192,203,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,192,203,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(255,192,203,0.3)";
-                }}
-              >
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>👤 代表 @hayator</div>
-                <div style={{ fontSize: "12px", color: "rgba(255,192,203,0.7)" }}>hayator.socialimagine.com / X @Hayator</div>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* おのくん公式サイトへの大きなCTAブロック */}
+        {/* 運営情報へのCTAブロック */}
         <section
           style={{
             padding: "28px 24px",
@@ -699,7 +384,7 @@ export default function AboutPage() {
               fontWeight: 700,
             }}
           >
-            運営者の公式サイト
+            運営者について
           </div>
           <div
             style={{
@@ -710,7 +395,7 @@ export default function AboutPage() {
               marginBottom: "8px",
             }}
           >
-            おのくん公式ホームページ
+            運営情報ページ
           </div>
           <div
             style={{
@@ -720,13 +405,10 @@ export default function AboutPage() {
               marginBottom: "20px",
             }}
           >
-            AI音楽・DTM・デジタルクリエイティブに関する情報を発信中。<br />
-            おのくんの最新の活動やコンテンツはこちらからご覧いただけます。
+            おのくんの紹介と関連プロジェクト・サービス一覧をご覧ください。
           </div>
           <a
-            href="https://onokun.com/"
-            rel="author"
-            target="_blank"
+            href="/information"
             style={{
               display: "inline-block",
               padding: "13px 36px",
@@ -739,7 +421,7 @@ export default function AboutPage() {
               letterSpacing: "0.5px",
             }}
           >
-            🌐 onokun.com を見る
+            👤 運営情報を見る
           </a>
         </section>
 
@@ -755,7 +437,9 @@ export default function AboutPage() {
             {" · "}
             <Link href="/services">対応サービス</Link>
             {" · "}
-            <Link href="/about">運営者情報</Link>
+            <Link href="/about">About</Link>
+            {" · "}
+            <Link href="/information">運営情報</Link>
           </p>
         </footer>
       </div>
