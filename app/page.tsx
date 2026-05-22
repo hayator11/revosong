@@ -1596,6 +1596,32 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : 'http://localhost:3000/auth/callback'
+      }
+    });
+    if (error) setError(error.message);
+  };
+
+  const handleXSignIn = async () => {
+    setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'twitter',
+      options: {
+        redirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : 'http://localhost:3000/auth/callback'
+      }
+    });
+    if (error) setError(error.message);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -1604,6 +1630,26 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         </h3>
         {error && <div className="error-box">{error}</div>}
         {message && <div className="success-box">{message}</div>}
+
+        <button
+          className="btn-primary"
+          onClick={handleGoogleSignIn}
+          style={{ width: "100%", marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <span>🔵</span> Google でログイン
+        </button>
+
+        <button
+          className="btn-primary"
+          onClick={handleXSignIn}
+          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <span>⚫</span> X でログイン
+        </button>
+
+        <div style={{ textAlign: "center", margin: "16px 0", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
+          または
+        </div>
 
         <div className="field-label">メールアドレス</div>
         <input
