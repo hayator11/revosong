@@ -366,12 +366,12 @@ export default function InformationPage() {
           <div className="profile-body">
             <p className="profile-bio">
               はじめまして、<strong>おのくん</strong>です。
-              AI音楽・DTM・デジタルクリエイティブの分野で活動しています。
+              音楽制作・DTM・デジタルクリエイティブの分野で活動しています。
               <br /><br />
-              AI技術が音楽制作にもたらす可能性に魅了され、AI生成楽曲や純粋に音楽が好きな人たちのためのアーティストコミュニティの発展を目指してMUSIC CHARTS<strong>「REVOSONG」</strong>を立ち上げました。
-              誰もが自分の楽曲を気軽に投稿・共有できる場所を作りたいという想いで運営しています。
+              AI生成楽曲やオリジナル楽曲など、すべてのクリエイターたちが自分の音楽を発表できるアーティストコミュニティを作りたいという想いで、MUSIC CHARTS<strong>「REVOSONG」</strong>を立ち上げました。
+              ジャンルやツールを問わず、誰もが気軽に投稿・共有・応援できるオープンなプラットフォームを目指しています。
               <br /><br />
-              音楽・AI・テクノロジーに関する情報は、公式サイトでも発信しています。ぜひご覧ください。
+              音楽制作やクリエイティブに関する情報は、公式サイトでも発信しています。ぜひご覧ください。
             </p>
 
             {/* 公式サイトリンク（SEOの核心 - dofollow） */}
@@ -419,7 +419,7 @@ export default function InformationPage() {
               </div>
               <div className="info-card">
                 <div className="info-card-label">サービス開始</div>
-                <div className="info-card-value">2025年</div>
+                <div className="info-card-value">2026年</div>
               </div>
             </div>
           </div>
