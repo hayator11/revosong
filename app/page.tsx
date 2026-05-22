@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, memo, useTransition } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Track = {
@@ -1573,14 +1573,14 @@ export default function Home() {
   );
 }
 
-const AuthModal = memo(function AuthModal({ onClose }: { onClose: () => void }) {
+function AuthModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     setError("");
     setMessage("");
     if (isSignUp) {
@@ -1594,7 +1594,7 @@ const AuthModal = memo(function AuthModal({ onClose }: { onClose: () => void }) 
       });
       if (err) setError(err.message);
     }
-  }, [email, password, isSignUp]);
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -1649,9 +1649,9 @@ const AuthModal = memo(function AuthModal({ onClose }: { onClose: () => void }) 
       </div>
     </div>
   );
-});
+}
 
-const UploadModal = memo(function UploadModal({
+function UploadModal({
   user,
   onClose,
   onDone,
@@ -1672,11 +1672,10 @@ const UploadModal = memo(function UploadModal({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const update = useCallback((k: string, v: string) => {
+  const update = (k: string, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
-  }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!form.title || !form.artist_name) return;
     setSubmitting(true);
     await supabase.from("tracks").insert({
@@ -1693,7 +1692,7 @@ const UploadModal = memo(function UploadModal({
     setDone(true);
     onDone();
     setTimeout(onClose, 1500);
-  }, [form, user.id, onClose, onDone]);
+  };
 
   if (done) {
     return (
@@ -1818,9 +1817,9 @@ const UploadModal = memo(function UploadModal({
       </div>
     </div>
   );
-});
+}
 
-const EditModal = memo(function EditModal({
+function EditModal({
   track,
   onClose,
   onDone,
@@ -1840,11 +1839,10 @@ const EditModal = memo(function EditModal({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const update = useCallback((k: string, v: string) => {
+  const update = (k: string, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
-  }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!form.title || !form.artist_name) return;
     setSubmitting(true);
     await supabase
@@ -1861,7 +1859,7 @@ const EditModal = memo(function EditModal({
     setSubmitting(false);
     setDone(true);
     setTimeout(onDone, 1200);
-  }, [form, track.id, onDone]);
+  };
 
   if (done) {
     return (
@@ -1954,4 +1952,4 @@ const EditModal = memo(function EditModal({
       </div>
     </div>
   );
-});
+}
