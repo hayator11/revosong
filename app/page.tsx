@@ -1641,10 +1641,10 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
         <button
           className="btn-primary"
-          onClick={handleXSignIn}
-          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          disabled
+          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: 0.5, cursor: "not-allowed" }}
         >
-          <span>⚫</span> X でログイン
+          <span>⚫</span> X でログイン（準備中）
         </button>
 
         <div style={{ textAlign: "center", margin: "16px 0", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
