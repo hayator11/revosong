@@ -1,65 +1,1955 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+
+type Track = {
+  id: number;
+  user_id: string;
+  title: string;
+  artist_name: string;
+  ai_tool: string;
+  genre: string;
+  music_type: string;
+  prompt: string | null;
+  external_url: string | null;
+  play_count: number;
+  created_at: string;
+  like_count: number;
+  liked: boolean;
+};
+
+type User = { id: string; email?: string } | null;
+
+const AI_TOOLS = ["Suno", "Udio", "MusicLM", "Stable Audio"];
+const GENRES = [
+  "Synthwave", "Lo-Fi", "Cinematic", "City Pop", "Classical",
+  "Future Bass", "Ambient", "J-Pop", "Rock", "EDM",
+  "Hip Hop", "R&B", "Jazz", "Folk",
+];
+const FILTERS = ["すべて", "Suno", "Udio", "MusicLM", "Stable Audio"];
+const PERIODS = ["日間", "週間", "月間", "全期間"];
+const MUSIC_TYPES = ["すべて", "AI生成", "オリジナル"];
+const SITE_URL = "https://ai-music-charts.vercel.app";
+
+function formatNumber(n: number) {
+  if (n >= 10000) return (n / 10000).toFixed(1) + "万";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+  return n.toString();
+}
+
+function getYouTubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function isSoundCloudUrl(url: string): boolean {
+  return url.includes("soundcloud.com");
+}
+
+function getNiconicoId(url: string): string | null {
+  const m = url.match(/(?:nicovideo\.jp\/watch\/|nico\.ms\/)(sm\d+)/);
+  return m ? m[1] : null;
+}
+
+function getBandcampEmbedUrl(url: string): string | null {
+  if (url.includes("bandcamp.com")) return url;
+  return null;
+}
+
+function getSpotifyId(url: string): { type: string; id: string } | null {
+  const m = url.match(/open\.spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+  if (m) return { type: m[1], id: m[2] };
+  return null;
+}
+
+function getAudiomackInfo(url: string): string | null {
+  if (url.includes("audiomack.com")) return url;
+  return null;
+}
+
+function getServiceName(url: string): string {
+  if (getYouTubeId(url)) return "YouTube";
+  if (isSoundCloudUrl(url)) return "SoundCloud";
+  if (getNiconicoId(url)) return "ニコニコ動画";
+  if (getSpotifyId(url)) return "Spotify";
+  if (getBandcampEmbedUrl(url)) return "Bandcamp";
+  if (getAudiomackInfo(url)) return "Audiomack";
+  return "外部サイト";
+}
+
+function EmbedPlayer({ url }: { url: string }) {
+  const ytId = getYouTubeId(url);
+  if (ytId) {
+    return (
+      <iframe
+        width="100%"
+        height="160"
+        src={"https://www.youtube.com/embed/" + ytId + "?autoplay=1"}
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        style={{ border: "none", borderRadius: 12 }}
+      />
+    );
+  }
+
+  if (isSoundCloudUrl(url)) {
+    const encoded = encodeURIComponent(url);
+    return (
+      <iframe
+        width="100%"
+        height="120"
+        scrolling="no"
+        frameBorder="no"
+        allow="autoplay"
+        src={"https://w.soundcloud.com/player/?url=" + encoded + "&auto_play=true&color=%23ff2d55&hide_related=true&show_comments=false&show_user=true&show_reposts=false"}
+        style={{ borderRadius: 12 }}
+      />
+    );
+  }
+
+  const nicoId = getNiconicoId(url);
+  if (nicoId) {
+    return (
+      <iframe
+        width="100%"
+        height="170"
+        src={"https://embed.nicovideo.jp/watch/" + nicoId}
+        style={{ border: "none", borderRadius: 12 }}
+        allowFullScreen
+      />
+    );
+  }
+
+  const spotify = getSpotifyId(url);
+  if (spotify) {
+    return (
+      <iframe
+        width="100%"
+        height="152"
+        src={"https://open.spotify.com/embed/" + spotify.type + "/" + spotify.id + "?theme=0"}
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        style={{ border: "none", borderRadius: 12 }}
+      />
+    );
+  }
+
+  if (url.includes("bandcamp.com")) {
+    return (
+      <div style={{ borderRadius: 12, overflow: "hidden" }}>
+        <a href={url} target="_blank" rel="noopener noreferrer" style={{
+          display: "flex", alignItems: "center", gap: 12, padding: "16px",
+          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 12, color: "#1da0c3", textDecoration: "none", fontSize: 14,
+        }}>
+          <span style={{fontSize: 24}}>🎵</span>
+          <div>
+            <div style={{fontWeight: 700}}>Bandcampで再生</div>
+            <div style={{fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2}}>タップして開く</div>
+          </div>
+        </a>
+      </div>
+    );
+  }
+
+  if (url.includes("audiomack.com")) {
+    const encoded = encodeURIComponent(url);
+    return (
+      <iframe
+        width="100%"
+        height="150"
+        src={"https://audiomack.com/embed/song?url=" + encoded + "&background=1"}
+        style={{ border: "none", borderRadius: 12 }}
+      />
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "block", padding: "16px", borderRadius: 12,
+        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+        color: "#ff2d55", textAlign: "center", textDecoration: "none", fontSize: 14,
+      }}
+    >
+      外部サイトで再生する
+    </a>
+  );
+}
+
+function ShareButtons({ track }: { track: Track }) {
+  const [copied, setCopied] = useState(false);
+  const trackUrl = SITE_URL + "/?track=" + track.id;
+  const shareText = "🎵 AI生成楽曲「" + track.title + "」by " + track.artist_name + " を聴いてみて！ #AIMusic #AI音楽ランキング";
+  const encodedText = encodeURIComponent(shareText + "\n" + trackUrl);
+  const encodedUrl = encodeURIComponent(trackUrl);
+
+  const xUrl = "https://x.com/intent/post?text=" + encodedText;
+  const lineUrl = "https://social-plugins.line.me/lineit/share?url=" + encodedUrl + "&text=" + encodeURIComponent(shareText);
+  const fbUrl = "https://www.facebook.com/sharer/sharer.php?u=" + encodedUrl;
+
+  const copyLink = () => {
+    navigator.clipboard?.writeText(trackUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="share-container">
+      <div className="share-row">
+        <a href={xUrl} target="_blank" rel="noopener noreferrer" className="share-sns-btn share-sns-x">
+          <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href={lineUrl} target="_blank" rel="noopener noreferrer" className="share-sns-btn share-sns-line">
+          <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 5.82 2 10.5c0 3.69 3.08 6.79 7.24 7.84.28.06.66.19.75.43.09.22.06.56.03.78l-.12.73c-.04.22-.17.86.75.47s4.98-2.94 6.8-5.03C19.62 13.27 22 11.18 22 10.5 22 5.82 17.52 2 12 2zm-3.5 11.5h-2a.5.5 0 01-.5-.5V8.5a.5.5 0 011 0V12h1.5a.5.5 0 010 1zm1.5-.5a.5.5 0 01-1 0v-4a.5.5 0 011 0v4zm4.5.5h-2a.5.5 0 01-.5-.5V8.5a.5.5 0 011 0v3.29l1.78-2.54a.5.5 0 01.82.58L13.5 11.5l1.6 2.28a.5.5 0 01-.82.58L12.5 12v1a.5.5 0 01-.5.5zm4-3h-1V12h1a.5.5 0 010 1h-1.5a.5.5 0 01-.5-.5v-4a.5.5 0 01.5-.5H17a.5.5 0 010 1h-1v1h1a.5.5 0 010 1z"/></svg>
+        </a>
+        <a href={fbUrl} target="_blank" rel="noopener noreferrer" className="share-sns-btn share-sns-fb">
+          <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <button onClick={copyLink} className="share-sns-btn share-sns-copy">
+          {copied ? (
+            <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff" stroke="#fff" strokeWidth="0"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          ) : (
+            <svg className="share-sns-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AboutSection() {
+  const [open, setOpen] = useState(false);
+  const [showServices, setShowServices] = useState(false);
+  return (
+    <div className="about-section">
+      <button className="about-toggle" onClick={() => setOpen(!open)}>
+        <span>MUSIC CHARTS とは？</span>
+        <span style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", display: "inline-block" }}>▼</span>
+      </button>
+      {open && (
+        <div className="about-content">
+          <p className="about-text">
+            <strong>AI生成楽曲もオリジナル楽曲も</strong>、みんなの「いいね」で順位が決まるランキングサイトです。
+            誰でも無料で投稿・視聴・投票ができます。
+          </p>
+          <div className="about-steps">
+            <div className="about-step">
+              <div className="about-step-icon">🎵</div>
+              <div className="about-step-title">1. 投稿する</div>
+              <div className="about-step-desc">楽曲のURLを登録するだけ</div>
+            </div>
+            <div className="about-step">
+              <div className="about-step-icon">❤️</div>
+              <div className="about-step-title">2. いいね</div>
+              <div className="about-step-desc">気に入った曲に投票しよう</div>
+            </div>
+            <div className="about-step">
+              <div className="about-step-icon">🏆</div>
+              <div className="about-step-title">3. ランキング</div>
+              <div className="about-step-desc">いいね数で順位が決定！</div>
+            </div>
+          </div>
+
+          <button className="services-toggle" onClick={() => setShowServices(!showServices)}>
+            <span>🔗 対応サービス・投稿方法を見る</span>
+            <span style={{ transform: showServices ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", display: "inline-block", fontSize: 10 }}>▼</span>
+          </button>
+
+          {showServices && (
+            <div className="services-list">
+              <div className="service-card">
+                <div className="service-header">
+                  <span className="service-icon">🔴</span>
+                  <span className="service-name">YouTube</span>
+                  <span className="service-free">無料</span>
+                </div>
+                <div className="service-desc">動画として楽曲をアップロード。最も手軽で利用者が多い。アカウント作成後すぐに投稿可能。</div>
+                <div className="service-url">youtube.com</div>
+              </div>
+              <div className="service-card">
+                <div className="service-header">
+                  <span className="service-icon">🟠</span>
+                  <span className="service-name">SoundCloud</span>
+                  <span className="service-free">無料枠あり</span>
+                </div>
+                <div className="service-desc">音楽特化のプラットフォーム。無料プランで最大3時間分アップロード可能。音楽クリエイターに人気。</div>
+                <div className="service-url">soundcloud.com</div>
+              </div>
+              <div className="service-card">
+                <div className="service-header">
+                  <span className="service-icon">🟢</span>
+                  <span className="service-name">Spotify</span>
+                  <span className="service-free">配信サービス経由</span>
+                </div>
+                <div className="service-desc">DistroKid・TuneCore等の配信サービスを通じてアップロード。世界最大の音楽ストリーミング。</div>
+                <div className="service-url">open.spotify.com</div>
+              </div>
+              <div className="service-card">
+                <div className="service-header">
+                  <span className="service-icon">⚪</span>
+                  <span className="service-name">ニコニコ動画</span>
+                  <span className="service-free">無料</span>
+                </div>
+                <div className="service-desc">日本発の動画プラットフォーム。ボカロ・DTM文化が根付いており、日本の音楽クリエイターに最適。</div>
+                <div className="service-url">nicovideo.jp</div>
+              </div>
+              <div className="service-how">
+                <div className="service-how-title">📝 投稿の手順</div>
+                <div className="service-how-text">
+                  1. 上記サービスに楽曲をアップロード → 2. 楽曲ページのURLをコピー → 3. 本サイトで「+ 投稿」からURLを貼り付け
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="about-cta">あなたの楽曲を世界に届けよう！</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
+  const [user, setUser] = useState<User>(null);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [filter, setFilter] = useState("すべて");
+  const [typeFilter, setTypeFilter] = useState("すべて");
+  const [period, setPeriod] = useState("全期間");
+  const [showUpload, setShowUpload] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [editTrack, setEditTrack] = useState<Track | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUser({ id: data.user.id, email: data.user.email ?? "" });
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUser({ id: session.user.id, email: session.user.email ?? "" });
+          setShowAuth(false);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const getPeriodStart = (p: string): string => {
+    const now = new Date();
+    if (p === "日間") now.setDate(now.getDate() - 1);
+    else if (p === "週間") now.setDate(now.getDate() - 7);
+    else if (p === "月間") now.setMonth(now.getMonth() - 1);
+    else return "2000-01-01T00:00:00Z";
+    return now.toISOString();
+  };
+
+  const fetchTracks = useCallback(async () => {
+    setLoading(true);
+    const periodStart = getPeriodStart(period);
+    const { data: trackData } = await supabase
+      .rpc("get_rankings_by_period", { period_start: periodStart });
+
+    if (trackData) {
+      let likedIds: number[] = [];
+      if (user) {
+        const { data: likesData } = await supabase
+          .from("likes")
+          .select("track_id")
+          .eq("user_id", user.id);
+        likedIds = (likesData ?? []).map(
+          (l: { track_id: number }) => l.track_id
+        );
+      }
+      setTracks(
+        trackData.map((t: Record<string, unknown>) => ({
+          ...t,
+          liked: likedIds.includes(t.id as number),
+        })) as Track[]
+      );
+    }
+    setLoading(false);
+  }, [user, period]);
+
+  useEffect(() => {
+    fetchTracks();
+  }, [fetchTracks]);
+
+  const toggleLike = async (trackId: number) => {
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
+    const track = tracks.find((t) => t.id === trackId);
+    if (!track) return;
+
+    if (track.liked) {
+      await supabase
+        .from("likes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("track_id", trackId);
+    } else {
+      await supabase
+        .from("likes")
+        .insert({ user_id: user.id, track_id: trackId });
+    }
+    fetchTracks();
+  };
+
+  const deleteTrack = async (trackId: number) => {
+    if (!confirm("この楽曲を削除しますか？")) return;
+    await supabase.from("tracks").delete().eq("id", trackId);
+    setSelectedTrack(null);
+    fetchTracks();
+  };
+
+  const filtered = tracks.filter(
+    (t) => (filter === "すべて" || t.ai_tool === filter) &&
+           (typeFilter === "すべて" || (typeFilter === "AI生成" ? t.music_type === "ai" : t.music_type === "original"))
+  );
+  const totalPlays = tracks.reduce((s, t) => s + t.play_count, 0);
+  const totalLikes = tracks.reduce((s, t) => s + t.like_count, 0);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="app-root">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; }
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(100%); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .app-root {
+          min-height: 100vh;
+          background: #0a0a0f;
+          color: #fff;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .hero {
+          position: relative;
+          padding: 48px 24px 24px;
+          text-align: center;
+        }
+        .hero-bg {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at 50% 0%, rgba(255,45,85,0.15) 0%, transparent 60%);
+          pointer-events: none;
+        }
+        .hero-title {
+          font-family: 'Oswald', sans-serif;
+          font-size: 42px;
+          font-weight: 700;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          background: linear-gradient(135deg, #ff2d55, #ff9500, #5e5ce6, #ff2d55);
+          background-size: 300% 300%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: gradientShift 6s ease infinite;
+        }
+        .hero-sub {
+          margin-top: 6px;
+          font-size: 13px;
+          color: rgba(255,255,255,0.75);
+          letter-spacing: 2px;
+        }
+        .hero-type-badges {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 12px;
+        }
+        .hero-type-badge {
+          padding: 5px 14px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+        .hero-badge-ai {
+          background: rgba(94,92,230,0.18);
+          border: 1px solid rgba(94,92,230,0.35);
+          color: #a5a3f5;
+        }
+        .hero-badge-orig {
+          background: rgba(255,149,0,0.15);
+          border: 1px solid rgba(255,149,0,0.35);
+          color: #ff9500;
+        }
+        .top-buttons {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          gap: 8px;
+        }
+        .btn-upload {
+          padding: 8px 18px;
+          border-radius: 24px;
+          background: linear-gradient(135deg, #ff2d55, #ff6482);
+          border: none;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .btn-logout {
+          padding: 8px 14px;
+          border-radius: 24px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: rgba(255,255,255,0.6);
+          font-size: 12px;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .btn-login {
+          padding: 8px 18px;
+          border-radius: 24px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: #fff;
+          font-size: 13px;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .about-section {
+          margin: 0 24px 8px;
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 16px;
+          overflow: hidden;
+          background: rgba(255,255,255,0.02);
+        }
+        .about-toggle {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 18px;
+          background: none;
+          border: none;
+          color: #ff2d55;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .about-content {
+          padding: 0 18px 18px;
+          animation: fadeIn 0.3s ease;
+        }
+        .about-text {
+          font-size: 13px;
+          line-height: 1.8;
+          color: rgba(255,255,255,0.8);
+          margin-bottom: 16px;
+        }
+        .about-text strong {
+          color: #fff;
+        }
+        .about-steps {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .about-step {
+          text-align: center;
+          padding: 14px 8px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+        .about-step-icon {
+          font-size: 28px;
+          margin-bottom: 8px;
+        }
+        .about-step-title {
+          font-size: 12px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.9);
+          margin-bottom: 4px;
+        }
+        .about-step-desc {
+          font-size: 10px;
+          color: rgba(255,255,255,0.7);
+          line-height: 1.5;
+        }
+        .services-section {
+          margin-top: 16px;
+          padding: 14px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+        .services-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.7);
+          margin-bottom: 4px;
+        }
+        .services-desc {
+          font-size: 11px;
+          color: rgba(255,255,255,0.35);
+          margin-bottom: 12px;
+          line-height: 1.6;
+        }
+        .services-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+        .service-card {
+          text-align: center;
+          padding: 10px 6px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.05);
+        }
+        .service-icon {
+          font-size: 22px;
+          margin-bottom: 4px;
+        }
+        .service-name {
+          font-size: 11px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.7);
+        }
+        .service-note {
+          font-size: 9px;
+          color: rgba(255,255,255,0.3);
+          margin-top: 2px;
+        }
+        .about-cta {
+          text-align: center;
+          font-size: 14px;
+          font-weight: 700;
+          color: #ff2d55;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          padding: 16px 24px;
+        }
+        .stat-card {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 12px;
+          padding: 14px 10px;
+          text-align: center;
+        }
+        .stat-value {
+          font-family: 'Oswald', sans-serif;
+          font-size: 22px;
+          font-weight: 700;
+          background: linear-gradient(135deg, #ff2d55, #ff9500);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .stat-label-placeholder { display: none; }
+        .filters {
+          display: flex;
+          gap: 6px;
+          padding: 6px 24px 12px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .filters::-webkit-scrollbar { display: none; }
+        .filter-chip {
+          padding: 5px 14px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
+          transition: all 0.25s;
+        }
+        .filter-chip-off {
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04);
+          color: rgba(255,255,255,0.5);
+        }
+        .filter-chip-on {
+          border: 1px solid rgba(255,45,85,0.5);
+          background: rgba(255,45,85,0.15);
+          color: #ff2d55;
+        }
+        .track-list {
+          padding: 4px 16px 200px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .track-row {
+          display: grid;
+          grid-template-columns: 36px 1fr auto;
+          align-items: center;
+          gap: 12px;
+          padding: 13px 14px;
+          border-radius: 12px;
+          opacity: 0;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: 1px solid rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.02);
+        }
+        .track-row:hover {
+          background: rgba(255,255,255,0.05);
+          border-color: rgba(255,255,255,0.09);
+        }
+        .track-row-active {
+          background: rgba(255,45,85,0.08);
+          border-color: rgba(255,45,85,0.2);
+        }
+        .rank-medal {
+          font-size: 28px;
+          text-align: center;
+          line-height: 1;
+        }
+        .rank-num {
+          font-family: 'Oswald', sans-serif;
+          font-size: 22px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.55);
+          text-align: center;
+        }
+        .track-title {
+          font-size: 15px;
+          font-weight: 700;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .track-title-playing {
+          color: #ff2d55;
+        }
+        .track-meta {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 3px;
+          font-size: 11px;
+          color: rgba(255,255,255,0.5);
+        }
+        .ai-badge {
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 600;
+          background: rgba(255,255,255,0.07);
+          color: rgba(255,255,255,0.5);
+        }
+        .url-badge {
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 9px;
+          font-weight: 600;
+          background: rgba(255,45,85,0.15);
+          color: #ff2d55;
+        }
+        .like-btn {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+        }
+        .like-btn:hover {
+          transform: scale(1.1);
+        }
+        .like-count {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.5);
+        }
+        .like-count-active {
+          color: #ff2d55;
+        }
+        .empty-state {
+          text-align: center;
+          padding: 48px 24px;
+          color: rgba(255,255,255,0.3);
+        }
+        .loading-state {
+          text-align: center;
+          padding: 48px;
+          color: rgba(255,255,255,0.3);
+        }
+        .player-bar {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: #1a1a24;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          padding: 16px;
+          z-index: 50;
+          animation: slideUp 0.3s ease;
+        }
+        .player-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+        }
+        .player-title {
+          font-size: 14px;
+          font-weight: 700;
+        }
+        .player-artist {
+          font-size: 12px;
+          color: rgba(255,255,255,0.4);
+          margin-top: 2px;
+        }
+        .player-buttons {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .player-close {
+          background: rgba(255,255,255,0.08);
+          border: none;
+          color: rgba(255,255,255,0.6);
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .player-close:hover {
+          background: rgba(255,255,255,0.15);
+        }
+        .player-edit-btn {
+          background: rgba(255,255,255,0.08);
+          border: none;
+          color: rgba(255,255,255,0.6);
+          padding: 6px 12px;
+          border-radius: 16px;
+          cursor: pointer;
+          font-size: 12px;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .player-edit-btn:hover {
+          background: rgba(255,255,255,0.15);
+        }
+        .player-delete-btn {
+          background: rgba(255,59,48,0.1);
+          border: none;
+          color: #ff3b30;
+          padding: 6px 12px;
+          border-radius: 16px;
+          cursor: pointer;
+          font-size: 12px;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .player-delete-btn:hover {
+          background: rgba(255,59,48,0.2);
+        }
+        .player-prompt {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.06);
+          font-size: 12px;
+          color: rgba(255,255,255,0.5);
+          line-height: 1.5;
+        }
+        .player-prompt-label {
+          font-size: 10px;
+          color: rgba(255,255,255,0.3);
+          margin-bottom: 4px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .no-url-msg {
+          padding: 24px 16px;
+          text-align: center;
+          color: rgba(255,255,255,0.3);
+          font-size: 13px;
+          background: rgba(255,255,255,0.03);
+          border-radius: 12px;
+        }
+        .share-container {
+          margin: 12px 0 4px;
+        }
+        .share-row {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        }
+        .share-sns-btn {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          text-decoration: none;
+        }
+        .share-sns-btn:hover {
+          transform: scale(1.12);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .share-sns-btn:active {
+          transform: scale(0.95);
+        }
+        .share-sns-icon {
+          width: 20px;
+          height: 20px;
+        }
+        .share-sns-x {
+          background: #000;
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+        .share-sns-line {
+          background: #06C755;
+        }
+        .share-sns-fb {
+          background: #1877F2;
+        }
+        .share-sns-copy {
+          background: rgba(255,255,255,0.15);
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+        .share-sns-copy:hover {
+          background: rgba(255,255,255,0.25);
+        }
+        .period-bar {
+          display: flex;
+          gap: 4px;
+          padding: 4px 24px 12px;
+          justify-content: center;
+        }
+        .period-chip {
+          padding: 6px 16px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .period-chip-off {
+          background: transparent;
+          color: rgba(255,255,255,0.35);
+        }
+        .period-chip-off:hover {
+          color: rgba(255,255,255,0.7);
+        }
+        .period-chip-on {
+          background: rgba(255,255,255,0.1);
+          color: #fff;
+          font-weight: 700;
+        }
+        .services-toggle {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 14px;
+          margin: 12px 0 0;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 10px;
+          color: rgba(255,255,255,0.6);
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .services-toggle:hover {
+          background: rgba(255,255,255,0.06);
+        }
+        .services-list {
+          margin-top: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          animation: fadeIn 0.3s ease;
+        }
+        .service-card {
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+        .service-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
+        }
+        .service-icon {
+          font-size: 16px;
+        }
+        .service-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.85);
+        }
+        .service-free {
+          font-size: 10px;
+          padding: 2px 8px;
+          border-radius: 10px;
+          background: rgba(48,209,88,0.15);
+          color: #30d158;
+          font-weight: 600;
+        }
+        .service-desc {
+          font-size: 12px;
+          color: rgba(255,255,255,0.45);
+          line-height: 1.6;
+        }
+        .service-url {
+          font-size: 11px;
+          color: rgba(255,45,85,0.6);
+          margin-top: 4px;
+        }
+        .service-how {
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: rgba(255,45,85,0.06);
+          border: 1px solid rgba(255,45,85,0.15);
+        }
+        .service-how-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.7);
+          margin-bottom: 6px;
+        }
+        .service-how-text {
+          font-size: 12px;
+          color: rgba(255,255,255,0.5);
+          line-height: 1.7;
+        }
+        .type-filters {
+          display: flex;
+          gap: 8px;
+          padding: 4px 24px 12px;
+          justify-content: center;
+        }
+        .type-chip {
+          padding: 8px 16px;
+          border-radius: 24px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.25s;
+        }
+        .type-chip-off {
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04);
+          color: rgba(255,255,255,0.5);
+        }
+        .type-chip-on {
+          border: 1px solid rgba(255,149,0,0.5);
+          background: rgba(255,149,0,0.15);
+          color: #ff9500;
+        }
+        .type-badge-ai {
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 9px;
+          font-weight: 700;
+          background: rgba(94,92,230,0.2);
+          color: #5e5ce6;
+        }
+        .type-badge-original {
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 9px;
+          font-weight: 700;
+          background: rgba(255,149,0,0.2);
+          color: #ff9500;
+        }
+        .type-select {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .type-select-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 16px 12px;
+          border-radius: 14px;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        .type-select-off {
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.03);
+          color: rgba(255,255,255,0.4);
+        }
+        .type-select-on {
+          border: 1px solid rgba(255,45,85,0.5);
+          background: rgba(255,45,85,0.1);
+          color: #ff2d55;
+        }
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+          padding: 24px;
+        }
+        .modal-card {
+          background: #1a1a24;
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 20px;
+          width: 100%;
+          max-width: 420px;
+          max-height: 85vh;
+          overflow-y: auto;
+          padding: 24px;
+        }
+        .modal-title {
+          font-size: 17px;
+          font-weight: 700;
+          margin-bottom: 16px;
+        }
+        .field-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.5);
+          margin: 14px 0 6px;
+        }
+        .field-input {
+          width: 100%;
+          padding: 10px 14px;
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04);
+          color: #fff;
+          font-size: 14px;
+          outline: none;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .field-input:focus {
+          border-color: rgba(255,45,85,0.5);
+        }
+        .field-input::placeholder {
+          color: rgba(255,255,255,0.2);
+        }
+        .chip-select {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .select-chip {
+          padding: 5px 12px;
+          border-radius: 16px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .select-chip-off {
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04);
+          color: rgba(255,255,255,0.5);
+        }
+        .select-chip-on {
+          border: 1px solid rgba(255,45,85,0.5);
+          background: rgba(255,45,85,0.15);
+          color: #ff2d55;
+        }
+        .btn-primary {
+          padding: 12px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #ff2d55, #ff6482);
+          border: none;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .btn-primary:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .btn-cancel {
+          padding: 12px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.7);
+          font-size: 14px;
+          cursor: pointer;
+          font-family: 'Noto Sans JP', sans-serif;
+        }
+        .error-box {
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: rgba(255,59,48,0.15);
+          color: #ff3b30;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+        .success-box {
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: rgba(48,209,88,0.15);
+          color: #30d158;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+        .auth-switch {
+          text-align: center;
+          font-size: 13px;
+          color: rgba(255,255,255,0.4);
+          margin-top: 12px;
+        }
+        .auth-switch-link {
+          color: #ff2d55;
+          cursor: pointer;
+          margin-left: 4px;
+        }
+        .url-hint {
+          font-size: 11px;
+          color: rgba(255,255,255,0.3);
+          margin-top: 4px;
+          line-height: 1.5;
+        }
+        .page-wrapper {
+          max-width: 640px;
+          margin: 0 auto;
+          width: 100%;
+        }
+        .filter-section-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.28);
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          padding: 10px 24px 0;
+        }
+        .ranking-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 24px 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.3);
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          border-top: 1px solid rgba(255,255,255,0.05);
+          margin: 4px 16px 0;
+        }
+        .ranking-count {
+          font-size: 11px;
+          color: rgba(255,255,255,0.22);
+          font-weight: 400;
+          letter-spacing: 0;
+          text-transform: none;
+        }
+        .stat-label {
+          font-size: 11px;
+          color: rgba(255,255,255,0.5);
+          margin-top: 3px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+        .footer {
+          text-align: center;
+          padding: 28px 24px;
+          font-size: 11px;
+          color: rgba(255,255,255,0.2);
+          border-top: 1px solid rgba(255,255,255,0.05);
+          margin: 8px 16px 0;
+        }
+      `}</style>
+
+      <div className="page-wrapper">
+      <header className="hero">
+        <div className="hero-bg" />
+        <h1 className="hero-title">MUSIC CHARTS</h1>
+        <p className="hero-sub">みんなの音楽ランキング</p>
+        <div className="hero-type-badges">
+          <span className="hero-type-badge hero-badge-ai">🤖 AI生成楽曲</span>
+          <span className="hero-type-badge hero-badge-orig">🎤 オリジナル楽曲</span>
+        </div>
+        <div className="top-buttons">
+          {user ? (
+            <>
+              <button className="btn-upload" onClick={() => setShowUpload(true)}>
+                + 投稿
+              </button>
+              <button
+                className="btn-logout"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setUser(null);
+                }}
+              >
+                ログアウト
+              </button>
+            </>
+          ) : (
+            <button className="btn-login" onClick={() => setShowAuth(true)}>
+              ログイン
+            </button>
+          )}
+        </div>
+      </header>
+
+      <AboutSection />
+
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-value">{formatNumber(tracks.length)}</div>
+          <div className="stat-label">楽曲数</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{formatNumber(totalPlays)}</div>
+          <div className="stat-label">総再生数</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{formatNumber(totalLikes)}</div>
+          <div className="stat-label">総いいね</div>
+        </div>
+      </div>
+
+      <div className="filter-section-label">AIツール</div>
+      <div className="filters">
+        {FILTERS.map((f) => (
+          <div
+            key={f}
+            className={`filter-chip ${filter === f ? "filter-chip-on" : "filter-chip-off"}`}
+            onClick={() => setFilter(f)}
+          >
+            {f}
+          </div>
+        ))}
+      </div>
+
+      <div className="filter-section-label">タイプ</div>
+      <div className="type-filters">
+        {MUSIC_TYPES.map((t) => (
+          <div
+            key={t}
+            className={`type-chip ${typeFilter === t ? "type-chip-on" : "type-chip-off"}`}
+            onClick={() => setTypeFilter(t)}
+          >
+            {t === "AI生成" ? "🤖 AI生成" : t === "オリジナル" ? "🎤 オリジナル" : "🎵 すべて"}
+          </div>
+        ))}
+      </div>
+
+      <div className="filter-section-label">期間</div>
+      <div className="period-bar">
+        {PERIODS.map((p) => (
+          <button
+            key={p}
+            className={`period-chip ${period === p ? "period-chip-on" : "period-chip-off"}`}
+            onClick={() => setPeriod(p)}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <div className="ranking-header">
+        <span>Ranking</span>
+        <span className="ranking-count">{filtered.length}曲</span>
+      </div>
+      <div className="track-list">
+        {loading ? (
+          <div className="loading-state">読み込み中...</div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state">
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🎵</div>
+            <div>まだ楽曲がありません</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>
+              最初の投稿者になろう！
+            </div>
+          </div>
+        ) : (
+          filtered.map((track, i) => (
+            <div
+              key={track.id}
+              className={`track-row ${selectedTrack?.id === track.id ? "track-row-active" : ""}`}
+              style={{
+                animation: `fadeIn 0.4s ease ${i * 0.05}s forwards`,
+              }}
+              onClick={() => setSelectedTrack(
+                selectedTrack?.id === track.id ? null : track
+              )}
+            >
+              {i === 0 ? (
+                <span className="rank-medal">🥇</span>
+              ) : i === 1 ? (
+                <span className="rank-medal">🥈</span>
+              ) : i === 2 ? (
+                <span className="rank-medal">🥉</span>
+              ) : (
+                <span className="rank-num">{i + 1}</span>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div className={`track-title ${selectedTrack?.id === track.id ? "track-title-playing" : ""}`}>
+                  {track.title}
+                </div>
+                <div className="track-meta">
+                  {track.music_type === "ai" && track.ai_tool && <span className="ai-badge">{track.ai_tool}</span>}
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+                    {track.genre}
+                  </span>
+                  <span>·</span>
+                  <span>{track.artist_name}</span>
+                  {track.external_url && <span className="url-badge">♪ 再生可</span>}
+                  <span className={track.music_type === "ai" ? "type-badge-ai" : "type-badge-original"}>
+                    {track.music_type === "ai" ? "AI" : "Original"}
+                  </span>
+                </div>
+              </div>
+              <button
+                className="like-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLike(track.id);
+                }}
+              >
+                <svg
+                  width={18}
+                  height={18}
+                  viewBox="0 0 24 24"
+                  fill={track.liked ? "#ff2d55" : "none"}
+                  stroke={track.liked ? "#ff2d55" : "rgba(255,255,255,0.4)"}
+                  strokeWidth={2}
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span
+                  className={`like-count ${track.liked ? "like-count-active" : ""}`}
+                >
+                  {formatNumber(track.like_count)}
+                </span>
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="footer">
+        <div style={{ marginBottom: 10 }}>
+          MUSIC CHARTS — みんなの音楽ランキング
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 6 }}>
+          <a href="/services" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            🎵 対応サービス一覧
+          </a>
+          <a href="/about" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            👤 運営者情報
+          </a>
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.18)", marginTop: 4 }}>
+          運営：<a href="https://onokun.com/" rel="author" target="_blank" style={{ color: "rgba(255,45,85,0.5)", textDecoration: "none" }}>おのくん</a>
+        </div>
+      </div>
+      </div>
+
+      {selectedTrack && (
+        <div className="player-bar">
+          <div className="player-header">
+            <div>
+              <div className="player-title">{selectedTrack.title}</div>
+              <div className="player-artist">
+                {selectedTrack.artist_name} · {selectedTrack.music_type === "ai" && selectedTrack.ai_tool ? selectedTrack.ai_tool : (selectedTrack.external_url ? getServiceName(selectedTrack.external_url) : "")}
+              </div>
+            </div>
+            <div className="player-buttons">
+              {user && user.id === selectedTrack.user_id && (
+                <>
+                  <button
+                    className="player-edit-btn"
+                    onClick={() => setEditTrack(selectedTrack)}
+                  >
+                    ✏️ 編集
+                  </button>
+                  <button
+                    className="player-delete-btn"
+                    onClick={() => deleteTrack(selectedTrack.id)}
+                  >
+                    🗑 削除
+                  </button>
+                </>
+              )}
+              <button
+                className="player-close"
+                onClick={() => setSelectedTrack(null)}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          {selectedTrack.external_url ? (
+            <EmbedPlayer url={selectedTrack.external_url} />
+          ) : (
+            <div className="no-url-msg">
+              この楽曲にはURLが設定されていません
+            </div>
+          )}
+          <ShareButtons track={selectedTrack} />
+          {selectedTrack.prompt && (
+            <div className="player-prompt">
+              <div className="player-prompt-label">Prompt</div>
+              {selectedTrack.prompt}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showUpload && user && (
+        <UploadModal
+          user={user}
+          onClose={() => setShowUpload(false)}
+          onDone={fetchTracks}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      )}
+      {editTrack && (
+        <EditModal
+          track={editTrack}
+          onClose={() => setEditTrack(null)}
+          onDone={() => {
+            setEditTrack(null);
+            setSelectedTrack(null);
+            fetchTracks();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AuthModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+    setMessage("");
+    if (isSignUp) {
+      const { error: err } = await supabase.auth.signUp({ email, password });
+      if (err) setError(err.message);
+      else setMessage("確認メールを送信しました！メールを確認してください。");
+    } else {
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (err) setError(err.message);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">
+          {isSignUp ? "新規登録" : "ログイン"}
+        </h3>
+        {error && <div className="error-box">{error}</div>}
+        {message && <div className="success-box">{message}</div>}
+
+        <div className="field-label">メールアドレス</div>
+        <input
+          className="field-input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+        />
+
+        <div className="field-label" style={{ marginTop: 12 }}>
+          パスワード
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <input
+          className="field-input"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="6文字以上"
+        />
+
+        <button
+          className="btn-primary"
+          onClick={handleSubmit}
+          style={{ width: "100%", marginTop: 16 }}
+        >
+          {isSignUp ? "登録する" : "ログイン"}
+        </button>
+
+        <div className="auth-switch">
+          {isSignUp ? "アカウントをお持ちの方は" : "アカウントがない方は"}
+          <span
+            className="auth-switch-link"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError("");
+              setMessage("");
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            {isSignUp ? "ログイン" : "新規登録"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UploadModal({
+  user,
+  onClose,
+  onDone,
+}: {
+  user: { id: string };
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [form, setForm] = useState({
+    title: "",
+    artist_name: "",
+    ai_tool: "Suno",
+    genre: "Synthwave",
+    music_type: "ai",
+    prompt: "",
+    external_url: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const update = (k: string, v: string) =>
+    setForm((prev) => ({ ...prev, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.title || !form.artist_name) return;
+    setSubmitting(true);
+    await supabase.from("tracks").insert({
+      user_id: user.id,
+      title: form.title,
+      artist_name: form.artist_name,
+      ai_tool: form.music_type === "ai" ? form.ai_tool : "",
+      genre: form.genre,
+      music_type: form.music_type,
+      prompt: form.music_type === "ai" ? (form.prompt || null) : null,
+      external_url: form.external_url || null,
+    });
+    setSubmitting(false);
+    setDone(true);
+    onDone();
+    setTimeout(onClose, 1500);
+  };
+
+  if (done) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-card"
+          style={{ textAlign: "center", padding: "48px 24px" }}
+        >
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>投稿完了！</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">楽曲を投稿</h3>
+
+        <div className="field-label">楽曲タイプ *</div>
+        <div className="type-select">
+          <div
+            className={`type-select-btn ${form.music_type === "ai" ? "type-select-on" : "type-select-off"}`}
+            onClick={() => update("music_type", "ai")}
+          >
+            <span style={{fontSize: 20}}>🤖</span>
+            <span>AI生成</span>
+          </div>
+          <div
+            className={`type-select-btn ${form.music_type === "original" ? "type-select-on" : "type-select-off"}`}
+            onClick={() => update("music_type", "original")}
+          >
+            <span style={{fontSize: 20}}>🎤</span>
+            <span>オリジナル</span>
+          </div>
+        </div>
+
+        <div className="field-label">曲名 *</div>
+        <input
+          className="field-input"
+          placeholder="例: Neon Drift"
+          value={form.title}
+          onChange={(e) => update("title", e.target.value)}
+        />
+
+        <div className="field-label">アーティスト名 *</div>
+        <input
+          className="field-input"
+          placeholder="例: あなたのニックネーム"
+          value={form.artist_name}
+          onChange={(e) => update("artist_name", e.target.value)}
+        />
+
+        {form.music_type === "ai" && (
+          <>
+            <div className="field-label">使用AIツール</div>
+            <div className="chip-select">
+              {AI_TOOLS.map((t) => (
+                <div
+                  key={t}
+                  className={`select-chip ${form.ai_tool === t ? "select-chip-on" : "select-chip-off"}`}
+                  onClick={() => update("ai_tool", t)}
+                >
+                  {t}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="field-label">ジャンル</div>
+        <div className="chip-select">
+          {GENRES.map((g) => (
+            <div
+              key={g}
+              className={`select-chip ${form.genre === g ? "select-chip-on" : "select-chip-off"}`}
+              onClick={() => update("genre", g)}
+            >
+              {g}
+            </div>
+          ))}
+        </div>
+
+        <div className="field-label">音楽URL *</div>
+        <input
+          className="field-input"
+          placeholder="https://www.youtube.com/watch?v=..."
+          value={form.external_url}
+          onChange={(e) => update("external_url", e.target.value)}
+        />
+        <div className="url-hint">
+          YouTube・SoundCloud・ニコニコ動画・Spotify・Bandcamp・Audiomack に対応
+        </div>
+
+        {form.music_type === "ai" && (
+          <>
+            <div className="field-label">使用したプロンプト（任意）</div>
+            <textarea
+              className="field-input"
+              style={{ minHeight: 60, resize: "vertical" }}
+              placeholder="どんなプロンプトで生成しましたか？"
+              value={form.prompt}
+              onChange={(e) => update("prompt", e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          <button className="btn-cancel" onClick={onClose} style={{ flex: 1 }}>
+            キャンセル
+          </button>
+          <button
+            className="btn-primary"
+            onClick={handleSubmit}
+            disabled={!form.title || !form.artist_name || submitting}
+            style={{ flex: 1 }}
           >
-            Documentation
-          </a>
+            {submitting ? "投稿中..." : "投稿する 🎵"}
+          </button>
         </div>
-      </main>
+      </div>
+    </div>
+  );
+}
+
+function EditModal({
+  track,
+  onClose,
+  onDone,
+}: {
+  track: Track;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [form, setForm] = useState({
+    title: track.title,
+    artist_name: track.artist_name,
+    ai_tool: track.ai_tool,
+    genre: track.genre,
+    prompt: track.prompt || "",
+    external_url: track.external_url || "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const update = (k: string, v: string) =>
+    setForm((prev) => ({ ...prev, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.title || !form.artist_name) return;
+    setSubmitting(true);
+    await supabase
+      .from("tracks")
+      .update({
+        title: form.title,
+        artist_name: form.artist_name,
+        ai_tool: form.ai_tool,
+        genre: form.genre,
+        prompt: form.prompt || null,
+        external_url: form.external_url || null,
+      })
+      .eq("id", track.id);
+    setSubmitting(false);
+    setDone(true);
+    setTimeout(onDone, 1200);
+  };
+
+  if (done) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-card"
+          style={{ textAlign: "center", padding: "48px 24px" }}
+        >
+          <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>更新しました！</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">楽曲を編集</h3>
+
+        <div className="field-label">曲名 *</div>
+        <input
+          className="field-input"
+          value={form.title}
+          onChange={(e) => update("title", e.target.value)}
+        />
+
+        <div className="field-label">アーティスト名 *</div>
+        <input
+          className="field-input"
+          value={form.artist_name}
+          onChange={(e) => update("artist_name", e.target.value)}
+        />
+
+        <div className="field-label">使用AIツール</div>
+        <div className="chip-select">
+          {AI_TOOLS.map((t) => (
+            <div
+              key={t}
+              className={`select-chip ${form.ai_tool === t ? "select-chip-on" : "select-chip-off"}`}
+              onClick={() => update("ai_tool", t)}
+            >
+              {t}
+            </div>
+          ))}
+        </div>
+
+        <div className="field-label">ジャンル</div>
+        <div className="chip-select">
+          {GENRES.map((g) => (
+            <div
+              key={g}
+              className={`select-chip ${form.genre === g ? "select-chip-on" : "select-chip-off"}`}
+              onClick={() => update("genre", g)}
+            >
+              {g}
+            </div>
+          ))}
+        </div>
+
+        <div className="field-label">音楽URL</div>
+        <input
+          className="field-input"
+          placeholder="https://www.youtube.com/watch?v=..."
+          value={form.external_url}
+          onChange={(e) => update("external_url", e.target.value)}
+        />
+
+        <div className="field-label">使用したプロンプト</div>
+        <textarea
+          className="field-input"
+          style={{ minHeight: 60, resize: "vertical" }}
+          value={form.prompt}
+          onChange={(e) => update("prompt", e.target.value)}
+        />
+
+        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          <button className="btn-cancel" onClick={onClose} style={{ flex: 1 }}>
+            キャンセル
+          </button>
+          <button
+            className="btn-primary"
+            onClick={handleSubmit}
+            disabled={!form.title || !form.artist_name || submitting}
+            style={{ flex: 1 }}
+          >
+            {submitting ? "保存中..." : "保存する ✓"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
