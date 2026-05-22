@@ -50,20 +50,13 @@ export default function InformationPage() {
             </p>
 
             <div style={{ marginBottom: "24px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>公式サイト・リンク</div>
+              <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>公式サイト</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
                 <a href="https://onokun.com/" target="_blank" rel="author" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "12px", textDecoration: "none", color: "inherit", transition: "all 0.25s" }}>
                   <div style={{ fontSize: "18px" }}>🌐</div>
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>onokun.com</div>
                     <div style={{ fontSize: "11px", color: "rgba(255,45,85,0.7)" }}>Official Homepage</div>
-                  </div>
-                </a>
-                <a href="https://hayator.socialimagine.com/" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "rgba(255,192,203,0.06)", border: "1px solid rgba(255,192,203,0.25)", borderRadius: "12px", textDecoration: "none", color: "inherit", transition: "all 0.25s" }}>
-                  <div style={{ fontSize: "18px" }}>👤</div>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>@hayator</div>
-                    <div style={{ fontSize: "11px", color: "rgba(255,192,203,0.7)" }}>Representative Blog</div>
                   </div>
                 </a>
               </div>
@@ -89,7 +82,7 @@ export default function InformationPage() {
           <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#fff", marginBottom: "20px" }}>📌 プロジェクト・サービス一覧</h2>
 
           {/* MUSIC CHARTS */}
-          <div style={{ border: "1px solid rgba(0,212,255,0.3)", borderRadius: "14px", background: "rgba(0,212,255,0.05)", padding: "20px", marginBottom: "16px" }}>
+          <div style={{ border: "1px solid rgba(0,212,255,0.3)", borderRadius: "14px", background: "rgba(0,212,255,0.05)", padding: "20px", marginBottom: "24px" }}>
             <a href="https://revosong-charts.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#00d4ff", marginBottom: "8px" }}>🎵 MUSIC CHARTS / REVOSONG</h3>
               <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
@@ -98,63 +91,80 @@ export default function InformationPage() {
             </a>
           </div>
 
-          {/* レボリストLab */}
-          <div style={{ border: "1px solid rgba(255,165,0,0.3)", borderRadius: "14px", background: "rgba(255,165,0,0.05)", padding: "20px", marginBottom: "16px" }}>
-            <a href="https://revolist.earth/revolist-lab" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#ffa500", marginBottom: "8px" }}>🔬 レボリストLab</h3>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
-                <strong>「防災を、かろやかに」というコンセプト</strong>から生まれた組織。インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、社会課題に創造的に取り組みます。個人の力を活かして社会変革をもたらすことがビジョン。
-              </p>
-            </a>
+          {/* レボリスト関連プロジェクト群 */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3 style={{ fontSize: "14px", fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: "16px", paddingLeft: "4px", borderLeft: "3px solid rgba(255,165,0,0.6)" }}>
+              🚀 おのくんのボランティア活動から生まれた「レボリスト」プロジェクト群
+            </h3>
+
+            {/* レボリストLab */}
+            <div style={{ border: "1px solid rgba(255,165,0,0.3)", borderRadius: "14px", background: "rgba(255,165,0,0.05)", padding: "20px", marginBottom: "12px" }}>
+              <a href="https://revolist.earth/revolist-lab" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "#ffa500", marginBottom: "6px" }}>🔬 レボリストLab</h4>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+                  <strong>「防災を、かろやかに」というコンセプト</strong>から生まれた組織。インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、社会課題に創造的に取り組みます。個人の力を活かして社会変革をもたらすことがビジョン。
+                </p>
+              </a>
+            </div>
+
+            {/* 防災×帽祭 */}
+            <div style={{ border: "1px solid rgba(220,20,60,0.3)", borderRadius: "14px", background: "rgba(220,20,60,0.05)", padding: "20px", marginBottom: "12px" }}>
+              <a href="https://revolist.earth/bosai-bosai" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "#dc143c", marginBottom: "6px" }}>🎩 防災×帽祭（Bosai×Bosai）</h4>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+                  <strong>ハットを通じた防災意識向上プロジェクト。</strong>華やかでカラフルなハットをかぶることで心理的な変容をもたらし、堅苦しい避難訓練をエンターテインメント化。全国約20万校、605万人の小学生へのリーチを目指し、災害時の相互支援体制構築を推進しています。
+                </p>
+              </a>
+            </div>
+
+            {/* レボリンク */}
+            <div style={{ border: "1px solid rgba(50,205,50,0.3)", borderRadius: "14px", background: "rgba(50,205,50,0.05)", padding: "20px", marginBottom: "12px" }}>
+              <a href="https://onokun.com/socially-responsible-sponsorship/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "#32cd32", marginBottom: "6px" }}>🔗 レボリンク</h4>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+                  <strong>社会貢献型広告収益スポンサープログラム。</strong>「普通の買い物が、誰かの応援になる仕組み」を実現。消費者が特別なコストを負担せず、日常の購買行為が防災教育やコミュニティ事業を支援。透明性、日常性、循環を三つの核心価値としています。
+                </p>
+              </a>
+            </div>
+
+            {/* レボファンディング */}
+            <div style={{ border: "1px solid rgba(138,43,226,0.3)", borderRadius: "14px", background: "rgba(138,43,226,0.05)", padding: "20px", marginBottom: "12px" }}>
+              <a href="https://hayator11.github.io/revofunding/index.html" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "#8a2be2", marginBottom: "6px" }}>💰 レボファンディング</h4>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+                  クラウドファンディングプラットフォーム。創造的で社会貢献的なプロジェクトの資金調達を支援し、アイデアを実現させるための仕組みを提供します。
+                </p>
+              </a>
+            </div>
+
+            {/* レボアート */}
+            <div style={{ border: "1px solid rgba(255,20,147,0.3)", borderRadius: "14px", background: "rgba(255,20,147,0.05)", padding: "20px", marginBottom: "12px" }}>
+              <a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "#ff1493", marginBottom: "6px" }}>🎨 レボアート</h4>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+                  デジタルアートとクリエイター向けプラットフォーム。アーティストの作品発表と相互支援を通じて、創造的コミュニティを育成します。
+                </p>
+              </a>
+            </div>
+
+            {/* レボハット */}
+            <div style={{ border: "1px solid rgba(0,191,255,0.3)", borderRadius: "14px", background: "rgba(0,191,255,0.05)", padding: "20px" }}>
+              <a href="https://onokun.com/hat-model-academy/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "#00bfff", marginBottom: "6px" }}>🎓 レボハット（Hat Model Academy）</h4>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+                  <strong>日本初の「ハットモデル・アカデミー」。</strong>帽子を「表現の武器」として、身体表現とハットの融合を探求。ゼロから新しい文化を共に創造する開拓者を募集。ハットランウェイ、パフォーマンス、セルフブランディングを通じて新しい働き方を実践しています。
+                </p>
+              </a>
+            </div>
           </div>
 
-          {/* 防災×帽祭 */}
-          <div style={{ border: "1px solid rgba(220,20,60,0.3)", borderRadius: "14px", background: "rgba(220,20,60,0.05)", padding: "20px", marginBottom: "16px" }}>
-            <a href="https://revolist.earth/bosai-bosai" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#dc143c", marginBottom: "8px" }}>🎩 防災×帽祭（Bosai×Bosai）</h3>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
-                <strong>ハットを通じた防災意識向上プロジェクト。</strong>華やかでカラフルなハットをかぶることで心理的な変容をもたらし、堅苦しい避難訓練をエンターテインメント化。全国約20万校、605万人の小学生へのリーチを目指し、災害時の相互支援体制構築を推進しています。
-              </p>
-            </a>
-          </div>
-
-          {/* レボリンク */}
-          <div style={{ border: "1px solid rgba(50,205,50,0.3)", borderRadius: "14px", background: "rgba(50,205,50,0.05)", padding: "20px", marginBottom: "16px" }}>
-            <a href="https://onokun.com/socially-responsible-sponsorship/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#32cd32", marginBottom: "8px" }}>🔗 レボリンク</h3>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
-                <strong>社会貢献型広告収益スポンサープログラム。</strong>「普通の買い物が、誰かの応援になる仕組み」を実現。消費者が特別なコストを負担せず、日常の購買行為が防災教育やコミュニティ事業を支援。透明性、日常性、循環を三つの核心価値としています。
-              </p>
-            </a>
-          </div>
-
-          {/* レボファンディング */}
-          <div style={{ border: "1px solid rgba(138,43,226,0.3)", borderRadius: "14px", background: "rgba(138,43,226,0.05)", padding: "20px", marginBottom: "16px" }}>
-            <a href="https://hayator11.github.io/revofunding/index.html" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#8a2be2", marginBottom: "8px" }}>💰 レボファンディング</h3>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
-                クラウドファンディングプラットフォーム。創造的で社会貢献的なプロジェクトの資金調達を支援し、アイデアを実現させるための仕組みを提供します。
-              </p>
-            </a>
-          </div>
-
-          {/* レボアート */}
-          <div style={{ border: "1px solid rgba(255,20,147,0.3)", borderRadius: "14px", background: "rgba(255,20,147,0.05)", padding: "20px", marginBottom: "16px" }}>
-            <a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#ff1493", marginBottom: "8px" }}>🎨 レボアート</h3>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
-                デジタルアートとクリエイター向けプラットフォーム。アーティストの作品発表と相互支援を通じて、創造的コミュニティを育成します。
-              </p>
-            </a>
-          </div>
-
-          {/* レボハット */}
-          <div style={{ border: "1px solid rgba(0,191,255,0.3)", borderRadius: "14px", background: "rgba(0,191,255,0.05)", padding: "20px" }}>
-            <a href="https://onokun.com/hat-model-academy/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#00bfff", marginBottom: "8px" }}>🎓 レボハット（Hat Model Academy）</h3>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", lineHeight: 1.8 }}>
-                <strong>日本初の「ハットモデル・アカデミー」。</strong>帽子を「表現の武器」として、身体表現とハットの融合を探求。ゼロから新しい文化を共に創造する開拓者を募集。ハットランウェイ、パフォーマンス、セルフブランディングを通じて新しい働き方を実践しています。
-              </p>
+          {/* @hayator */}
+          <div style={{ padding: "12px 16px", background: "rgba(255,192,203,0.05)", border: "1px solid rgba(255,192,203,0.15)", borderRadius: "12px", marginTop: "16px" }}>
+            <a href="https://hayator.socialimagine.com/" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
+              <span style={{ fontSize: "14px" }}>👤</span>
+              <span style={{ fontSize: "12px", color: "rgba(255,192,203,0.8)" }}>
+                <strong>@hayator</strong> — Representative Blog / Philosophy & Thoughts
+              </span>
             </a>
           </div>
         </section>
