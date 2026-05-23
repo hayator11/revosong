@@ -500,32 +500,33 @@ export default function Home() {
   const fetchComments = async (trackId: number) => {
     setCommentsLoading(true);
     try {
-      // View を使用してコメント＆ユーザー情報を一度に取得
+      // コメントを取得
       const { data: commentsData } = await supabase
-        .from("comments_with_users")
+        .from("comments")
         .select("*")
         .eq("track_id", trackId)
         .order("created_at", { ascending: false });
 
       if (commentsData) {
-        setComments(commentsData as CommentWithUserInfo[]);
+        // 各コメントのユーザー情報を取得
+        const withUserInfo = await Promise.all(
+          commentsData.map(async (comment) => {
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("email")
+              .eq("id", comment.user_id)
+              .single();
+
+            return {
+              ...comment,
+              user_email: profileData?.email || "Anonymous",
+            };
+          })
+        );
+        setComments(withUserInfo);
       }
     } catch (error) {
       console.error("コメント取得エラー:", error);
-      // Viewが存在しない場合のフォールバック
-      try {
-        const { data: commentsData } = await supabase
-          .from("comments")
-          .select("*")
-          .eq("track_id", trackId)
-          .order("created_at", { ascending: false });
-
-        if (commentsData) {
-          setComments(commentsData as CommentWithUserInfo[]);
-        }
-      } catch (fallbackError) {
-        console.error("フォールバック失敗:", fallbackError);
-      }
     }
     setCommentsLoading(false);
   };
@@ -535,20 +536,56 @@ export default function Home() {
 
     setSubmitComment(true);
     try {
-      const { error } = await supabase
-        .from("comments")
-        .insert({
-          track_id: selectedTrack.id,
+      const commentContent = commentInput.trim();
+
+      // ステップ 1: AI で不適切さを判定
+      console.log("AI による判定を実行中...");
+      const aiResponse = await fetch("/api/check-comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: commentContent,
           user_id: user.id,
-          content: commentInput.trim(),
-        });
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error("AI 判定に失敗しました");
+      }
+
+      const aiResult = await aiResponse.json();
+
+      // ステップ 2: 判定結果に基づいて処理
+      if (aiResult.is_inappropriate) {
+        // 不適切なコメント → 警告表示
+        alert(
+          `⚠️ 申し訳ございません\n\n理由: ${aiResult.reason}\n\nコメント内容を修正してください`
+        );
+        console.warn("不適切なコメント検出:", aiResult.reason);
+        setSubmitComment(false);
+        return;
+      }
+
+      // ステップ 3: 適切なコメントを投稿
+      const { error } = await supabase.from("comments").insert({
+        track_id: selectedTrack.id,
+        user_id: user.id,
+        content: commentContent,
+        status: "approved",
+        is_inappropriate: false,
+      });
 
       if (!error) {
         setCommentInput("");
+        console.log("コメントが正常に投稿されました");
         fetchComments(selectedTrack.id);
+      } else {
+        console.error("コメント保存エラー:", error);
+        alert("コメント投稿に失敗しました");
       }
     } catch (error) {
       console.error("コメント投稿エラー:", error);
+      alert("エラーが発生しました。もう一度お試しください。");
     }
     setSubmitComment(false);
   };
