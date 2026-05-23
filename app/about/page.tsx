@@ -322,6 +322,23 @@ export default function AboutPage() {
         </header>
 
 
+        {/* おのくんプロフィール */}
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <div style={{ width: "240px", height: "240px", margin: "0 auto 16px", background: "#ffffff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", boxSizing: "border-box", filter: "drop-shadow(0 12px 32px rgba(255,45,85,0.2))" }}>
+            <img src="/onokun.jpg" alt="おのくん" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          </div>
+          <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#fff", letterSpacing: "1px", marginBottom: "4px" }}>おのくん</h2>
+          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", letterSpacing: "2px", marginBottom: "16px" }}>onokun</p>
+          <a
+            href="https://onokun.com/"
+            rel="author"
+            target="_blank"
+            style={{ display: "inline-block", padding: "8px 16px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "16px", color: "#ff2d55", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}
+          >
+            🌐 onokun.com
+          </a>
+        </div>
+
         {/* サイト概要 */}
         <section className="site-section">
           <div className="site-section-header">
