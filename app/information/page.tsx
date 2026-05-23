@@ -21,8 +21,8 @@ export default function InformationPage() {
         </p>
 
         {/* エコシステム図解 */}
-        <div style={{ marginBottom: "48px", textAlign: "center" }}>
-          <img src="/revosong-ecosystem.jpg" alt="REVOSONG エコシステム図解 - おのくんのルーツから展開する社会貢献プロジェクト群" style={{ width: "100%", maxWidth: "600px", height: "auto", borderRadius: "12px" }} />
+        <div style={{ marginBottom: "48px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <img src="/revosong-ecosystem.jpg" alt="REVOSONG エコシステム図解 - おのくんのルーツから展開する社会貢献プロジェクト群" style={{ width: "100%", maxWidth: "700px", height: "auto", borderRadius: "12px" }} />
         </div>
 
         {/* おのくんのルーツと信念 */}
