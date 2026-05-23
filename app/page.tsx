@@ -33,6 +33,7 @@ type Comment = {
 
 type CommentWithUserInfo = Comment & {
   user_email?: string;
+  username?: string | null;
   avatar_url?: string | null;
   twitter_url?: string | null;
   github_url?: string | null;
@@ -522,13 +523,14 @@ export default function Home() {
           commentsData.map(async (comment) => {
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("email, avatar_url, twitter_url, github_url, discord_url, instagram_url, youtube_url, tiktok_url, threads_url")
+              .select("email, username, avatar_url, twitter_url, github_url, discord_url, instagram_url, youtube_url, tiktok_url, threads_url")
               .eq("id", comment.user_id)
               .single();
 
             return {
               ...comment,
               user_email: profileData?.email || "Anonymous",
+              username: profileData?.username,
               avatar_url: profileData?.avatar_url,
               twitter_url: profileData?.twitter_url,
               github_url: profileData?.github_url,
@@ -2070,7 +2072,7 @@ export default function Home() {
                             fontWeight: 600,
                             color: "#ff2d55"
                           }}>
-                            {comment.user_email?.split("@")[0] || "Anonymous"}
+                            {comment.username || comment.user_email?.split("@")[0] || "Anonymous"}
                           </span>
                         </div>
 

@@ -88,7 +88,7 @@ export default function ProfilePage() {
             }
 
             // API route でプロフィール作成（service role key を使用）
-            if (Object.keys(snsData).length > 0) {
+            if (Object.keys(snsData).length > 0 || handle) {
               try {
                 const res = await fetch('/api/profile/auto-setup', {
                   method: 'POST',
@@ -96,6 +96,7 @@ export default function ProfilePage() {
                   body: JSON.stringify({
                     userId: userData.id,
                     email: userData.email,
+                    username: handle,
                     snsData,
                   }),
                 });

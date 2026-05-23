@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, snsData } = await request.json()
+    const { userId, email, username, snsData } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
     const profileData: any = {
       id: userId,
       email: email,
+    }
+
+    // ユーザー名を追加
+    if (username) {
+      profileData.username = username
     }
 
     // SNS データを追加
