@@ -1,6 +1,6 @@
 "use client";
 // Force redeploy trigger v2
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Track = {
@@ -355,6 +355,9 @@ export default function Home() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [submitComment, setSubmitComment] = useState(false);
 
+  // 再生回数カウント済みトラックを追跡（1回のみ実行）
+  const playCountedTrackIds = useRef<Set<number>>(new Set());
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
@@ -437,33 +440,54 @@ export default function Home() {
   };
 
   // 再生回数カウント（1時間おき）
-  const incrementPlayCount = async (trackId: number) => {
-    const track = tracks.find((t) => t.id === trackId);
-    if (!track) return;
+  const incrementPlayCount = useCallback(
+    async (trackId: number) => {
+      const track = tracks.find((t) => t.id === trackId);
+      if (!track) return;
 
-    const now = new Date();
-    const lastPlayTime = track.last_play_count_at ? new Date(track.last_play_count_at) : null;
-
-    // 最後のカウントから1時間以上経過しているかチェック
-    if (lastPlayTime) {
-      const hoursDiff = (now.getTime() - lastPlayTime.getTime()) / (1000 * 60 * 60);
-      if (hoursDiff < 1) {
-        // 1時間以内 → カウント無し
+      // 既にカウント済みならスキップ
+      if (playCountedTrackIds.current.has(trackId)) {
+        console.log(`再生回数カウント: ${track.title} は既にカウント済みなのでスキップ`);
         return;
       }
-    }
 
-    // 1時間以上経過 → play_count +1 & last_play_count_atを更新
-    await supabase
-      .from("tracks")
-      .update({
-        play_count: track.play_count + 1,
-        last_play_count_at: now.toISOString(),
-      })
-      .eq("id", trackId);
+      const now = new Date();
+      const lastPlayTime = track.last_play_count_at ? new Date(track.last_play_count_at) : null;
 
-    fetchTracks();
-  };
+      // 最後のカウントから1時間以上経過しているかチェック
+      if (lastPlayTime) {
+        const hoursDiff = (now.getTime() - lastPlayTime.getTime()) / (1000 * 60 * 60);
+        if (hoursDiff < 1) {
+          // 1時間以内 → カウント無し
+          console.log(`再生回数カウント: ${track.title} は1時間以内なのでスキップ (${hoursDiff.toFixed(2)}時間)`);
+          playCountedTrackIds.current.add(trackId);
+          return;
+        }
+      }
+
+      // カウント対象に追加
+      playCountedTrackIds.current.add(trackId);
+
+      // 1時間以上経過 → play_count +1 & last_play_count_atを更新
+      console.log(`再生回数カウント: ${track.title} を +1 (${track.play_count} → ${track.play_count + 1})`);
+
+      const { error } = await supabase
+        .from("tracks")
+        .update({
+          play_count: track.play_count + 1,
+          last_play_count_at: now.toISOString(),
+        })
+        .eq("id", trackId);
+
+      if (error) {
+        console.error("再生回数更新エラー:", error);
+      } else {
+        console.log("再生回数が正常に更新されました");
+        fetchTracks();
+      }
+    },
+    [tracks]
+  );
 
   const deleteTrack = async (trackId: number) => {
     if (!confirm("この楽曲を削除しますか？")) return;
@@ -538,6 +562,19 @@ export default function Home() {
       setCommentInput("");
     }
   }, [selectedTrack?.id]);
+
+  // トラック詳細が表示されたときに再生回数をカウント
+  // (プレイヤーがマウントされた時点で、ユーザーが再生する意図があると判断)
+  // 1回のみ実行される（同じトラックに対して複数回呼ばれることを防止）
+  useEffect(() => {
+    if (selectedTrack?.external_url) {
+      // 短いディレイを設定（プレイヤーがマウントされるのを待つ）
+      const timer = setTimeout(() => {
+        incrementPlayCount(selectedTrack.id);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedTrack?.id, incrementPlayCount]);
 
   const filtered = tracks.filter(
     (t) => (filter === "すべて" || t.ai_tool === filter) &&
@@ -1570,8 +1607,7 @@ export default function Home() {
                   setSelectedTrack(null);
                 } else {
                   setSelectedTrack(track);
-                  // 再生カウント
-                  incrementPlayCount(track.id);
+                  // 再生回数カウントは useEffect で自動実行
                 }
               }}
             >
