@@ -58,13 +58,17 @@ export default function ProfilePage() {
               snsUpdate.discord_url = `https://discord.com/users/${userData.user_metadata.sub}`;
             }
 
-            // プロフィールを自動更新
-            if (Object.keys(snsUpdate).length > 0) {
-              await supabase
-                .from('profiles')
-                .update(snsUpdate)
-                .eq('id', userData.id);
-            }
+            // プロフィールを自動作成または更新（upsert）
+            const profileData = {
+              id: userData.id,
+              email: userData.email,
+              ...snsUpdate,
+              updated_at: new Date().toISOString(),
+            };
+
+            await supabase
+              .from('profiles')
+              .upsert(profileData, { onConflict: 'id' });
           }
 
           fetchProfile(data.user.id);
