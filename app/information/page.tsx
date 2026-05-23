@@ -15,8 +15,13 @@ export default function InformationPage() {
           ← トップページへ戻る
         </Link>
 
-        <h1 style={{ fontSize: "36px", fontWeight: 700, color: "#fff", marginBottom: "12px", letterSpacing: "2px" }}>運営情報</h1>
-        <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, marginBottom: "40px" }}>
+        {/* レボリストLabロゴ */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <img src="/revolist-lab.jpg" alt="レボリストLab" style={{ height: "140px", width: "auto", objectFit: "contain" }} />
+        </div>
+
+        <h1 style={{ fontSize: "36px", fontWeight: 700, color: "#fff", marginBottom: "12px", letterSpacing: "2px", textAlign: "center" }}>運営情報</h1>
+        <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, marginBottom: "40px", textAlign: "center" }}>
           REVOSONG、レボリストシリーズ、そしておのくんの社会貢献活動について
         </p>
 
@@ -198,14 +203,19 @@ export default function InformationPage() {
         </section>
 
         {/* おのくんの活動 */}
-        <section style={{ marginBottom: "48px" }}>
-          <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", marginBottom: "16px" }}>おのくんの活動から生まれた</h2>
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", lineHeight: 1.9, marginBottom: "16px" }}>
-            クリエイター・起業家として音楽制作・DTM・デジタルクリエイティブで活動するおのくん。その転機は、<strong>東日本大震災後のボランティア経験</strong>でした。災害支援を通じて感じた「従来の枠組みではカバーできない社会課題」に対して、創造的でカジュアルなアプローチで取り組むことを信条としています。
-          </p>
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", lineHeight: 1.9, marginBottom: "16px" }}>
-            <strong>「防災を、かろやかに」「イメージできれば何でも出来る」</strong>という哲学の下、複数のプロジェクトを展開。クリエイターたちのつながりと社会への貢献を実現させています。
-          </p>
+        <section style={{ marginBottom: "48px", display: "grid", gridTemplateColumns: "1fr 100px", gap: "20px", alignItems: "start" }}>
+          <div>
+            <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", marginBottom: "16px" }}>おのくんの活動から生まれた</h2>
+            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", lineHeight: 1.9, marginBottom: "16px" }}>
+              クリエイター・起業家として音楽制作・DTM・デジタルクリエイティブで活動するおのくん。その転機は、<strong>東日本大震災後のボランティア経験</strong>でした。災害支援を通じて感じた「従来の枠組みではカバーできない社会課題」に対して、創造的でカジュアルなアプローチで取り組むことを信条としています。
+            </p>
+            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", lineHeight: 1.9, marginBottom: "16px" }}>
+              <strong>「防災を、かろやかに」「イメージできれば何でも出来る」</strong>という哲学の下、複数のプロジェクトを展開。クリエイターたちのつながりと社会への貢献を実現させています。
+            </p>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <img src="/onokun.jpg" alt="おのくん" style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,45,85,0.3)" }} />
+          </div>
         </section>
 
         {/* 防災×帽祭について */}
