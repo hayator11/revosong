@@ -575,8 +575,6 @@ export default function Home() {
         track_id: selectedTrack.id,
         user_id: user.id,
         content: commentContent,
-        status: "approved",
-        is_inappropriate: false,
       });
 
       if (!error) {
