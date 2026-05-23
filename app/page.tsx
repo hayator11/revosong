@@ -2,6 +2,7 @@
 // Force redeploy trigger v2
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { checkCommentSafety } from "@/lib/comment-filter";
 
 type Track = {
   id: number;
@@ -538,30 +539,17 @@ export default function Home() {
     try {
       const commentContent = commentInput.trim();
 
-      // ステップ 1: AI で不適切さを判定
-      console.log("AI による判定を実行中...");
-      const aiResponse = await fetch("/api/check-comment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: commentContent,
-          user_id: user.id,
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        throw new Error("AI 判定に失敗しました");
-      }
-
-      const aiResult = await aiResponse.json();
+      // ステップ 1: 無料フィルタで安全性を判定
+      console.log("コメント安全性を判定中...");
+      const safetyCheck = checkCommentSafety(commentContent);
 
       // ステップ 2: 判定結果に基づいて処理
-      if (aiResult.is_inappropriate) {
+      if (!safetyCheck.is_appropriate) {
         // 不適切なコメント → 警告表示
         alert(
-          `⚠️ 申し訳ございません\n\n理由: ${aiResult.reason}\n\nコメント内容を修正してください`
+          `⚠️ 申し訳ございません\n\n理由: ${safetyCheck.reason}\n\nコメント内容を修正してください`
         );
-        console.warn("不適切なコメント検出:", aiResult.reason);
+        console.warn("不適切なコメント検出:", safetyCheck);
         setSubmitComment(false);
         return;
       }
@@ -577,14 +565,14 @@ export default function Home() {
 
       if (!error) {
         setCommentInput("");
-        console.log("コメントが正常に投稿されました");
+        console.log("✅ コメントが正常に投稿されました");
         fetchComments(selectedTrack.id);
       } else {
-        console.error("コメント保存エラー:", error);
+        console.error("❌ コメント保存エラー:", error);
         alert("コメント投稿に失敗しました");
       }
     } catch (error) {
-      console.error("コメント投稿エラー:", error);
+      console.error("❌ コメント投稿エラー:", error);
       alert("エラーが発生しました。もう一度お試しください。");
     }
     setSubmitComment(false);
