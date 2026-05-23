@@ -9,15 +9,20 @@ export async function GET(request: Request) {
   const provider = requestUrl.searchParams.get('provider')
 
   if (code) {
-    // Supabase クライアントを初期化
-    const supabase = createClient(
+    // Supabase クライアントを初期化（認証用はanonキー、DB操作用はservice roleキー）
+    const supabaseAuth = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
     )
 
+    const supabaseDb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
+
     try {
       // OAuth コードをセッションに交換（タイムアウト対策）
-      const exchangePromise = supabase.auth.exchangeCodeForSession(code)
+      const exchangePromise = supabaseAuth.auth.exchangeCodeForSession(code)
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Session exchange timeout')), 5000)
       )
@@ -68,7 +73,7 @@ export async function GET(request: Request) {
 
       // プロフィール情報を更新（SNS URL を自動抽出）
       try {
-        const { data: existingProfile } = await supabase
+        const { data: existingProfile } = await supabaseDb
           .from('profiles')
           .select('*')
           .eq('id', userId)
@@ -99,7 +104,7 @@ export async function GET(request: Request) {
         if (existingProfile) {
           // プロフィール更新
           if (Object.keys(snsUpdate).length > 0) {
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseDb
               .from('profiles')
               .update({
                 ...snsUpdate,
@@ -115,7 +120,7 @@ export async function GET(request: Request) {
           }
         } else {
           // プロフィール作成
-          const { error: insertError } = await supabase
+          const { error: insertError } = await supabaseDb
             .from('profiles')
             .insert({
               id: userId,
