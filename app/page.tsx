@@ -44,7 +44,7 @@ const GENRES = [
 const FILTERS = ["すべて", "Suno", "Udio", "MusicLM", "Stable Audio"];
 const PERIODS = ["日間", "週間", "月間", "全期間"];
 const MUSIC_TYPES = ["すべて", "AI生成", "オリジナル"];
-const SITE_URL = "https://ai-music-charts.vercel.app";
+const SITE_URL = "https://revosong-charts.vercel.app";
 
 function formatNumber(n: number) {
   if (n >= 10000) return (n / 10000).toFixed(1) + "万";
