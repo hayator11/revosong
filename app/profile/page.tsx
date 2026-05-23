@@ -46,37 +46,44 @@ export default function ProfilePage() {
             const isGitHub = userData.identities?.some((i: any) => i.provider === 'github');
             const isDiscord = userData.identities?.some((i: any) => i.provider === 'discord');
 
-            let snsUpdate: Record<string, string> = {};
+            let snsData: Record<string, string> = {};
 
             if (isX && handle) {
-              snsUpdate.twitter_url = `https://x.com/${handle}`;
+              snsData.twitter_url = `https://x.com/${handle}`;
             }
             if (isGitHub && handle) {
-              snsUpdate.github_url = `https://github.com/${handle}`;
+              snsData.github_url = `https://github.com/${handle}`;
             }
             if (isDiscord && userData.user_metadata.sub) {
-              snsUpdate.discord_url = `https://discord.com/users/${userData.user_metadata.sub}`;
+              snsData.discord_url = `https://discord.com/users/${userData.user_metadata.sub}`;
             }
 
-            // プロフィールを自動作成または更新（upsert）
-            if (Object.keys(snsUpdate).length > 0) {
-              const profileData = {
-                id: userData.id,
-                email: userData.email,
-                ...snsUpdate,
-                updated_at: new Date().toISOString(),
-              };
+            // API route でプロフィール作成（service role key を使用）
+            if (Object.keys(snsData).length > 0) {
+              try {
+                const res = await fetch('/api/profile/auto-setup', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId: userData.id,
+                    email: userData.email,
+                    snsData,
+                  }),
+                });
 
-              console.log('Upserting profile:', profileData);
-              const { error } = await supabase
-                .from('profiles')
-                .upsert(profileData, { onConflict: 'id' });
-              console.log('Upsert result:', error ? `Error: ${error.message}` : 'Success');
+                if (!res.ok) {
+                  const error = await res.json();
+                  console.error('Profile auto-setup error:', error);
+                } else {
+                  console.log('Profile auto-setup successful');
+                }
+              } catch (error) {
+                console.error('Profile auto-setup fetch error:', error);
+              }
             }
           }
 
-          // Upsert 完了後、プロフィール取得
-          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 待機
+          // プロフィール取得
           fetchProfile(data.user.id);
         } else {
           window.location.href = "/";
