@@ -16,6 +16,7 @@ type Track = {
   created_at: string;
   like_count: number;
   liked: boolean;
+  last_play_count_at: string | null;
 };
 
 type User = { id: string; email?: string } | null;
@@ -411,6 +412,35 @@ export default function Home() {
         .from("likes")
         .insert({ user_id: user.id, track_id: trackId });
     }
+    fetchTracks();
+  };
+
+  // 再生回数カウント（1時間おき）
+  const incrementPlayCount = async (trackId: number) => {
+    const track = tracks.find((t) => t.id === trackId);
+    if (!track) return;
+
+    const now = new Date();
+    const lastPlayTime = track.last_play_count_at ? new Date(track.last_play_count_at) : null;
+
+    // 最後のカウントから1時間以上経過しているかチェック
+    if (lastPlayTime) {
+      const hoursDiff = (now.getTime() - lastPlayTime.getTime()) / (1000 * 60 * 60);
+      if (hoursDiff < 1) {
+        // 1時間以内 → カウント無し
+        return;
+      }
+    }
+
+    // 1時間以上経過 → play_count +1 & last_play_count_atを更新
+    await supabase
+      .from("tracks")
+      .update({
+        play_count: track.play_count + 1,
+        last_play_count_at: now.toISOString(),
+      })
+      .eq("id", trackId);
+
     fetchTracks();
   };
 
@@ -1424,9 +1454,15 @@ export default function Home() {
               style={{
                 animation: `fadeIn 0.4s ease ${i * 0.05}s forwards`,
               }}
-              onClick={() => setSelectedTrack(
-                selectedTrack?.id === track.id ? null : track
-              )}
+              onClick={() => {
+                if (selectedTrack?.id === track.id) {
+                  setSelectedTrack(null);
+                } else {
+                  setSelectedTrack(track);
+                  // 再生カウント
+                  incrementPlayCount(track.id);
+                }
+              }}
             >
               {i === 0 ? (
                 <span className="rank-medal">🥇</span>
