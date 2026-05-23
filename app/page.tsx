@@ -33,6 +33,12 @@ type Comment = {
 
 type CommentWithUserInfo = Comment & {
   user_email?: string;
+  avatar_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  youtube_url?: string | null;
+  tiktok_url?: string | null;
+  threads_url?: string | null;
 };
 
 type User = { id: string; email?: string } | null;
@@ -509,18 +515,24 @@ export default function Home() {
         .order("created_at", { ascending: false });
 
       if (commentsData) {
-        // 各コメントのユーザー情報を取得
+        // 各コメントのユーザー情報を取得（SNS情報を含む）
         const withUserInfo = await Promise.all(
           commentsData.map(async (comment) => {
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("email")
+              .select("email, avatar_url, twitter_url, instagram_url, youtube_url, tiktok_url, threads_url")
               .eq("id", comment.user_id)
               .single();
 
             return {
               ...comment,
               user_email: profileData?.email || "Anonymous",
+              avatar_url: profileData?.avatar_url,
+              twitter_url: profileData?.twitter_url,
+              instagram_url: profileData?.instagram_url,
+              youtube_url: profileData?.youtube_url,
+              tiktok_url: profileData?.tiktok_url,
+              threads_url: profileData?.threads_url,
             };
           })
         );
@@ -1531,6 +1543,23 @@ export default function Home() {
                 + 投稿
               </button>
               <button
+                className="btn-profile"
+                onClick={() => (window.location.href = "/profile")}
+                style={{
+                  padding: "10px 16px",
+                  background: "rgba(100,200,255,0.2)",
+                  border: "1px solid rgba(100,200,255,0.4)",
+                  borderRadius: "8px",
+                  color: "#64c8ff",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                👤 プロフィール
+              </button>
+              <button
                 className="btn-logout"
                 onClick={async () => {
                   await supabase.auth.signOut();
@@ -1980,45 +2009,130 @@ export default function Home() {
                   コメントはまだありません
                 </div>
               ) : (
-                comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    style={{
-                      padding: "8px 10px",
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: "4px",
-                      fontSize: "11px"
-                    }}
-                  >
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "4px"
-                    }}>
-                      <span style={{
-                        fontWeight: 600,
-                        color: "#ff2d55"
+                comments.map((comment) => {
+                  // SNSプラットフォームのマッピング
+                  const snsLinks = [
+                    { platform: "twitter", url: comment.twitter_url, icon: "𝕏" },
+                    { platform: "instagram", url: comment.instagram_url, icon: "📷" },
+                    { platform: "youtube", url: comment.youtube_url, icon: "🎬" },
+                    { platform: "tiktok", url: comment.tiktok_url, icon: "🎵" },
+                    { platform: "threads", url: comment.threads_url, icon: "@" },
+                  ].filter((s): s is { platform: string; url: string; icon: string } => !!s.url);
+
+                  return (
+                    <div
+                      key={comment.id}
+                      style={{
+                        padding: "10px 10px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "4px",
+                        fontSize: "11px"
+                      }}
+                    >
+                      {/* ユーザー情報ヘッダー（アバター + 名前 + SNS + 日付） */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        marginBottom: "6px",
+                        gap: "8px"
                       }}>
-                        {comment.user_email?.split("@")[0] || "Anonymous"}
-                      </span>
-                      <span style={{
-                        color: "rgba(255,255,255,0.4)",
-                        fontSize: "10px"
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          flex: 1
+                        }}>
+                          {/* アバター画像 */}
+                          {comment.avatar_url && (
+                            <img
+                              src={comment.avatar_url}
+                              alt="avatar"
+                              style={{
+                                width: "24px",
+                                height: "24px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                flexShrink: 0
+                              }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          )}
+                          {/* ユーザー名 */}
+                          <span style={{
+                            fontWeight: 600,
+                            color: "#ff2d55"
+                          }}>
+                            {comment.user_email?.split("@")[0] || "Anonymous"}
+                          </span>
+                        </div>
+
+                        {/* 日付（右寄せ） */}
+                        <span style={{
+                          color: "rgba(255,255,255,0.4)",
+                          fontSize: "10px",
+                          whiteSpace: "nowrap"
+                        }}>
+                          {new Date(comment.created_at).toLocaleDateString("ja-JP")}
+                        </span>
+                      </div>
+
+                      {/* SNSアイコン表示 */}
+                      {snsLinks.length > 0 && (
+                        <div style={{
+                          display: "flex",
+                          gap: "4px",
+                          marginBottom: "6px",
+                          flexWrap: "wrap"
+                        }}>
+                          {snsLinks.map(({ platform, url, icon }) => (
+                            <a
+                              key={platform}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={platform}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "18px",
+                                height: "18px",
+                                fontSize: "11px",
+                                background: "rgba(255,45,85,0.2)",
+                                borderRadius: "3px",
+                                textDecoration: "none",
+                                cursor: "pointer",
+                                transition: "all 0.2s"
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.background = "rgba(255,45,85,0.4)";
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.background = "rgba(255,45,85,0.2)";
+                              }}
+                            >
+                              {icon}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* コメント内容 */}
+                      <div style={{
+                        color: "rgba(255,255,255,0.8)",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        lineHeight: "1.4"
                       }}>
-                        {new Date(comment.created_at).toLocaleDateString("ja-JP")}
-                      </span>
+                        {comment.content}
+                      </div>
                     </div>
-                    <div style={{
-                      color: "rgba(255,255,255,0.8)",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                      lineHeight: "1.4"
-                    }}>
-                      {comment.content}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

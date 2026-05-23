@@ -1,0 +1,256 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
+type UserProfile = {
+  id: string;
+  email: string;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  youtube_url: string | null;
+  tiktok_url: string | null;
+  threads_url: string | null;
+  avatar_url: string | null;
+};
+
+export default function ProfilePage() {
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    twitter_url: "",
+    instagram_url: "",
+    youtube_url: "",
+    tiktok_url: "",
+    threads_url: "",
+    avatar_url: "",
+  });
+
+  // ユーザー情報を取得
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUser({ id: data.user.id, email: data.user.email || "" });
+        fetchProfile(data.user.id);
+      } else {
+        window.location.href = "/";
+      }
+    });
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (data) {
+      setProfile(data);
+      setFormData({
+        twitter_url: data.twitter_url || "",
+        instagram_url: data.instagram_url || "",
+        youtube_url: data.youtube_url || "",
+        tiktok_url: data.tiktok_url || "",
+        threads_url: data.threads_url || "",
+        avatar_url: data.avatar_url || "",
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update(formData)
+        .eq("id", user.id);
+
+      if (error) {
+        alert("保存に失敗しました");
+        console.error(error);
+      } else {
+        alert("✅ プロフィールが更新されました");
+        fetchProfile(user.id);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("エラーが発生しました");
+    }
+    setSaving(false);
+  };
+
+  if (loading) return <div style={{ textAlign: "center", padding: "40px" }}>読み込み中...</div>;
+  if (!user) return null;
+
+  return (
+    <div
+      style={{
+        maxWidth: "600px",
+        margin: "0 auto",
+        padding: "40px 20px",
+        fontFamily: "'Noto Sans JP', sans-serif",
+        background: "#0a0a0f",
+        minHeight: "100vh",
+        color: "#fff",
+      }}
+    >
+      <h1 style={{ textAlign: "center", marginBottom: "30px" }}>📋 プロフィール設定</h1>
+
+      <div style={{ marginBottom: "20px" }}>
+        <label style={{ display: "block", fontSize: "14px", color: "#ccc", marginBottom: "5px" }}>
+          メールアドレス
+        </label>
+        <input
+          type="text"
+          value={user.email}
+          disabled
+          style={{
+            width: "100%",
+            padding: "10px",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "6px",
+            color: "#999",
+          }}
+        />
+      </div>
+
+      {/* SNS リンク入力 */}
+      <div style={{ marginTop: "30px", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "20px" }}>
+        <h3 style={{ marginBottom: "20px", fontSize: "16px" }}>🔗 SNS アカウントを登録</h3>
+
+        {[
+          { key: "twitter_url", label: "𝕏 (Twitter)", placeholder: "https://twitter.com/username" },
+          { key: "instagram_url", label: "📷 Instagram", placeholder: "https://instagram.com/username" },
+          { key: "youtube_url", label: "🎬 YouTube", placeholder: "https://youtube.com/@username" },
+          { key: "tiktok_url", label: "🎵 TikTok", placeholder: "https://tiktok.com/@username" },
+          { key: "threads_url", label: "@ Threads", placeholder: "https://threads.net/@username" },
+          { key: "avatar_url", label: "🖼️ アバター画像 URL", placeholder: "https://example.com/avatar.jpg" },
+        ].map((field) => (
+          <div key={field.key} style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", fontSize: "13px", color: "#aaa", marginBottom: "5px" }}>
+              {field.label}
+            </label>
+            <input
+              type="text"
+              placeholder={field.placeholder}
+              value={formData[field.key as keyof typeof formData]}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  [field.key]: e.target.value,
+                })
+              }
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,45,85,0.2)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13px",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* プレビュー */}
+      <div
+        style={{
+          marginTop: "30px",
+          padding: "20px",
+          background: "rgba(255,45,85,0.05)",
+          border: "1px solid rgba(255,45,85,0.2)",
+          borderRadius: "8px",
+        }}
+      >
+        <h4 style={{ marginBottom: "15px", fontSize: "14px" }}>👀 プレビュー</h4>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "10px",
+          }}
+        >
+          {formData.avatar_url && (
+            <img
+              src={formData.avatar_url}
+              alt="avatar"
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          )}
+          <span style={{ fontWeight: 600, color: "#ff2d55" }}>{user.email.split("@")[0]}</span>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {formData.twitter_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>𝕏</span>}
+          {formData.instagram_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>📷</span>}
+          {formData.youtube_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🎬</span>}
+          {formData.tiktok_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🎵</span>}
+          {formData.threads_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>@</span>}
+        </div>
+      </div>
+
+      {/* 保存ボタン */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{
+          width: "100%",
+          padding: "12px",
+          marginTop: "30px",
+          background: saving ? "rgba(255,45,85,0.3)" : "rgba(255,45,85,0.8)",
+          border: "none",
+          borderRadius: "6px",
+          color: "#fff",
+          fontWeight: 600,
+          fontSize: "14px",
+          cursor: saving ? "not-allowed" : "pointer",
+          transition: "all 0.2s",
+        }}
+        onMouseOver={(e) => {
+          if (!saving) e.currentTarget.style.background = "rgba(255,45,85,1)";
+        }}
+        onMouseOut={(e) => {
+          if (!saving) e.currentTarget.style.background = "rgba(255,45,85,0.8)";
+        }}
+      >
+        {saving ? "保存中..." : "💾 プロフィールを保存"}
+      </button>
+
+      {/* 戻るボタン */}
+      <button
+        onClick={() => (window.location.href = "/")}
+        style={{
+          width: "100%",
+          padding: "10px",
+          marginTop: "10px",
+          background: "transparent",
+          border: "1px solid rgba(255,255,255,0.2)",
+          borderRadius: "6px",
+          color: "#aaa",
+          fontWeight: "600",
+          fontSize: "13px",
+          cursor: "pointer",
+        }}
+      >
+        ← 戻る
+      </button>
+    </div>
+  );
+}
