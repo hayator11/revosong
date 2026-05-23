@@ -7,6 +7,8 @@ type UserProfile = {
   id: string;
   email: string;
   twitter_url: string | null;
+  github_url: string | null;
+  discord_url: string | null;
   instagram_url: string | null;
   youtube_url: string | null;
   tiktok_url: string | null;
@@ -21,6 +23,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     twitter_url: "",
+    github_url: "",
+    discord_url: "",
     instagram_url: "",
     youtube_url: "",
     tiktok_url: "",
@@ -133,6 +137,8 @@ export default function ProfilePage() {
       setProfile(data);
       setFormData({
         twitter_url: data.twitter_url || "",
+        github_url: data.github_url || "",
+        discord_url: data.discord_url || "",
         instagram_url: data.instagram_url || "",
         youtube_url: data.youtube_url || "",
         tiktok_url: data.tiktok_url || "",
@@ -276,6 +282,8 @@ export default function ProfilePage() {
 
         {[
           { key: "twitter_url", label: "𝕏 X", placeholder: "https://x.com/username" },
+          { key: "github_url", label: "🐙 GitHub", placeholder: "https://github.com/username" },
+          { key: "discord_url", label: "💜 Discord", placeholder: "https://discord.com/users/userid" },
           { key: "instagram_url", label: "📷 Instagram", placeholder: "https://instagram.com/username" },
           { key: "youtube_url", label: "🎬 YouTube", placeholder: "https://youtube.com/@username" },
           { key: "tiktok_url", label: "🎵 TikTok", placeholder: "https://tiktok.com/@username" },
@@ -348,6 +356,8 @@ export default function ProfilePage() {
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {formData.twitter_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>𝕏</span>}
+          {formData.github_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🐙</span>}
+          {formData.discord_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>💜</span>}
           {formData.instagram_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>📷</span>}
           {formData.youtube_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🎬</span>}
           {formData.tiktok_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🎵</span>}
