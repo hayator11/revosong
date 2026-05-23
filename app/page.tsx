@@ -18,6 +18,19 @@ type Track = {
   like_count: number;
   liked: boolean;
   last_play_count_at: string | null;
+  artist_social_url: string | null;
+};
+
+type Comment = {
+  id: number;
+  track_id: number;
+  user_id: string;
+  content: string;
+  created_at: string;
+};
+
+type CommentWithUserInfo = Comment & {
+  user_email?: string;
 };
 
 type User = { id: string; email?: string } | null;
@@ -1602,12 +1615,66 @@ export default function Home() {
             </div>
           )}
           <ShareButtons track={selectedTrack} />
+
+          {/* アーティストのSNSリンク */}
+          {selectedTrack.artist_social_url && (
+            <div style={{
+              padding: "16px",
+              background: "rgba(255,255,255,0.03)",
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px"
+            }}>
+              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>アーティスト:</span>
+              <a
+                href={selectedTrack.artist_social_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "6px 12px",
+                  background: "linear-gradient(135deg, #ff2d55, #ff6482)",
+                  borderRadius: "16px",
+                  color: "#fff",
+                  textDecoration: "none",
+                  fontSize: "12px",
+                  fontWeight: 600
+                }}
+              >
+                🔗 {new URL(selectedTrack.artist_social_url).hostname.replace('www.', '')}
+              </a>
+            </div>
+          )}
+
           {selectedTrack.prompt && (
             <div className="player-prompt">
               <div className="player-prompt-label">Prompt</div>
               {selectedTrack.prompt}
             </div>
           )}
+
+          {/* コメント欄プレースホルダー */}
+          <div style={{
+            padding: "16px",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.02)"
+          }}>
+            <div style={{
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#fff",
+              marginBottom: "12px"
+            }}>
+              💬 コメント（準備中）
+            </div>
+            <div style={{
+              fontSize: "12px",
+              color: "rgba(255,255,255,0.5)",
+              fontStyle: "italic"
+            }}>
+              この楽曲についてのコメント機能は準備中です
+            </div>
+          </div>
         </div>
       )}
 
@@ -1775,6 +1842,7 @@ function UploadModal({
     music_type: "ai",
     prompt: "",
     external_url: "",
+    artist_social_url: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -1794,6 +1862,7 @@ function UploadModal({
       music_type: form.music_type,
       prompt: form.music_type === "ai" ? (form.prompt || null) : null,
       external_url: form.external_url || null,
+      artist_social_url: form.artist_social_url || null,
     });
     setSubmitting(false);
     setDone(true);
@@ -1930,6 +1999,17 @@ function UploadModal({
           </>
         )}
 
+        <div className="field-label">あなたのSNS（任意）</div>
+        <input
+          className="field-input"
+          placeholder="https://twitter.com/... または https://www.youtube.com/... など"
+          value={form.artist_social_url}
+          onChange={(e) => update("artist_social_url", e.target.value)}
+        />
+        <div className="url-hint">
+          あなたの Twitter/X、YouTube、Spotify などのプロフィールリンクを貼ると、リスナーがあなたをフォロー・応援できます
+        </div>
+
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
           <button className="btn-cancel" onClick={onClose} style={{ flex: 1 }}>
             キャンセル
@@ -1964,6 +2044,7 @@ function EditModal({
     genre: track.genre,
     prompt: track.prompt || "",
     external_url: track.external_url || "",
+    artist_social_url: track.artist_social_url || "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -1983,6 +2064,7 @@ function EditModal({
         genre: form.genre,
         prompt: form.prompt || null,
         external_url: form.external_url || null,
+        artist_social_url: form.artist_social_url || null,
       })
       .eq("id", track.id);
     setSubmitting(false);
@@ -2064,6 +2146,17 @@ function EditModal({
           value={form.prompt}
           onChange={(e) => update("prompt", e.target.value)}
         />
+
+        <div className="field-label">あなたのSNS</div>
+        <input
+          className="field-input"
+          placeholder="https://twitter.com/... または https://www.youtube.com/... など"
+          value={form.artist_social_url}
+          onChange={(e) => update("artist_social_url", e.target.value)}
+        />
+        <div className="url-hint">
+          リスナーがあなたをフォロー・応援できるようにしましょう
+        </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
           <button className="btn-cancel" onClick={onClose} style={{ flex: 1 }}>
