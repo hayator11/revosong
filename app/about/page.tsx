@@ -442,6 +442,146 @@ export default function AboutPage() {
           </a>
         </section>
 
+        {/* 著作権について - 重要な注意事項 */}
+        <section
+          style={{
+            background: "linear-gradient(135deg, rgba(220,20,60,0.15), rgba(255,69,0,0.15))",
+            border: "2px solid #dc143c",
+            borderRadius: "16px",
+            padding: "28px 24px",
+            marginBottom: "48px",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#ff4500",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            ⚠️ 著作権について - 重要なお知らせ
+          </h2>
+
+          <div
+            style={{
+              background: "rgba(220,20,60,0.08)",
+              border: "1px solid rgba(220,20,60,0.3)",
+              borderRadius: "12px",
+              padding: "16px",
+              marginBottom: "16px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "14px",
+                color: "rgba(255,255,255,0.9)",
+                lineHeight: 1.9,
+                fontWeight: 600,
+                margin: "0 0 12px 0",
+              }}
+            >
+              🚫 このプラットフォームに投稿できる楽曲について
+            </p>
+            <ul
+              style={{
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.85)",
+                lineHeight: 1.8,
+                margin: "0 0 0 20px",
+                paddingLeft: "10px",
+              }}
+            >
+              <li style={{ marginBottom: "8px" }}>
+                <strong>AI生成楽曲</strong>：Suno、Udio、MusicLM、Stable Audio など AI音楽ツールで生成した楽曲（著作権フリー）
+              </li>
+              <li style={{ marginBottom: "8px" }}>
+                <strong>オリジナル楽曲</strong>：ご自身が作成・著作権を保有する楽曲のみ
+              </li>
+              <li>
+                <strong style={{ color: "#ff6482" }}>
+                  著作権のある既存楽曲の投稿は厳禁です
+                </strong>
+              </li>
+            </ul>
+          </div>
+
+          <div
+            style={{
+              background: "rgba(255,69,0,0.08)",
+              border: "1px solid rgba(255,69,0,0.3)",
+              borderRadius: "12px",
+              padding: "16px",
+              marginBottom: "16px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "14px",
+                color: "rgba(255,255,255,0.9)",
+                lineHeight: 1.9,
+                fontWeight: 600,
+                margin: "0 0 12px 0",
+              }}
+            >
+              📋 投稿時のガイドライン
+            </p>
+            <ul
+              style={{
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.85)",
+                lineHeight: 1.8,
+                margin: "0 0 0 20px",
+                paddingLeft: "10px",
+              }}
+            >
+              <li style={{ marginBottom: "8px" }}>
+                投稿楽曲の著作権はご自身に帰属することを確認の上、投稿してください
+              </li>
+              <li style={{ marginBottom: "8px" }}>
+                既存アーティストの楽曲、カバー曲、サンプリング楽曲の投稿はお断りしています
+              </li>
+              <li>
+                楽曲のプロンプト、ジャンル、アーティスト名は正確に記入してください
+              </li>
+            </ul>
+          </div>
+
+          <div
+            style={{
+              background: "rgba(220,20,60,0.1)",
+              border: "1px solid rgba(220,20,60,0.4)",
+              borderRadius: "12px",
+              padding: "16px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "14px",
+                color: "rgba(255,255,255,0.9)",
+                lineHeight: 1.9,
+                fontWeight: 600,
+                margin: "0 0 12px 0",
+              }}
+            >
+              🔍 違反が判明した場合
+            </p>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.85)",
+                lineHeight: 1.8,
+                margin: 0,
+              }}
+            >
+              著作権侵害の投稿が判明した場合、<strong>運営サイド判断により予告なく削除</strong>いたします。著作権の侵害にあたる投稿の責任は投稿者に帰属します。当プラットフォームは著作権侵害への一切の責任を負いません。
+            </p>
+          </div>
+        </section>
+
         <footer className="page-footer">
           <p>
             &copy; 2025 MUSIC CHARTS — 運営：
