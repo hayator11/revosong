@@ -68,12 +68,21 @@ export default function ProfilePage() {
           // OAuth から来た場合、SNS URL を自動入力
           if (data.user.user_metadata) {
             const userData = data.user;
-            const handle = userData.user_metadata.user_name || userData.user_metadata.preferred_username;
 
             // プロバイダーを特定
             const isX = userData.identities?.some((i: any) => i.provider === 'x' || i.provider === 'twitter');
             const isGitHub = userData.identities?.some((i: any) => i.provider === 'github');
             const isDiscord = userData.identities?.some((i: any) => i.provider === 'discord');
+
+            // プロバイダーごとに異なるフィールドからハンドルを取得
+            let handle = '';
+            if (isDiscord) {
+              // Discord: name が使用されることが多い
+              handle = userData.user_metadata.name || userData.user_metadata.preferred_username || userData.user_metadata.user_name;
+            } else {
+              // X, GitHub: user_name または preferred_username
+              handle = userData.user_metadata.user_name || userData.user_metadata.preferred_username;
+            }
 
             let snsData: Record<string, string> = {};
 
