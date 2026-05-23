@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About | MUSIC CHARTS",
     description: "AI生成・オリジナル楽曲のランキングプラットフォーム「MUSIC CHARTS」について。",
-    url: "https://ai-music-charts.vercel.app/about",
+    url: "https://revosong-charts.vercel.app/about",
     siteName: "MUSIC CHARTS",
     type: "website",
   },
@@ -31,9 +31,9 @@ const jsonLd = {
     },
     {
       "@type": "WebSite",
-      "@id": "https://ai-music-charts.vercel.app/#website",
+      "@id": "https://revosong-charts.vercel.app/#website",
       name: "MUSIC CHARTS",
-      url: "https://ai-music-charts.vercel.app/",
+      url: "https://revosong-charts.vercel.app/",
       description: "AI生成・オリジナル楽曲のランキングサイト",
       author: {
         "@id": "https://onokun.com/#person",
@@ -44,10 +44,10 @@ const jsonLd = {
     },
     {
       "@type": "WebPage",
-      "@id": "https://ai-music-charts.vercel.app/about",
-      url: "https://ai-music-charts.vercel.app/about",
+      "@id": "https://revosong-charts.vercel.app/about",
+      url: "https://revosong-charts.vercel.app/about",
       name: "運営者情報・おのくん | MUSIC CHARTS",
-      isPartOf: { "@id": "https://ai-music-charts.vercel.app/#website" },
+      isPartOf: { "@id": "https://revosong-charts.vercel.app/#website" },
       about: { "@id": "https://onokun.com/#person" },
     },
   ],
@@ -352,7 +352,7 @@ export default function AboutPage() {
               </li>
               <li className="site-detail-item">
                 <span className="site-detail-key">URL</span>
-                <span>https://ai-music-charts.vercel.app/</span>
+                <span>https://revosong-charts.vercel.app/</span>
               </li>
               <li className="site-detail-item">
                 <span className="site-detail-key">コンセプト</span>
