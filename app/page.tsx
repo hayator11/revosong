@@ -1617,34 +1617,53 @@ export default function Home() {
           <ShareButtons track={selectedTrack} />
 
           {/* アーティストのSNSリンク */}
-          {selectedTrack.artist_social_url && (
-            <div style={{
-              padding: "16px",
-              background: "rgba(255,255,255,0.03)",
-              borderTop: "1px solid rgba(255,255,255,0.1)",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px"
-            }}>
-              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>アーティスト:</span>
-              <a
-                href={selectedTrack.artist_social_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "6px 12px",
-                  background: "linear-gradient(135deg, #ff2d55, #ff6482)",
-                  borderRadius: "16px",
-                  color: "#fff",
-                  textDecoration: "none",
-                  fontSize: "12px",
-                  fontWeight: 600
-                }}
-              >
-                🔗 {new URL(selectedTrack.artist_social_url).hostname.replace('www.', '')}
-              </a>
-            </div>
-          )}
+          {selectedTrack.artist_social_url && (() => {
+            try {
+              const urlHost = new URL(selectedTrack.artist_social_url).hostname.replace('www.', '');
+              return (
+                <div style={{
+                  padding: "16px",
+                  background: "rgba(255,255,255,0.03)",
+                  borderTop: "1px solid rgba(255,255,255,0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>アーティスト:</span>
+                  <a
+                    href={selectedTrack.artist_social_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: "6px 12px",
+                      background: "linear-gradient(135deg, #ff2d55, #ff6482)",
+                      borderRadius: "16px",
+                      color: "#fff",
+                      textDecoration: "none",
+                      fontSize: "12px",
+                      fontWeight: 600
+                    }}
+                  >
+                    🔗 {urlHost}
+                  </a>
+                </div>
+              );
+            } catch {
+              return (
+                <div style={{
+                  padding: "16px",
+                  background: "rgba(255,255,255,0.03)",
+                  borderTop: "1px solid rgba(255,255,255,0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>アーティスト:</span>
+                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>無効なURL</span>
+                </div>
+              );
+            }
+          })()}
 
           {selectedTrack.prompt && (
             <div className="player-prompt">
