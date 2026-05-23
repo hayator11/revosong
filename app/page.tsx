@@ -2012,11 +2012,11 @@ export default function Home() {
                 comments.map((comment) => {
                   // SNSプラットフォームのマッピング
                   const snsLinks = [
-                    { platform: "twitter", url: comment.twitter_url, icon: "𝕏" },
-                    { platform: "instagram", url: comment.instagram_url, icon: "📷" },
-                    { platform: "youtube", url: comment.youtube_url, icon: "🎬" },
-                    { platform: "tiktok", url: comment.tiktok_url, icon: "🎵" },
-                    { platform: "threads", url: comment.threads_url, icon: "@" },
+                    { platform: "X", url: comment.twitter_url, icon: "𝕏" },
+                    { platform: "Instagram", url: comment.instagram_url, icon: "📷" },
+                    { platform: "YouTube", url: comment.youtube_url, icon: "🎬" },
+                    { platform: "TikTok", url: comment.tiktok_url, icon: "🎵" },
+                    { platform: "Threads", url: comment.threads_url, icon: "@" },
                   ].filter((s): s is { platform: string; url: string; icon: string } => !!s.url);
 
                   return (
