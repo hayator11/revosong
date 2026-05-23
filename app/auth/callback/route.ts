@@ -72,22 +72,33 @@ export async function GET(request: Request) {
       }
 
       // プロフィール情報を更新（SNS URL を自動抽出）
+      console.log('=== PROFILE OPERATION START ===')
+      console.log('userId:', userId)
+      console.log('email:', email)
+      console.log('provider:', provider)
+      console.log('user.user_metadata:', user?.user_metadata)
+
       try {
-        const { data: existingProfile } = await supabaseDb
+        console.log('Checking for existing profile...')
+        const { data: existingProfile, error: selectError } = await supabaseDb
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .single()
+
+        console.log('Select result:', { existingProfile, selectError })
 
         let snsUpdate: Record<string, string> = {}
 
         // ユーザーメタデータから SNS 情報を抽出
         if (user?.user_metadata) {
           const handle = user.user_metadata.user_name || user.user_metadata.preferred_username
+          console.log('SNS handle:', handle)
 
           if (provider === 'x' || user.identities?.some((i: any) => i.provider === 'twitter')) {
             if (handle) {
               snsUpdate.twitter_url = `https://x.com/${handle}`
+              console.log('Setting twitter_url:', snsUpdate.twitter_url)
             }
           } else if (provider === 'github' || user.identities?.some((i: any) => i.provider === 'github')) {
             if (handle) {
@@ -101,10 +112,13 @@ export async function GET(request: Request) {
           }
         }
 
+        console.log('snsUpdate:', snsUpdate)
+
         if (existingProfile) {
+          console.log('Profile exists, updating...')
           // プロフィール更新
           if (Object.keys(snsUpdate).length > 0) {
-            const { error: updateError } = await supabaseDb
+            const { data: updateData, error: updateError } = await supabaseDb
               .from('profiles')
               .update({
                 ...snsUpdate,
@@ -112,15 +126,17 @@ export async function GET(request: Request) {
               })
               .eq('id', userId)
 
+            console.log('Update result:', { updateData, updateError })
             if (updateError) {
-              console.error('Profile update error:', updateError)
+              console.error('❌ Profile update error:', updateError)
             } else {
-              console.log('Profile updated successfully for user:', userId)
+              console.log('✅ Profile updated successfully for user:', userId)
             }
           }
         } else {
+          console.log('Profile does not exist, creating new...')
           // プロフィール作成
-          const { error: insertError } = await supabaseDb
+          const { data: insertData, error: insertError } = await supabaseDb
             .from('profiles')
             .insert({
               id: userId,
@@ -130,19 +146,21 @@ export async function GET(request: Request) {
               updated_at: new Date().toISOString(),
             })
 
+          console.log('Insert result:', { insertData, insertError })
           if (insertError) {
-            console.error('Profile insert error:', insertError)
+            console.error('❌ Profile insert error:', insertError)
           } else {
-            console.log('Profile created successfully for user:', userId)
+            console.log('✅ Profile created successfully for user:', userId)
           }
         }
       } catch (profileError: any) {
-        console.error('Profile operation error:', {
+        console.error('❌ Profile operation error:', {
           message: profileError?.message,
+          stack: profileError?.stack,
           fullError: profileError
         })
-        // プロフィール更新失敗は致命的ではない
       }
+      console.log('=== PROFILE OPERATION END ===\n')
 
       // プロフィールページにリダイレクト
       return NextResponse.redirect(new URL('/profile', requestUrl.origin))
