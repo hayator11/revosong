@@ -193,7 +193,7 @@ export default function ProfilePage() {
         </p>
 
         {[
-          { key: "twitter_url", label: "𝕏 X", placeholder: "https://twitter.com/username" },
+          { key: "twitter_url", label: "𝕏 X", placeholder: "https://x.com/username" },
           { key: "instagram_url", label: "📷 Instagram", placeholder: "https://instagram.com/username" },
           { key: "youtube_url", label: "🎬 YouTube", placeholder: "https://youtube.com/@username" },
           { key: "tiktok_url", label: "🎵 TikTok", placeholder: "https://tiktok.com/@username" },
