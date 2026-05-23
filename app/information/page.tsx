@@ -28,91 +28,35 @@ export default function InformationPage() {
         {/* SVG図解 */}
         <div style={{ background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.2)", borderRadius: "20px", padding: "40px 20px", marginBottom: "48px", overflow: "auto" }}>
           <svg viewBox="0 0 800 700" style={{ width: "100%", height: "auto", minHeight: "500px" }}>
-            {/* タイトル */}
-            <text x="400" y="40" fontSize="24" fontWeight="700" textAnchor="middle" fill="#fff">
-              REVOSONG エコシステム
-            </text>
-
-            {/* REVOSONG */}
+            <text x="400" y="40" fontSize="24" fontWeight="700" textAnchor="middle" fill="#fff">REVOSONG エコシステム</text>
             <circle cx="400" cy="100" r="45" fill="rgba(0,212,255,0.3)" stroke="#00d4ff" strokeWidth="2" />
-            <text x="400" y="110" fontSize="16" fontWeight="700" textAnchor="middle" fill="#00d4ff">
-              REVOSONG
-            </text>
-
-            {/* 矢印（下） */}
-            <line x1="400" y1="145" x2="400" y2="190" stroke="rgba(255,255,255,0.3)" strokeWidth="2" markerEnd="url(#arrowhead)" />
-
-            {/* レボシリーズ */}
-            <g>
-              {/* 背景ボックス */}
-              <rect x="120" y="190" width="560" height="120" fill="rgba(255,165,0,0.1)" stroke="rgba(255,165,0,0.4)" strokeWidth="2" rx="10" />
-
-              {/* タイトル */}
-              <text x="400" y="215" fontSize="14" fontWeight="700" textAnchor="middle" fill="#ffa500">
-                レボリストシリーズ
-              </text>
-
-              {/* 各プロジェクト */}
-              <circle cx="160" cy="270" r="28" fill="rgba(255,165,0,0.3)" stroke="#ffa500" strokeWidth="1" />
-              <text x="160" y="275" fontSize="11" textAnchor="middle" fill="#fff">Lab</text>
-
-              <circle cx="240" cy="270" r="28" fill="rgba(220,20,60,0.3)" stroke="#dc143c" strokeWidth="1" />
-              <text x="240" y="275" fontSize="11" textAnchor="middle" fill="#fff">防災</text>
-
-              <circle cx="320" cy="270" r="28" fill="rgba(50,205,50,0.3)" stroke="#32cd32" strokeWidth="1" />
-              <text x="320" y="275" fontSize="11" textAnchor="middle" fill="#fff">リンク</text>
-
-              <circle cx="400" cy="270" r="28" fill="rgba(138,43,226,0.3)" stroke="#8a2be2" strokeWidth="1" />
-              <text x="400" y="275" fontSize="11" textAnchor="middle" fill="#fff">ファン</text>
-
-              <circle cx="480" cy="270" r="28" fill="rgba(255,20,147,0.3)" stroke="#ff1493" strokeWidth="1" />
-              <text x="480" y="275" fontSize="11" textAnchor="middle" fill="#fff">アート</text>
-
-              <circle cx="560" cy="270" r="28" fill="rgba(0,191,255,0.3)" stroke="#00bfff" strokeWidth="1" />
-              <text x="560" y="275" fontSize="11" textAnchor="middle" fill="#fff">ハット</text>
-            </g>
-
-            {/* 矢印（上からおのくん） */}
+            <text x="400" y="110" fontSize="16" fontWeight="700" textAnchor="middle" fill="#00d4ff">REVOSONG</text>
+            <line x1="400" y1="145" x2="400" y2="190" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+            <rect x="120" y="190" width="560" height="120" fill="rgba(255,165,0,0.1)" stroke="rgba(255,165,0,0.4)" strokeWidth="2" rx="10" />
+            <text x="400" y="215" fontSize="14" fontWeight="700" textAnchor="middle" fill="#ffa500">レボリストシリーズ</text>
+            <circle cx="160" cy="270" r="28" fill="rgba(255,165,0,0.3)" stroke="#ffa500" strokeWidth="1" />
+            <text x="160" y="275" fontSize="11" textAnchor="middle" fill="#fff">Lab</text>
+            <circle cx="240" cy="270" r="28" fill="rgba(220,20,60,0.3)" stroke="#dc143c" strokeWidth="1" />
+            <text x="240" y="275" fontSize="11" textAnchor="middle" fill="#fff">防災</text>
+            <circle cx="320" cy="270" r="28" fill="rgba(50,205,50,0.3)" stroke="#32cd32" strokeWidth="1" />
+            <text x="320" y="275" fontSize="11" textAnchor="middle" fill="#fff">リンク</text>
+            <circle cx="400" cy="270" r="28" fill="rgba(138,43,226,0.3)" stroke="#8a2be2" strokeWidth="1" />
+            <text x="400" y="275" fontSize="11" textAnchor="middle" fill="#fff">ファン</text>
+            <circle cx="480" cy="270" r="28" fill="rgba(255,20,147,0.3)" stroke="#ff1493" strokeWidth="1" />
+            <text x="480" y="275" fontSize="11" textAnchor="middle" fill="#fff">アート</text>
+            <circle cx="560" cy="270" r="28" fill="rgba(0,191,255,0.3)" stroke="#00bfff" strokeWidth="1" />
+            <text x="560" y="275" fontSize="11" textAnchor="middle" fill="#fff">ハット</text>
             <line x1="400" y1="310" x2="400" y2="360" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-
-            {/* おのくん */}
             <circle cx="400" cy="420" r="50" fill="rgba(255,45,85,0.2)" stroke="#ff2d55" strokeWidth="3" />
-            <text x="400" y="420" fontSize="18" fontWeight="700" textAnchor="middle" textAnchor="middle" fill="#ff2d55">
-              おのくん
-            </text>
-
-            {/* 矢印（下） */}
+            <text x="400" y="420" fontSize="18" fontWeight="700" textAnchor="middle" fill="#ff2d55">おのくん</text>
             <line x1="400" y1="470" x2="400" y2="510" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-
-            {/* 活動 + 防災×帽祭 */}
-            <g>
-              <rect x="150" y="510" width="500" height="100" fill="rgba(255,192,203,0.1)" stroke="rgba(255,192,203,0.4)" strokeWidth="2" rx="10" />
-              <text x="400" y="535" fontSize="14" fontWeight="700" textAnchor="middle" fill="#fff">
-                各種の社会貢献活動
-              </text>
-              <text x="400" y="560" fontSize="12" textAnchor="middle" fill="rgba(255,255,255,0.8)">
-                防災×帽祭 / ボランティア / コミュニティ など
-              </text>
-              <text x="400" y="585" fontSize="11" textAnchor="middle" fill="rgba(255,192,203,0.9)" fontStyle="italic">
-                ✨ すべてが社会貢献型の取り組み
-              </text>
-            </g>
-
-            {/* 矢印（下） */}
+            <rect x="150" y="510" width="500" height="100" fill="rgba(255,192,203,0.1)" stroke="rgba(255,192,203,0.4)" strokeWidth="2" rx="10" />
+            <text x="400" y="535" fontSize="14" fontWeight="700" textAnchor="middle" fill="#fff">各種の社会貢献活動</text>
+            <text x="400" y="560" fontSize="12" textAnchor="middle" fill="rgba(255,255,255,0.8)">防災×帽祭 / ボランティア / コミュニティ など</text>
+            <text x="400" y="585" fontSize="11" textAnchor="middle" fill="rgba(255,192,203,0.9)" fontStyle="italic">✨ すべてが社会貢献型の取り組み</text>
             <line x1="400" y1="610" x2="400" y2="650" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-
-            {/* @hayator */}
             <circle cx="400" cy="680" r="35" fill="rgba(255,192,203,0.2)" stroke="#ff1493" strokeWidth="2" />
-            <text x="400" y="690" fontSize="13" fontWeight="700" textAnchor="middle" fill="#ff1493">
-              @hayator
-            </text>
-
-            {/* 矢印の定義 */}
-            <defs>
-              <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                <polygon points="0 0, 10 3, 0 6" fill="rgba(255,255,255,0.3)" />
-              </marker>
-            </defs>
+            <text x="400" y="690" fontSize="13" fontWeight="700" textAnchor="middle" fill="#ff1493">@hayator</text>
           </svg>
         </div>
 
@@ -136,57 +80,45 @@ export default function InformationPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
             <div style={{ border: "1px solid rgba(255,165,0,0.3)", borderRadius: "12px", background: "rgba(255,165,0,0.05)", padding: "16px" }}>
-              <a href="https://revolist.earth/revolist-lab" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#ffa500", marginBottom: "6px" }}>🔬 レボリストLab</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-                  「防災を、かろやかに」というコンセプトから生まれた組織。インタビュー企画、ハットランウェイ、ものづくりLab などを通じて社会課題に創造的に取り組みます。
-                </p>
-              </a>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#ffa500", marginBottom: "6px" }}>🔬 レボリストLab</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                「防災を、かろやかに」というコンセプトから生まれた組織。インタビュー企画、ハットランウェイ、ものづくりLab などを通じて社会課題に創造的に取り組みます。
+              </p>
             </div>
 
             <div style={{ border: "1px solid rgba(220,20,60,0.3)", borderRadius: "12px", background: "rgba(220,20,60,0.05)", padding: "16px" }}>
-              <a href="https://revolist.earth/bosai-bosai" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#dc143c", marginBottom: "6px" }}>🎩 防災×帽祭</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-                  ハットを通じた防災意識向上プロジェクト。華やかでカラフルなハットで心理的な変容をもたらし、避難訓練をエンターテインメント化。全国約20万校、605万人の小学生へのリーチを目指しています。
-                </p>
-              </a>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#dc143c", marginBottom: "6px" }}>🎩 防災×帽祭</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                ハットを通じた防災意識向上プロジェクト。華やかでカラフルなハットで心理的な変容をもたらし、避難訓練をエンターテインメント化。全国約20万校、605万人の小学生へのリーチを目指しています。
+              </p>
             </div>
 
             <div style={{ border: "1px solid rgba(50,205,50,0.3)", borderRadius: "12px", background: "rgba(50,205,50,0.05)", padding: "16px" }}>
-              <a href="https://onokun.com/socially-responsible-sponsorship/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#32cd32", marginBottom: "6px" }}>🔗 レボリンク</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-                  社会貢献型広告収益スポンサープログラム。「普通の買い物が、誰かの応援になる仕組み」を実現。消費者が特別なコストを負担せず、日常の購買行為が防災教育やコミュニティ事業を支援します。
-                </p>
-              </a>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#32cd32", marginBottom: "6px" }}>🔗 レボリンク</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                社会貢献型広告収益スポンサープログラム。「普通の買い物が、誰かの応援になる仕組み」を実現。消費者が特別なコストを負担せず、日常の購買行為が防災教育やコミュニティ事業を支援します。
+              </p>
             </div>
 
             <div style={{ border: "1px solid rgba(138,43,226,0.3)", borderRadius: "12px", background: "rgba(138,43,226,0.05)", padding: "16px" }}>
-              <a href="https://hayator11.github.io/revofunding/index.html" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#8a2be2", marginBottom: "6px" }}>💰 レボファンディング</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-                  クラウドファンディングプラットフォーム。創造的で社会貢献的なプロジェクトの資金調達を支援し、アイデアを実現させるための仕組みを提供します。
-                </p>
-              </a>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#8a2be2", marginBottom: "6px" }}>💰 レボファンディング</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                クラウドファンディングプラットフォーム。創造的で社会貢献的なプロジェクトの資金調達を支援し、アイデアを実現させるための仕組みを提供します。
+              </p>
             </div>
 
             <div style={{ border: "1px solid rgba(255,20,147,0.3)", borderRadius: "12px", background: "rgba(255,20,147,0.05)", padding: "16px" }}>
-              <a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#ff1493", marginBottom: "6px" }}>🎨 レボアート</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-                  デジタルアートとクリエイター向けプラットフォーム。アーティストの作品発表と相互支援を通じて、創造的コミュニティを育成します。
-                </p>
-              </a>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#ff1493", marginBottom: "6px" }}>🎨 レボアート</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                デジタルアートとクリエイター向けプラットフォーム。アーティストの作品発表と相互支援を通じて、創造的コミュニティを育成します。
+              </p>
             </div>
 
             <div style={{ border: "1px solid rgba(0,191,255,0.3)", borderRadius: "12px", background: "rgba(0,191,255,0.05)", padding: "16px" }}>
-              <a href="https://onokun.com/hat-model-academy/" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#00bfff", marginBottom: "6px" }}>🎓 レボハット（Hat Model Academy）</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
-                  日本初の「ハットモデル・アカデミー」。帽子を「表現の武器」として、身体表現とハットの融合を探求。新しい文化を共に創造する開拓者を募集しています。
-                </p>
-              </a>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#00bfff", marginBottom: "6px" }}>🎓 レボハット（Hat Model Academy）</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7 }}>
+                日本初の「ハットモデル・アカデミー」。帽子を「表現の武器」として、身体表現とハットの融合を探求。新しい文化を共に創造する開拓者を募集しています。
+              </p>
             </div>
           </div>
         </section>
