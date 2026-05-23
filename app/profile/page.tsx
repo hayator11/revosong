@@ -30,14 +30,54 @@ export default function ProfilePage() {
 
   // ユーザー情報を取得
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email || "" });
-        fetchProfile(data.user.id);
-      } else {
+    const initializeUser = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data.user) {
+          setUser({ id: data.user.id, email: data.user.email || "" });
+
+          // OAuth から来た場合、SNS URL を自動入力
+          if (data.user.user_metadata) {
+            const userData = data.user;
+            const handle = userData.user_metadata.user_name || userData.user_metadata.preferred_username;
+
+            // プロバイダーを特定
+            const isX = userData.identities?.some((i: any) => i.provider === 'x' || i.provider === 'twitter');
+            const isGitHub = userData.identities?.some((i: any) => i.provider === 'github');
+            const isDiscord = userData.identities?.some((i: any) => i.provider === 'discord');
+
+            let snsUpdate: Record<string, string> = {};
+
+            if (isX && handle) {
+              snsUpdate.twitter_url = `https://x.com/${handle}`;
+            }
+            if (isGitHub && handle) {
+              snsUpdate.github_url = `https://github.com/${handle}`;
+            }
+            if (isDiscord && userData.user_metadata.sub) {
+              snsUpdate.discord_url = `https://discord.com/users/${userData.user_metadata.sub}`;
+            }
+
+            // プロフィールを自動更新
+            if (Object.keys(snsUpdate).length > 0) {
+              await supabase
+                .from('profiles')
+                .update(snsUpdate)
+                .eq('id', userData.id);
+            }
+          }
+
+          fetchProfile(data.user.id);
+        } else {
+          window.location.href = "/";
+        }
+      } catch (error) {
+        console.error('User initialization error:', error);
         window.location.href = "/";
       }
-    });
+    };
+
+    initializeUser();
   }, []);
 
   const fetchProfile = async (userId: string) => {
