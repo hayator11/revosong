@@ -59,18 +59,24 @@ export default function ProfilePage() {
             }
 
             // プロフィールを自動作成または更新（upsert）
-            const profileData = {
-              id: userData.id,
-              email: userData.email,
-              ...snsUpdate,
-              updated_at: new Date().toISOString(),
-            };
+            if (Object.keys(snsUpdate).length > 0) {
+              const profileData = {
+                id: userData.id,
+                email: userData.email,
+                ...snsUpdate,
+                updated_at: new Date().toISOString(),
+              };
 
-            await supabase
-              .from('profiles')
-              .upsert(profileData, { onConflict: 'id' });
+              console.log('Upserting profile:', profileData);
+              const { error } = await supabase
+                .from('profiles')
+                .upsert(profileData, { onConflict: 'id' });
+              console.log('Upsert result:', error ? `Error: ${error.message}` : 'Success');
+            }
           }
 
+          // Upsert 完了後、プロフィール取得
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 待機
           fetchProfile(data.user.id);
         } else {
           window.location.href = "/";
