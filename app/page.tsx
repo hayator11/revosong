@@ -1373,7 +1373,7 @@ export default function Home() {
         <div className="top-buttons">
           <div className="top-menu">
             <a href="/about" className="menu-link">About</a>
-            <a href="/information" className="menu-link">運営情報</a>
+            <a href="/information" className="menu-link">Information</a>
           </div>
           {user ? (
             <>
