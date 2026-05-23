@@ -19,6 +19,7 @@ type Track = {
   liked: boolean;
   last_play_count_at: string | null;
   artist_social_url: string | null;
+  social_links?: Record<string, string>;
 };
 
 type Comment = {
@@ -348,6 +349,12 @@ export default function Home() {
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [editTrack, setEditTrack] = useState<Track | null>(null);
 
+  // コメント管理用のState
+  const [comments, setComments] = useState<CommentWithUserInfo[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [submitComment, setSubmitComment] = useState(false);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
@@ -464,6 +471,73 @@ export default function Home() {
     setSelectedTrack(null);
     fetchTracks();
   };
+
+  // コメント機能関連
+  const fetchComments = async (trackId: number) => {
+    setCommentsLoading(true);
+    try {
+      // View を使用してコメント＆ユーザー情報を一度に取得
+      const { data: commentsData } = await supabase
+        .from("comments_with_users")
+        .select("*")
+        .eq("track_id", trackId)
+        .order("created_at", { ascending: false });
+
+      if (commentsData) {
+        setComments(commentsData as CommentWithUserInfo[]);
+      }
+    } catch (error) {
+      console.error("コメント取得エラー:", error);
+      // Viewが存在しない場合のフォールバック
+      try {
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("track_id", trackId)
+          .order("created_at", { ascending: false });
+
+        if (commentsData) {
+          setComments(commentsData as CommentWithUserInfo[]);
+        }
+      } catch (fallbackError) {
+        console.error("フォールバック失敗:", fallbackError);
+      }
+    }
+    setCommentsLoading(false);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!user || !selectedTrack || !commentInput.trim()) return;
+
+    setSubmitComment(true);
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .insert({
+          track_id: selectedTrack.id,
+          user_id: user.id,
+          content: commentInput.trim(),
+        });
+
+      if (!error) {
+        setCommentInput("");
+        fetchComments(selectedTrack.id);
+      }
+    } catch (error) {
+      console.error("コメント投稿エラー:", error);
+    }
+    setSubmitComment(false);
+  };
+
+  // selectedTrackが変わったらコメントを再取得
+  useEffect(() => {
+    if (selectedTrack) {
+      fetchComments(selectedTrack.id);
+    } else {
+      setComments([]);
+      setCommentInput("");
+    }
+  }, [selectedTrack?.id]);
 
   const filtered = tracks.filter(
     (t) => (filter === "すべて" || t.ai_tool === filter) &&
@@ -1617,52 +1691,93 @@ export default function Home() {
           <ShareButtons track={selectedTrack} />
 
           {/* アーティストのSNSリンク */}
-          {selectedTrack.artist_social_url && (() => {
-            try {
-              const urlHost = new URL(selectedTrack.artist_social_url).hostname.replace('www.', '');
-              return (
-                <div style={{
-                  padding: "16px",
-                  background: "rgba(255,255,255,0.03)",
-                  borderTop: "1px solid rgba(255,255,255,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px"
-                }}>
-                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>アーティスト:</span>
-                  <a
-                    href={selectedTrack.artist_social_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: "6px 12px",
-                      background: "linear-gradient(135deg, #ff2d55, #ff6482)",
-                      borderRadius: "16px",
-                      color: "#fff",
-                      textDecoration: "none",
-                      fontSize: "12px",
-                      fontWeight: 600
-                    }}
-                  >
-                    🔗 {urlHost}
-                  </a>
+          {(() => {
+            const socialLinks = (selectedTrack as any).social_links || {};
+            const hasSocial = Object.keys(socialLinks).length > 0 || selectedTrack.artist_social_url;
+
+            if (!hasSocial) return null;
+
+            const snsIcons: Record<string, string> = {
+              'x': '𝕏',
+              'instagram': '📷',
+              'facebook': 'f',
+              'threads': '@',
+              'tiktok': '🎵',
+              'youtube': '▶️'
+            };
+
+            return (
+              <div style={{
+                padding: "16px",
+                background: "rgba(255,255,255,0.03)",
+                borderTop: "1px solid rgba(255,255,255,0.1)"
+              }}>
+                <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", marginBottom: "10px", fontWeight: 600 }}>
+                  アーティストをフォロー
                 </div>
-              );
-            } catch {
-              return (
-                <div style={{
-                  padding: "16px",
-                  background: "rgba(255,255,255,0.03)",
-                  borderTop: "1px solid rgba(255,255,255,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px"
-                }}>
-                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>アーティスト:</span>
-                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>無効なURL</span>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
+                    if (!url) return null;
+                    const icon = snsIcons[platform] || '🔗';
+                    return (
+                      <a
+                        key={platform}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "6px 12px",
+                          background: "rgba(255,45,85,0.2)",
+                          border: "1px solid rgba(255,45,85,0.4)",
+                          borderRadius: "16px",
+                          color: "#ff2d55",
+                          textDecoration: "none",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
+                        onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
+                      >
+                        <span>{icon}</span>
+                        <span style={{ textTransform: "capitalize" }}>{platform}</span>
+                      </a>
+                    );
+                  })}
+                  {selectedTrack.artist_social_url && (
+                    <a
+                      href={selectedTrack.artist_social_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "6px 12px",
+                        background: "rgba(255,45,85,0.2)",
+                        border: "1px solid rgba(255,45,85,0.4)",
+                        borderRadius: "16px",
+                        color: "#ff2d55",
+                        textDecoration: "none",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
+                      onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
+                    >
+                      <span>🔗</span>
+                      <span>プロフィール</span>
+                    </a>
+                  )}
                 </div>
-              );
-            }
+              </div>
+            );
           })()}
 
           {selectedTrack.prompt && (
@@ -1672,7 +1787,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* コメント欄プレースホルダー */}
+          {/* コメント機能 */}
           <div style={{
             padding: "16px",
             borderTop: "1px solid rgba(255,255,255,0.1)",
@@ -1684,14 +1799,166 @@ export default function Home() {
               color: "#fff",
               marginBottom: "12px"
             }}>
-              💬 コメント（準備中）
+              💬 コメント ({comments.length})
             </div>
+
+            {/* コメント入力フォーム */}
+            {user ? (
+              <div style={{
+                marginBottom: "16px",
+                display: "flex",
+                gap: "8px",
+                flexDirection: "column"
+              }}>
+                <textarea
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  placeholder="コメントを入力..."
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    background: "rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    fontSize: "12px",
+                    fontFamily: "inherit",
+                    resize: "vertical",
+                    minHeight: "60px",
+                    outline: "none",
+                    transition: "all 0.2s"
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                    e.currentTarget.style.borderColor = "rgba(255,45,85,0.4)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                  }}
+                />
+                <button
+                  onClick={handleSubmitComment}
+                  disabled={submitComment || !commentInput.trim()}
+                  style={{
+                    padding: "8px 16px",
+                    background: commentInput.trim() ? "rgba(255,45,85,0.8)" : "rgba(255,45,85,0.3)",
+                    border: "none",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: commentInput.trim() ? "pointer" : "not-allowed",
+                    transition: "all 0.2s",
+                    opacity: submitComment ? 0.6 : 1
+                  }}
+                  onMouseOver={(e) => {
+                    if (commentInput.trim() && !submitComment) {
+                      e.currentTarget.style.background = "rgba(255,45,85,1)";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (commentInput.trim() && !submitComment) {
+                      e.currentTarget.style.background = "rgba(255,45,85,0.8)";
+                    }
+                  }}
+                >
+                  {submitComment ? "投稿中..." : "コメントを投稿"}
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                marginBottom: "16px",
+                padding: "12px",
+                background: "rgba(255,45,85,0.1)",
+                border: "1px solid rgba(255,45,85,0.3)",
+                borderRadius: "6px",
+                fontSize: "12px",
+                color: "rgba(255,45,85,0.8)",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+              onClick={() => setShowAuth(true)}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(255,45,85,0.15)";
+                e.currentTarget.style.borderColor = "rgba(255,45,85,0.4)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "rgba(255,45,85,0.1)";
+                e.currentTarget.style.borderColor = "rgba(255,45,85,0.3)";
+              }}>
+                ログインしてコメントを投稿
+              </div>
+            )}
+
+            {/* コメントリスト */}
             <div style={{
-              fontSize: "12px",
-              color: "rgba(255,255,255,0.5)",
-              fontStyle: "italic"
+              maxHeight: "300px",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px"
             }}>
-              この楽曲についてのコメント機能は準備中です
+              {commentsLoading ? (
+                <div style={{
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.5)",
+                  textAlign: "center",
+                  padding: "8px"
+                }}>
+                  コメント読み込み中...
+                </div>
+              ) : comments.length === 0 ? (
+                <div style={{
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.4)",
+                  textAlign: "center",
+                  padding: "8px"
+                }}>
+                  コメントはまだありません
+                </div>
+              ) : (
+                comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    style={{
+                      padding: "8px 10px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "4px",
+                      fontSize: "11px"
+                    }}
+                  >
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "4px"
+                    }}>
+                      <span style={{
+                        fontWeight: 600,
+                        color: "#ff2d55"
+                      }}>
+                        {comment.user_email?.split("@")[0] || "Anonymous"}
+                      </span>
+                      <span style={{
+                        color: "rgba(255,255,255,0.4)",
+                        fontSize: "10px"
+                      }}>
+                        {new Date(comment.created_at).toLocaleDateString("ja-JP")}
+                      </span>
+                    </div>
+                    <div style={{
+                      color: "rgba(255,255,255,0.8)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      lineHeight: "1.4"
+                    }}>
+                      {comment.content}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
