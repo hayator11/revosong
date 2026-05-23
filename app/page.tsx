@@ -2211,6 +2211,32 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     if (error) setError(error.message);
   };
 
+  const handleGitHubSignIn = async () => {
+    setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : 'http://localhost:3000/auth/callback'
+      }
+    });
+    if (error) setError(error.message);
+  };
+
+  const handleDiscordSignIn = async () => {
+    setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : 'http://localhost:3000/auth/callback'
+      }
+    });
+    if (error) setError(error.message);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -2230,10 +2256,26 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
         <button
           className="btn-primary"
-          disabled
-          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: 0.5, cursor: "not-allowed" }}
+          onClick={handleXSignIn}
+          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
-          <span>⚫</span> X でログイン（準備中）
+          <span>𝕏</span> X でログイン
+        </button>
+
+        <button
+          className="btn-primary"
+          onClick={handleGitHubSignIn}
+          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <span>🐙</span> GitHub でログイン
+        </button>
+
+        <button
+          className="btn-primary"
+          onClick={handleDiscordSignIn}
+          style={{ width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <span>💜</span> Discord でログイン
         </button>
 
         <div style={{ textAlign: "center", margin: "16px 0", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>

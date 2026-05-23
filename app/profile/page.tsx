@@ -125,6 +125,73 @@ export default function ProfilePage() {
       <div style={{ marginTop: "30px", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "20px" }}>
         <h3 style={{ marginBottom: "20px", fontSize: "16px" }}>🔗 SNS アカウントを登録</h3>
 
+        {/* OAuth ボタン */}
+        <div style={{ marginBottom: "20px", padding: "15px", background: "rgba(100,200,255,0.1)", borderRadius: "8px", border: "1px solid rgba(100,200,255,0.2)" }}>
+          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", marginBottom: "12px" }}>
+            外部アカウントでログインして、プロフィール情報を登録できます
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <button
+              onClick={() => window.location.href = "/auth/callback?provider=x"}
+              style={{
+                padding: "10px",
+                background: "rgba(0,0,0,0.3)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.5)")}
+              onMouseOut={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.3)")}
+            >
+              𝕏 X
+            </button>
+            <button
+              onClick={() => window.location.href = "/auth/callback?provider=github"}
+              style={{
+                padding: "10px",
+                background: "rgba(0,0,0,0.3)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.5)")}
+              onMouseOut={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.3)")}
+            >
+              🐙 GitHub
+            </button>
+            <button
+              onClick={() => window.location.href = "/auth/callback?provider=discord"}
+              style={{
+                padding: "10px",
+                background: "rgba(0,0,0,0.3)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.5)")}
+              onMouseOut={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.3)")}
+            >
+              💜 Discord
+            </button>
+          </div>
+        </div>
+
+        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "15px" }}>
+          または、手動で URL を入力：
+        </p>
+
         {[
           { key: "twitter_url", label: "𝕏 X", placeholder: "https://twitter.com/username" },
           { key: "instagram_url", label: "📷 Instagram", placeholder: "https://instagram.com/username" },
