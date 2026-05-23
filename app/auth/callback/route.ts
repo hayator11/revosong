@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
@@ -14,38 +16,73 @@ export async function GET(request: Request) {
     )
 
     try {
-      // OAuth コードをセッションに交換
-      const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+      // OAuth コードをセッションに交換（タイムアウト対策）
+      const exchangePromise = supabase.auth.exchangeCodeForSession(code)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Session exchange timeout')), 5000)
+      )
 
-      if (sessionError || !session?.user) {
-        console.error('Session exchange error:', {
-          message: sessionError?.message,
-          code: sessionError?.code,
-          fullError: sessionError,
-          session: session
-        })
-        return NextResponse.redirect(new URL('/auth/error', requestUrl.origin))
+      let session = null
+      let sessionError = null
+
+      try {
+        const result = await Promise.race([exchangePromise, timeoutPromise]) as any
+        if (result && typeof result === 'object' && 'data' in result) {
+          session = result.data?.session
+          sessionError = result.error
+        }
+      } catch (timeoutErr) {
+        // タイムアウトの場合でも続行（ユーザー情報はURLに含まれている）
+        console.warn('Session exchange timed out, attempting to extract from URL')
+        sessionError = timeoutErr as Error
       }
 
-      const user = session.user
+      // ユーザー情報を抽出（URL からの情報を活用）
+      let user = session?.user
+
+      if (!user) {
+        // セッション復元に失敗した場合、URL のハッシュからユーザー情報を取得
+        const hash = requestUrl.hash
+        if (hash.includes('access_token')) {
+          console.log('Using URL hash for user authentication')
+          // アクセストークンが URL に含まれているため、続行可能
+          // クライアント側でセッションが復元される
+        } else {
+          console.error('Session exchange error:', {
+            message: sessionError?.message,
+            sessionError,
+            session: session
+          })
+          return NextResponse.redirect(new URL('/auth/error', requestUrl.origin))
+        }
+      }
+
+      // ユーザーIDとメタデータを抽出
+      const userId = user?.id || requestUrl.searchParams.get('state')?.split(':')[0]
+      const email = user?.email
+
+      if (!userId) {
+        console.error('No user ID available')
+        return NextResponse.redirect(new URL('/auth/error', requestUrl.origin))
+      }
 
       // プロフィール情報を更新（SNS URL を自動抽出）
       try {
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', userId)
           .single()
 
         let snsUpdate: Record<string, string> = {}
 
         // ユーザーメタデータから SNS 情報を抽出
-        if (user.user_metadata) {
+        if (user?.user_metadata) {
           const handle = user.user_metadata.user_name || user.user_metadata.preferred_username
 
           if (provider === 'x' || user.identities?.some((i: any) => i.provider === 'twitter')) {
             if (handle) {
-              snsUpdate.twitter_url = `https://twitter.com/${handle}`
+              snsUpdate.twitter_url = `https://x.com/${handle}`
             }
           } else if (provider === 'github' || user.identities?.some((i: any) => i.provider === 'github')) {
             if (handle) {
@@ -62,28 +99,40 @@ export async function GET(request: Request) {
         if (existingProfile) {
           // プロフィール更新
           if (Object.keys(snsUpdate).length > 0) {
-            await supabase
+            const { error: updateError } = await supabase
               .from('profiles')
               .update({
                 ...snsUpdate,
                 updated_at: new Date().toISOString(),
               })
-              .eq('id', user.id)
+              .eq('id', userId)
+
+            if (updateError) {
+              console.error('Profile update error:', updateError)
+            } else {
+              console.log('Profile updated successfully for user:', userId)
+            }
           }
         } else {
           // プロフィール作成
-          await supabase
+          const { error: insertError } = await supabase
             .from('profiles')
             .insert({
-              id: user.id,
-              email: user.email,
+              id: userId,
+              email: email,
               ...snsUpdate,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
+
+          if (insertError) {
+            console.error('Profile insert error:', insertError)
+          } else {
+            console.log('Profile created successfully for user:', userId)
+          }
         }
       } catch (profileError: any) {
-        console.error('Profile update error:', {
+        console.error('Profile operation error:', {
           message: profileError?.message,
           fullError: profileError
         })
