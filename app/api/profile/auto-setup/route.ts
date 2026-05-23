@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
     const profileData: any = {
       id: userId,
       email: email,
-      updated_at: new Date().toISOString(),
     }
 
     // SNS データを追加
