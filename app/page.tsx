@@ -35,6 +35,8 @@ type CommentWithUserInfo = Comment & {
   user_email?: string;
   avatar_url?: string | null;
   twitter_url?: string | null;
+  github_url?: string | null;
+  discord_url?: string | null;
   instagram_url?: string | null;
   youtube_url?: string | null;
   tiktok_url?: string | null;
@@ -520,7 +522,7 @@ export default function Home() {
           commentsData.map(async (comment) => {
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("email, avatar_url, twitter_url, instagram_url, youtube_url, tiktok_url, threads_url")
+              .select("email, avatar_url, twitter_url, github_url, discord_url, instagram_url, youtube_url, tiktok_url, threads_url")
               .eq("id", comment.user_id)
               .single();
 
@@ -529,6 +531,8 @@ export default function Home() {
               user_email: profileData?.email || "Anonymous",
               avatar_url: profileData?.avatar_url,
               twitter_url: profileData?.twitter_url,
+              github_url: profileData?.github_url,
+              discord_url: profileData?.discord_url,
               instagram_url: profileData?.instagram_url,
               youtube_url: profileData?.youtube_url,
               tiktok_url: profileData?.tiktok_url,
@@ -2013,6 +2017,8 @@ export default function Home() {
                   // SNSプラットフォームのマッピング
                   const snsLinks = [
                     { platform: "X", url: comment.twitter_url, icon: "𝕏" },
+                    { platform: "GitHub", url: comment.github_url, icon: "🐙" },
+                    { platform: "Discord", url: comment.discord_url, icon: "💜" },
                     { platform: "Instagram", url: comment.instagram_url, icon: "📷" },
                     { platform: "YouTube", url: comment.youtube_url, icon: "🎬" },
                     { platform: "TikTok", url: comment.tiktok_url, icon: "🎵" },
