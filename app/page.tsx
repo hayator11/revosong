@@ -1820,6 +1820,28 @@ function UploadModal({
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <h3 className="modal-title">楽曲を投稿</h3>
 
+        {/* 著作権警告 */}
+        <div style={{
+          background: "linear-gradient(135deg, rgba(220,20,60,0.2), rgba(255,69,0,0.2))",
+          border: "2px solid #ff4500",
+          borderRadius: "10px",
+          padding: "14px 16px",
+          marginBottom: "20px",
+          fontSize: "12px",
+          lineHeight: 1.7,
+          color: "#fff"
+        }}>
+          <div style={{ fontWeight: 700, color: "#ff6482", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+            ⚠️ 著作権に関する重要なお知らせ
+          </div>
+          <p style={{ margin: "0 0 6px 0", fontSize: "11px" }}>
+            <strong>著作権のある既存楽曲の投稿は厳禁です。</strong>AI生成楽曲またはご自身が著作権を保有するオリジナル楽曲のみ投稿可能です。
+          </p>
+          <p style={{ margin: 0, fontSize: "11px", color: "rgba(255,255,255,0.9)" }}>
+            違反が判明した場合、予告なく削除されます。投稿者が著作権侵害の責任を負います。
+          </p>
+        </div>
+
         <div className="field-label">楽曲タイプ *</div>
         <div className="type-select">
           <div
