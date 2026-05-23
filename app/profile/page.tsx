@@ -28,6 +28,31 @@ export default function ProfilePage() {
     avatar_url: "",
   });
 
+  // OAuth handlers
+  const handleXSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "x",
+      options: { redirectTo: window.location.origin + "/profile" }
+    });
+    if (error) console.error("X Sign-In Error:", error);
+  };
+
+  const handleGitHubSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: { redirectTo: window.location.origin + "/profile" }
+    });
+    if (error) console.error("GitHub Sign-In Error:", error);
+  };
+
+  const handleDiscordSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "discord",
+      options: { redirectTo: window.location.origin + "/profile" }
+    });
+    if (error) console.error("Discord Sign-In Error:", error);
+  };
+
   // ユーザー情報を取得
   useEffect(() => {
     const initializeUser = async () => {
@@ -189,7 +214,7 @@ export default function ProfilePage() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <button
-              onClick={() => window.location.href = "/auth/callback?provider=x"}
+              onClick={handleXSignIn}
               style={{
                 padding: "10px",
                 background: "rgba(0,0,0,0.3)",
@@ -207,7 +232,7 @@ export default function ProfilePage() {
               𝕏 X
             </button>
             <button
-              onClick={() => window.location.href = "/auth/callback?provider=github"}
+              onClick={handleGitHubSignIn}
               style={{
                 padding: "10px",
                 background: "rgba(0,0,0,0.3)",
@@ -225,7 +250,7 @@ export default function ProfilePage() {
               🐙 GitHub
             </button>
             <button
-              onClick={() => window.location.href = "/auth/callback?provider=discord"}
+              onClick={handleDiscordSignIn}
               style={{
                 padding: "10px",
                 background: "rgba(0,0,0,0.3)",
