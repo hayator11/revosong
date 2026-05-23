@@ -541,6 +541,25 @@ export default function Home() {
           right: 20px;
           display: flex;
           gap: 8px;
+          align-items: center;
+        }
+        .top-menu {
+          display: flex;
+          gap: 4px;
+          margin-right: 12px;
+        }
+        .menu-link {
+          padding: 6px 12px;
+          color: rgba(255,255,255,0.5);
+          text-decoration: none;
+          font-size: 12px;
+          border-radius: 16px;
+          transition: all 0.2s;
+          cursor: pointer;
+        }
+        .menu-link:hover {
+          color: rgba(255,255,255,0.8);
+          background: rgba(255,255,255,0.05);
         }
         .btn-upload {
           padding: 8px 18px;
@@ -1352,6 +1371,10 @@ export default function Home() {
           <span className="hero-type-badge hero-badge-orig">🎤 オリジナル楽曲</span>
         </div>
         <div className="top-buttons">
+          <div className="top-menu">
+            <a href="/about" className="menu-link">About</a>
+            <a href="/information" className="menu-link">運営情報</a>
+          </div>
           {user ? (
             <>
               <button className="btn-upload" onClick={() => setShowUpload(true)}>
