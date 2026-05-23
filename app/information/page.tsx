@@ -20,7 +20,7 @@ export default function InformationPage() {
           <img src="/revolist-lab.jpg" alt="レボリストLab" style={{ height: "140px", width: "auto", objectFit: "contain" }} />
         </div>
 
-        <h1 style={{ fontSize: "36px", fontWeight: 700, color: "#fff", marginBottom: "12px", letterSpacing: "2px", textAlign: "center" }}>運営情報</h1>
+        <h1 style={{ fontSize: "36px", fontWeight: 700, color: "#fff", marginBottom: "12px", letterSpacing: "2px", textAlign: "center" }}>🚀 運営情報</h1>
         <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, marginBottom: "40px", textAlign: "center" }}>
           REVOSONG、レボリストシリーズ、そしておのくんの社会貢献活動について
         </p>
