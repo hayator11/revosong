@@ -21,7 +21,6 @@ export async function GET(request: Request) {
         console.error('Session exchange error:', {
           message: sessionError?.message,
           code: sessionError?.code,
-          details: sessionError?.details,
           fullError: sessionError,
           session: session
         })
@@ -86,9 +85,6 @@ export async function GET(request: Request) {
       } catch (profileError: any) {
         console.error('Profile update error:', {
           message: profileError?.message,
-          code: profileError?.code,
-          details: profileError?.details,
-          hint: profileError?.hint,
           fullError: profileError
         })
         // プロフィール更新失敗は致命的ではない
