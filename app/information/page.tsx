@@ -49,9 +49,17 @@ export default function InformationPage() {
               <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "12px" }}>
                 資金と人を集めながら「循環」させ続ける、次世代型のクラウドファンディング。創造的で社会貢献的なプロジェクトの資金調達を支援し、アイデアを実現させるための仕組みを提供します。
               </p>
-              <a href="https://hayator11.github.io/revofunding/index.html" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 12px", background: "rgba(138,43,226,0.2)", border: "1px solid rgba(138,43,226,0.4)", borderRadius: "6px", color: "#8a2be2", textDecoration: "none", fontSize: "12px", fontWeight: 600 }}>
-                詳細を見る
-              </a>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                <a href="https://hayator11.github.io/revofunding/index.html" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(138,43,226,0.2)", border: "1px solid rgba(138,43,226,0.4)", borderRadius: "6px", color: "#8a2be2", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  公式サイト
+                </a>
+                <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @onokun
+                </a>
+                <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @hayator
+                </a>
+              </div>
             </div>
 
             <div style={{ border: "1px solid rgba(255,20,147,0.3)", borderRadius: "12px", background: "rgba(255,20,147,0.05)", padding: "16px" }}>
@@ -59,9 +67,17 @@ export default function InformationPage() {
               <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "12px" }}>
                 廃棄ペンキの利活用など、被災地や過疎地の課題を「アート力」で支える活動。デジタルアートとクリエイター向けプラットフォーム。アーティストの作品発表と相互支援を通じて、創造的コミュニティを育成します。
               </p>
-              <a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 12px", background: "rgba(255,20,147,0.2)", border: "1px solid rgba(255,20,147,0.4)", borderRadius: "6px", color: "#ff1493", textDecoration: "none", fontSize: "12px", fontWeight: 600 }}>
-                詳細を見る
-              </a>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                <a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(255,20,147,0.2)", border: "1px solid rgba(255,20,147,0.4)", borderRadius: "6px", color: "#ff1493", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  公式サイト
+                </a>
+                <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @onokun
+                </a>
+                <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @hayator
+                </a>
+              </div>
             </div>
 
             <div style={{ border: "1px solid rgba(50,205,50,0.3)", borderRadius: "12px", background: "rgba(50,205,50,0.05)", padding: "16px" }}>
@@ -69,9 +85,17 @@ export default function InformationPage() {
               <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "12px" }}>
                 社会貢献型広告収入モデル。「普通の買い物が、誰かの応援になる仕組み」を実現。消費者が特別なコストを負担せず、日常の購買行為が防災教育やコミュニティ事業を支援します。助成金に頼らない持続可能な基盤を構築。
               </p>
-              <a href="https://onokun.com/socially-responsible-sponsorship/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 12px", background: "rgba(50,205,50,0.2)", border: "1px solid rgba(50,205,50,0.4)", borderRadius: "6px", color: "#32cd32", textDecoration: "none", fontSize: "12px", fontWeight: 600 }}>
-                詳細を見る
-              </a>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                <a href="https://onokun.com/socially-responsible-sponsorship/" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(50,205,50,0.2)", border: "1px solid rgba(50,205,50,0.4)", borderRadius: "6px", color: "#32cd32", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  公式サイト
+                </a>
+                <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @onokun
+                </a>
+                <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @hayator
+                </a>
+              </div>
             </div>
 
             <div style={{ border: "1px solid rgba(220,20,60,0.3)", borderRadius: "12px", background: "rgba(220,20,60,0.05)", padding: "16px" }}>
@@ -79,12 +103,15 @@ export default function InformationPage() {
               <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "12px" }}>
                 ハットを通じた防災意識向上プロジェクト。華やかでカラフルなハットで心理的な変容をもたらし、堅苦しい避難訓練をエンターテインメント化。全国約20万校、605万人の小学生へのリーチを目指し、災害時の相互支援体制構築を推進しています。
               </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
                 <a href="https://revolist.earth/bosai-bosai" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(220,20,60,0.2)", border: "1px solid rgba(220,20,60,0.4)", borderRadius: "6px", color: "#dc143c", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   公式サイト
                 </a>
-                <a href="https://x.com/Bosai_Bosai_" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
-                  𝕏 @Bosai_Bosai_
+                <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @onokun
+                </a>
+                <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  𝕏 @hayator
                 </a>
               </div>
             </div>
@@ -101,12 +128,15 @@ export default function InformationPage() {
             インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、個人の力を活かしながら社会変革をもたらすことがビジョン。ここからすべての枝葉が生まれ、育つ場所です。
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
             <a href="https://revolist.earth/revolist-lab" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(255,165,0,0.15)", border: "1px solid rgba(255,165,0,0.3)", borderRadius: "8px", color: "#ffa500", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
-              🌐 レボリストLab 公式
+              🌐 公式サイト
             </a>
-            <a href="https://x.com/REVOLIST11" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
-              𝕏 @REVOLIST11
+            <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
+              𝕏 @onokun
+            </a>
+            <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
+              𝕏 @hayator
             </a>
           </div>
         </section>
@@ -129,9 +159,15 @@ export default function InformationPage() {
           </p>
 
           <div style={{ marginTop: "20px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
               <a href="https://onokun.com/" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(255,45,85,0.2)", border: "1px solid rgba(255,45,85,0.4)", borderRadius: "8px", color: "#ff2d55", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
-                👉 おのくん公式サイト
+                🌐 ホームページ
+              </a>
+              <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
+                𝕏 @onokun
+              </a>
+              <a href="https://www.instagram.com/mendokushe.onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", border: "1px solid rgba(240, 148, 51, 0.4)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
+                📷 Instagram
               </a>
             </div>
           </div>
