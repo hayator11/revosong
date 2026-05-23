@@ -18,7 +18,13 @@ export async function GET(request: Request) {
       const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
 
       if (sessionError || !session?.user) {
-        console.error('Session exchange error:', sessionError)
+        console.error('Session exchange error:', {
+          message: sessionError?.message,
+          code: sessionError?.code,
+          details: sessionError?.details,
+          fullError: sessionError,
+          session: session
+        })
         return NextResponse.redirect(new URL('/auth/error', requestUrl.origin))
       }
 
@@ -77,8 +83,14 @@ export async function GET(request: Request) {
               updated_at: new Date().toISOString(),
             })
         }
-      } catch (profileError) {
-        console.error('Profile update error:', profileError)
+      } catch (profileError: any) {
+        console.error('Profile update error:', {
+          message: profileError?.message,
+          code: profileError?.code,
+          details: profileError?.details,
+          hint: profileError?.hint,
+          fullError: profileError
+        })
         // プロフィール更新失敗は致命的ではない
       }
 
