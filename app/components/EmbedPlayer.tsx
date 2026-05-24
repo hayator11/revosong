@@ -23,6 +23,14 @@ export function isSoundCloudUrl(url: string): boolean {
   return url.includes('soundcloud.com');
 }
 
+export function isSunoUrl(url: string): boolean {
+  return url.includes('suno.com');
+}
+
+export function isMurekaUrl(url: string): boolean {
+  return url.includes('mureka.ai') || url.includes('mureka.ai/');
+}
+
 export function getNiconicoId(url: string): string | null {
   const m = url.match(/(?:nicovideo\.jp\/watch\/|nico\.ms\/)(sm\d+)/);
   return m ? m[1] : null;
@@ -37,6 +45,8 @@ export function getSpotifyId(url: string): { type: string; id: string } | null {
 export function getServiceName(url: string): string {
   if (getYouTubeId(url)) return 'YouTube';
   if (isSoundCloudUrl(url)) return 'SoundCloud';
+  if (isSunoUrl(url)) return 'SUNO';
+  if (isMurekaUrl(url)) return 'Mureka';
   if (getNiconicoId(url)) return 'ニコニコ動画';
   if (getSpotifyId(url)) return 'Spotify';
   if (url.includes('bandcamp.com')) return 'Bandcamp';
@@ -155,6 +165,66 @@ export function EmbedPlayer({
         src={`https://audiomack.com/embed/song?url=${encoded}&background=1`}
         style={{ border: 'none', borderRadius: 12 }}
       />
+    );
+  }
+
+  if (isSunoUrl(url)) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '16px',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          color: '#00d4ff',
+          textDecoration: 'none',
+          fontSize: 14,
+        }}
+      >
+        <span style={{ fontSize: 24 }}>🎵</span>
+        <div>
+          <div style={{ fontWeight: 700 }}>SUNO</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+            SUNOで再生
+          </div>
+        </div>
+      </a>
+    );
+  }
+
+  if (isMurekaUrl(url)) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '16px',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          color: '#00d4ff',
+          textDecoration: 'none',
+          fontSize: 14,
+        }}
+      >
+        <span style={{ fontSize: 24 }}>🎵</span>
+        <div>
+          <div style={{ fontWeight: 700 }}>Mureka</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+            Murekaで再生
+          </div>
+        </div>
+      </a>
     );
   }
 

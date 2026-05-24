@@ -570,24 +570,24 @@ export default function Home() {
               photoUrl = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
             }
 
-            // SoundCloudのサムネイル自動抽出
-            if (!photoUrl && externalUrl.includes('soundcloud.com')) {
+            // SoundCloud/SUNO/Murekaのサムネイル自動抽出
+            if (!photoUrl && (externalUrl.includes('soundcloud.com') || externalUrl.includes('suno.com') || externalUrl.includes('mureka.ai'))) {
               try {
-                const scResponse = await fetch('/api/extract-metadata', {
+                const response = await fetch('/api/extract-metadata', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ url: externalUrl })
                 });
-                const scData = await scResponse.json();
-                console.log(`SoundCloud metadata for ${externalUrl}:`, scData);
-                if (scData.thumbnail_url) {
-                  photoUrl = scData.thumbnail_url;
-                  console.log(`✓ SoundCloud thumbnail found: ${photoUrl}`);
+                const data = await response.json();
+                console.log(`Metadata for ${externalUrl}:`, data);
+                if (data.thumbnail_url) {
+                  photoUrl = data.thumbnail_url;
+                  console.log(`✓ Thumbnail found: ${photoUrl}`);
                 } else {
-                  console.warn(`⚠ SoundCloud thumbnail_url not found in response`);
+                  console.warn(`⚠ thumbnail_url not found in response`);
                 }
               } catch (err) {
-                console.error('SoundCloud thumbnail fetch error:', err);
+                console.error('Metadata fetch error:', err);
               }
             }
           }

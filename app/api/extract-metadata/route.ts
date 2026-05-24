@@ -20,6 +20,8 @@ function detectService(url: string): string {
   if (url.includes('nicovideo.jp') || url.includes('nico.ms')) return 'niconico';
   if (url.includes('bandcamp.com')) return 'bandcamp';
   if (url.includes('audiomack.com')) return 'audiomack';
+  if (url.includes('suno.com')) return 'suno';
+  if (url.includes('mureka.ai')) return 'mureka';
   return 'unknown';
 }
 
@@ -182,6 +184,65 @@ async function fetchAudiomackMetadata(url: string): Promise<Partial<ExtractedMet
   }
 }
 
+// Parse SUNO URL metadata
+async function fetchSunoMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
+  try {
+    // SUNO URLs format: suno.com/song/{id}
+    const parts = url.split('/').filter(p => p && !p.includes('?'));
+    const title = parts[parts.length - 1]?.replace(/-/g, ' ') || 'SUNO Track';
+
+    // Try to get thumbnail from SUNO API
+    const songId = parts[parts.length - 1];
+    let thumbnailUrl: string | undefined;
+
+    try {
+      const apiUrl = `https://api.suno.ai/api/songs/${songId}`;
+      const response = await fetch(apiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.image_url) {
+          thumbnailUrl = data.image_url;
+        }
+      }
+    } catch (e) {
+      // API call failed, continue without thumbnail
+    }
+
+    return {
+      title: title,
+      artist: 'SUNO',
+      thumbnail_url: thumbnailUrl
+    };
+  } catch (error) {
+    console.error('SUNO metadata error:', error);
+    return {
+      title: 'SUNO Track',
+      artist: 'SUNO'
+    };
+  }
+}
+
+// Parse Mureka URL metadata
+async function fetchMurekaMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
+  try {
+    // Mureka URLs format: mureka.ai/{user}/{id} or similar
+    const parts = url.split('/').filter(p => p && !p.includes('?'));
+    const title = parts[parts.length - 1]?.replace(/-/g, ' ') || 'Mureka Track';
+
+    return {
+      title: title,
+      artist: 'Mureka',
+      thumbnail_url: undefined
+    };
+  } catch (error) {
+    console.error('Mureka metadata error:', error);
+    return {
+      title: 'Mureka Track',
+      artist: 'Mureka'
+    };
+  }
+}
+
 // POST /api/extract-metadata - Extract metadata from external URL
 export async function POST(request: NextRequest) {
   try {
@@ -259,6 +320,16 @@ export async function POST(request: NextRequest) {
 
       case 'audiomack': {
         metadata = { ...metadata, ...(await fetchAudiomackMetadata(body.url)) };
+        break;
+      }
+
+      case 'suno': {
+        metadata = { ...metadata, ...(await fetchSunoMetadata(body.url)) };
+        break;
+      }
+
+      case 'mureka': {
+        metadata = { ...metadata, ...(await fetchMurekaMetadata(body.url)) };
         break;
       }
 
