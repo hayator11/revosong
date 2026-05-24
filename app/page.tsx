@@ -2399,10 +2399,21 @@ function UploadModal({
             ⚠️ 著作権に関する重要なお知らせ
           </div>
           <p style={{ margin: "0 0 8px 0", fontSize: "11px" }}>
-            <strong>著作権のある既存楽曲の投稿は厳禁です。</strong>
+            <strong>投稿できるもの：</strong>
+          </p>
+          <p style={{ margin: "0 0 8px 0", fontSize: "11px", paddingLeft: "12px" }}>
+            ✅ ご自身が作成したAI生成楽曲<br/>
+            ✅ ご自身が作曲・作成したオリジナル楽曲
           </p>
           <p style={{ margin: "0 0 8px 0", fontSize: "11px" }}>
-            AI生成楽曲またはご自身が著作権を保有するオリジナル楽曲のみ投稿可能です。
+            <strong>投稿できないもの：</strong>
+          </p>
+          <p style={{ margin: "0 0 8px 0", fontSize: "11px", paddingLeft: "12px", color: "#ffb3ba" }}>
+            ❌ 著作権のある既存楽曲<br/>
+            ❌ 他人のAI生成楽曲<br/>
+            ❌ 歌ってみた動画・音源<br/>
+            ❌ カバー音源<br/>
+            ❌ 他人の作品の二次創作
           </p>
           <p style={{ margin: "0 0 8px 0", fontSize: "11px", color: "#ffb3ba" }}>
             ⚠️ 著作権侵害の疑いがある楽曲を投稿した場合、<strong>運営サイドで予告なく削除される可能性があります。</strong>
@@ -2542,7 +2553,7 @@ function UploadModal({
               }}
             />
             <span>
-              <strong>著作権確認：</strong> この楽曲は、AI生成楽曲またはご自身が著作権を保有するオリジナル楽曲であることを確認しました。著作権侵害がある場合、運営サイドで予告なく削除される可能性があることに同意します。
+              <strong>著作権確認：</strong> この楽曲は、ご自身が作成したAI生成楽曲またはご自身が作曲したオリジナル楽曲です。歌ってみた・カバー・他人の作品ではありません。著作権侵害がある場合、運営サイドで予告なく削除される可能性があることに同意します。
             </span>
           </label>
         </div>
