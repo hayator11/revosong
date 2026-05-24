@@ -287,9 +287,9 @@ export function ArtistsSection() {
                 src={PROJECT_LOGOS['revolist-lab']}
                 alt="準備中"
                 style={{
-                  width: '60px',
-                  height: '60px',
-                  objectFit: 'contain',
+                  width: '100px',
+                  height: '100px',
+                  objectFit: 'cover',
                   opacity: 0.5,
                 }}
                 onError={(e) => {
