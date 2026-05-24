@@ -21,6 +21,8 @@ type Track = {
   last_play_count_at: string | null;
   artist_social_url: string | null;
   social_links?: Record<string, string>;
+  username?: string | null;
+  comment_count?: number;
 };
 
 type Comment = {
@@ -420,12 +422,33 @@ export default function Home() {
           (l: { track_id: number }) => l.track_id
         );
       }
-      setTracks(
-        trackData.map((t: Record<string, unknown>) => ({
-          ...t,
-          liked: likedIds.includes(t.id as number),
-        })) as Track[]
+
+      // ユーザー名とコメント数を取得
+      const tracksWithExtra = await Promise.all(
+        trackData.map(async (t: Record<string, unknown>) => {
+          // ユーザー名を取得
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", t.user_id as string)
+            .single();
+
+          // コメント数を取得
+          const { count: commentCount } = await supabase
+            .from("comments")
+            .select("*", { count: "exact", head: true })
+            .eq("track_id", t.id as number);
+
+          return {
+            ...t,
+            liked: likedIds.includes(t.id as number),
+            username: profileData?.username,
+            comment_count: commentCount || 0,
+          };
+        })
       );
+
+      setTracks(tracksWithExtra as Track[]);
     }
     setLoading(false);
   }, [user, period]);
@@ -1695,7 +1718,20 @@ export default function Home() {
                   </span>
                   <span>·</span>
                   <span>{track.artist_name}</span>
+                  {track.username && (
+                    <>
+                      <span>·</span>
+                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
+                        👤 {track.username}
+                      </span>
+                    </>
+                  )}
                   {track.external_url && <span className="url-badge">♪ 再生可</span>}
+                  {track.comment_count !== undefined && (
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: "3px" }}>
+                      💬 {track.comment_count}
+                    </span>
+                  )}
                   <span className={track.music_type === "ai" ? "type-badge-ai" : "type-badge-original"}>
                     {track.music_type === "ai" ? "AI" : "Original"}
                   </span>
@@ -2337,7 +2373,7 @@ function UploadModal({
     prompt: "",
     external_url: "",
     artist_social_url: "",
-    copyright_acknowledged: false,
+    copyright_acknowledged: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -2556,7 +2592,7 @@ function UploadModal({
           }}>
             <input
               type="checkbox"
-              checked={form.copyright_acknowledged}
+              checked={form.copyright_acknowledged === "true"}
               onChange={(e) => update("copyright_acknowledged", e.target.checked ? "true" : "false")}
               style={{
                 marginTop: "3px",
