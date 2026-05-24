@@ -339,6 +339,14 @@ function AboutSection() {
             </div>
           )}
 
+          <div style={{ marginTop: "30px", textAlign: "center" }}>
+            <img
+              src="/revosong-ecosystem.png"
+              alt="REVOSONG Ecosystem"
+              style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }}
+            />
+          </div>
+
           <p className="about-cta">あなたの楽曲を世界に届けよう！</p>
         </div>
       )}
