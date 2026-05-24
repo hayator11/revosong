@@ -481,7 +481,7 @@ export default function Home() {
 
   // Playback state
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(null);
-  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('auto');
+  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
 
   // コメント管理用のState

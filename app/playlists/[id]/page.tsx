@@ -65,7 +65,7 @@ export default function PlaylistPage() {
 
   // Playback state
   const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
-  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('auto');
+  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Fetch current user and playlist
