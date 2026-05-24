@@ -261,118 +261,147 @@ export function ArtistsSection() {
         🎩 レボハットアーティスト
       </h2>
 
-      {/* レボリストLab 説明セクション */}
+      {/* 準備中プレースホルダー3枚 */}
       <div
         style={{
-          background: 'rgba(255,165,0,0.08)',
-          border: '1px solid rgba(255,165,0,0.2)',
-          borderRadius: '12px',
-          padding: '20px 20px',
-          marginBottom: '32px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '20px',
+          marginBottom: '24px',
         }}
       >
-        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffa500', marginBottom: '10px' }}>
-          🔬 レボリストLab | 実験・実践の幹
-        </h3>
-        <p
-          style={{
-            fontSize: '13px',
-            color: 'rgba(255,255,255,0.8)',
-            lineHeight: 1.8,
-            marginBottom: '10px',
-          }}
-        >
-          <strong>「防災を、かろやかに」というコンセプト</strong>
-          から生まれた、社会課題の検証・実践・実証を行う実験場・インキュベーター。
-        </p>
-        <p
-          style={{
-            fontSize: '13px',
-            color: 'rgba(255,255,255,0.8)',
-            lineHeight: 1.8,
-            marginBottom: '14px',
-          }}
-        >
-          インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、個人の力を活かしながら社会変革をもたらすことがビジョン。
-        </p>
+        {[0, 1, 2].map(idx => (
+          <div
+            key={`placeholder-${idx}`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <div
+              style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)',
+                border: '3px solid rgba(0,212,255,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              <img
+                src={PROJECT_LOGOS['revolist-lab']}
+                alt="準備中"
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  objectFit: 'contain',
+                  opacity: 0.5,
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.4)',
+                textAlign: 'center',
+              }}
+            >
+              準備中
+            </div>
+          </div>
+        ))}
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-          <a
-            href="https://revolist.earth/revolist-lab"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              padding: '10px 14px',
-              background: 'rgba(255,165,0,0.15)',
-              border: '1px solid rgba(255,165,0,0.3)',
-              borderRadius: '8px',
-              color: '#ffa500',
-              textDecoration: 'none',
-              fontSize: '12px',
-              fontWeight: 600,
-              textAlign: 'center',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,165,0,0.25)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,165,0,0.15)';
-            }}
-          >
-            🌐 公式サイト
-          </a>
-          <a
-            href="https://x.com/REVOLIST11"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              padding: '10px 14px',
-              background: 'rgba(0,0,0,0.3)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#fff',
-              textDecoration: 'none',
-              fontSize: '12px',
-              fontWeight: 600,
-              textAlign: 'center',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
-            }}
-          >
-            𝕏 レボリストLab
-          </a>
-          <a
-            href="https://x.com/Hayator"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              padding: '10px 14px',
-              background: 'rgba(0,0,0,0.3)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#fff',
-              textDecoration: 'none',
-              fontSize: '12px',
-              fontWeight: 600,
-              textAlign: 'center',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
-            }}
-          >
-            𝕏 @hayator
-          </a>
-        </div>
+      {/* リンクボタン */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '32px' }}>
+        <a
+          href="https://revolist.earth/revolist-lab"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(0,212,255,0.15)',
+            border: '1px solid rgba(0,212,255,0.3)',
+            borderRadius: '8px',
+            color: '#00d4ff',
+            textDecoration: 'none',
+            fontSize: '13px',
+            fontWeight: 600,
+            textAlign: 'center',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0,212,255,0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0,212,255,0.15)';
+          }}
+        >
+          🌐 公式サイト
+        </a>
+        <a
+          href="https://x.com/REVOLIST11"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '8px',
+            color: '#fff',
+            textDecoration: 'none',
+            fontSize: '13px',
+            fontWeight: 600,
+            textAlign: 'center',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+          }}
+        >
+          𝕏 レボリストLab
+        </a>
+        <a
+          href="https://x.com/Hayator"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '8px',
+            color: '#fff',
+            textDecoration: 'none',
+            fontSize: '13px',
+            fontWeight: 600,
+            textAlign: 'center',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+          }}
+        >
+          𝕏 @hayator
+        </a>
       </div>
 
       {/* レボリストLab アーティスト */}
