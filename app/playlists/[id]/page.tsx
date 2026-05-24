@@ -65,7 +65,7 @@ export default function PlaylistPage() {
 
   // Playback state
   const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
-  const [playMode, setPlayMode] = useState<'once' | 'repeat-one' | 'repeat-all'>('once');
+  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('auto');
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Fetch current user and playlist
@@ -114,16 +114,19 @@ export default function PlaylistPage() {
   const handlePlayNext = () => {
     if (currentItemIndex === null || items.length === 0) return;
 
-    const nextIndex = currentItemIndex + 1;
-    if (nextIndex < items.length) {
-      setCurrentItemIndex(nextIndex);
+    if (playMode === 'shuffle') {
+      // Random next song
+      const randomIndex = Math.floor(Math.random() * items.length);
+      setCurrentItemIndex(randomIndex);
       setIsPlaying(true);
     } else {
-      // End of playlist
-      if (playMode === 'repeat-all') {
-        setCurrentItemIndex(0);
+      // Sequential next song
+      const nextIndex = currentItemIndex + 1;
+      if (nextIndex < items.length) {
+        setCurrentItemIndex(nextIndex);
         setIsPlaying(true);
       } else {
+        // End of playlist - stop
         setIsPlaying(false);
       }
     }
@@ -142,11 +145,11 @@ export default function PlaylistPage() {
     if (playMode === 'repeat-one' && currentItemIndex !== null) {
       // Restart the current song
       setIsPlaying(true);
-    } else if (playMode === 'once' && currentItemIndex !== null) {
+    } else if (playMode === 'once') {
       // Stop after current song
       setIsPlaying(false);
-    } else if (playMode === 'repeat-all' || playMode === 'repeat-one') {
-      // Play next or restart
+    } else if (playMode === 'auto' || playMode === 'shuffle') {
+      // Play next song automatically
       handlePlayNext();
     }
   };
@@ -694,12 +697,46 @@ export default function PlaylistPage() {
               </button>
             </div>
 
-            {/* Repeat mode */}
+            {/* Play mode */}
             <div style={{
               display: 'flex',
               gap: '12px',
               flexWrap: 'wrap'
             }}>
+              <button
+                onClick={() => setPlayMode('auto')}
+                style={{
+                  padding: '8px 16px',
+                  background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  border: playMode === 'auto' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '6px',
+                  color: playMode === 'auto' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                順番に流れる
+              </button>
+
+              <button
+                onClick={() => setPlayMode('shuffle')}
+                style={{
+                  padding: '8px 16px',
+                  background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '6px',
+                  color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🎲 ランダム
+              </button>
+
               <button
                 onClick={() => setPlayMode('once')}
                 style={{
@@ -714,7 +751,7 @@ export default function PlaylistPage() {
                   transition: 'all 0.2s'
                 }}
               >
-                1曲のみ
+                1曲だけ
               </button>
 
               <button
@@ -732,23 +769,6 @@ export default function PlaylistPage() {
                 }}
               >
                 🔁 1曲リピート
-              </button>
-
-              <button
-                onClick={() => setPlayMode('repeat-all')}
-                style={{
-                  padding: '8px 16px',
-                  background: playMode === 'repeat-all' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  border: playMode === 'repeat-all' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '6px',
-                  color: playMode === 'repeat-all' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                🔁 全曲リピート
               </button>
             </div>
           </div>

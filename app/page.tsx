@@ -481,7 +481,7 @@ export default function Home() {
 
   // Playback state
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(null);
-  const [playMode, setPlayMode] = useState<'once' | 'repeat-one' | 'repeat-all'>('once');
+  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('auto');
   const [isPlaying, setIsPlaying] = useState(false);
 
   // コメント管理用のState
@@ -531,18 +531,21 @@ export default function Home() {
   const handlePlayNext = () => {
     if (selectedTrackIndex === null || tracks.length === 0) return;
 
-    const nextIndex = selectedTrackIndex + 1;
-    if (nextIndex < tracks.length) {
-      setSelectedTrackIndex(nextIndex);
-      setSelectedTrack(tracks[nextIndex]);
+    if (playMode === 'shuffle') {
+      // Random next song
+      const randomIndex = Math.floor(Math.random() * tracks.length);
+      setSelectedTrackIndex(randomIndex);
+      setSelectedTrack(tracks[randomIndex]);
       setIsPlaying(true);
     } else {
-      // End of list
-      if (playMode === 'repeat-all') {
-        setSelectedTrackIndex(0);
-        setSelectedTrack(tracks[0]);
+      // Sequential next song
+      const nextIndex = selectedTrackIndex + 1;
+      if (nextIndex < tracks.length) {
+        setSelectedTrackIndex(nextIndex);
+        setSelectedTrack(tracks[nextIndex]);
         setIsPlaying(true);
       } else {
+        // End of list - stop
         setIsPlaying(false);
       }
     }
@@ -562,11 +565,11 @@ export default function Home() {
     if (playMode === 'repeat-one' && selectedTrackIndex !== null) {
       // Restart the current song
       setIsPlaying(true);
-    } else if (playMode === 'once' && selectedTrackIndex !== null) {
+    } else if (playMode === 'once') {
       // Stop after current song
       setIsPlaying(false);
-    } else if (playMode === 'repeat-all' || playMode === 'repeat-one') {
-      // Play next or restart
+    } else if (playMode === 'auto' || playMode === 'shuffle') {
+      // Play next song automatically
       handlePlayNext();
     }
   };
@@ -2005,12 +2008,46 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Repeat mode */}
+          {/* Play mode */}
           <div style={{
             display: 'flex',
             gap: '12px',
             flexWrap: 'wrap'
           }}>
+            <button
+              onClick={() => setPlayMode('auto')}
+              style={{
+                padding: '8px 16px',
+                background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                border: playMode === 'auto' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '6px',
+                color: playMode === 'auto' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              順番に流れる
+            </button>
+
+            <button
+              onClick={() => setPlayMode('shuffle')}
+              style={{
+                padding: '8px 16px',
+                background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '6px',
+                color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              🎲 ランダム
+            </button>
+
             <button
               onClick={() => setPlayMode('once')}
               style={{
@@ -2025,7 +2062,7 @@ export default function Home() {
                 transition: 'all 0.2s'
               }}
             >
-              1曲のみ
+              1曲だけ
             </button>
 
             <button
@@ -2043,23 +2080,6 @@ export default function Home() {
               }}
             >
               🔁 1曲リピート
-            </button>
-
-            <button
-              onClick={() => setPlayMode('repeat-all')}
-              style={{
-                padding: '8px 16px',
-                background: playMode === 'repeat-all' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                border: playMode === 'repeat-all' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '6px',
-                color: playMode === 'repeat-all' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              🔁 全曲リピート
             </button>
           </div>
         </div>
