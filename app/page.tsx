@@ -260,7 +260,7 @@ function AboutSection() {
   return (
     <div className="about-section">
       <button className="about-toggle" onClick={() => setOpen(!open)}>
-        <span>MUSIC CHARTS とは？</span>
+        <span>Information</span>
         <span style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", display: "inline-block" }}>▼</span>
       </button>
       {open && (
