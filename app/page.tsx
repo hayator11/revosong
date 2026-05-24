@@ -2347,6 +2347,20 @@ function UploadModal({
 
   const handleSubmit = async () => {
     if (!form.title || !form.artist_name) return;
+
+    // 最終確認ダイアログ
+    const confirmed = window.confirm(
+      "⚠️ 最終確認\n\n" +
+      "この楽曲について、以下の内容を確認しましたか？\n\n" +
+      "✓ ご自身が作成したAI生成楽曲、または作曲したオリジナル楽曲である\n" +
+      "✓ 歌ってみた、カバー、他人の作品ではない\n" +
+      "✓ 著作権侵害の恐れがない\n\n" +
+      "著作権侵害がある場合、運営サイドで予告なく削除されます。\n\n" +
+      "「OK」をクリックして投稿します。"
+    );
+
+    if (!confirmed) return;
+
     setSubmitting(true);
     await supabase.from("tracks").insert({
       user_id: user.id,
