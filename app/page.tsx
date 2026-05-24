@@ -1860,20 +1860,20 @@ export default function Home() {
                 <span className="rank-num">{i + 1}</span>
               )}
 
-              {/* Thumbnail */}
-              {track.photo_url && (
-                <img
-                  src={track.photo_url}
-                  alt={track.title}
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '6px',
-                    objectFit: 'cover',
-                    flexShrink: 0
-                  }}
-                />
-              )}
+              {/* Thumbnail - always reserve space */}
+              <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden' }}>
+                {track.photo_url && (
+                  <img
+                    src={track.photo_url}
+                    alt={track.title}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                )}
+              </div>
 
               <div style={{ minWidth: 0 }}>
                 <div className={`track-title ${selectedTrack?.id === track.id ? "track-title-playing" : ""}`}>
