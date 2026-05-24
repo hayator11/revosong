@@ -11,27 +11,27 @@ function extractSNSUsername(url: string, platform: string): string | null {
     switch (platform.toLowerCase()) {
       case 'x':
       case 'twitter':
-        const xMatch = pathname.match(/^\/([a-zA-Z0-9_]+)/?$/);
+        const xMatch = pathname.match(/^\/([a-zA-Z0-9_]+)\/?$/);
         return xMatch ? xMatch[1] : null;
 
       case 'instagram':
-        const igMatch = pathname.match(/^\/([a-zA-Z0-9_.]+)/?$/);
+        const igMatch = pathname.match(/^\/([a-zA-Z0-9_.]+)\/?$/);
         return igMatch ? igMatch[1] : null;
 
       case 'youtube':
-        const ytMatch = pathname.match(/^\/(@[a-zA-Z0-9_-]+)/?$/);
+        const ytMatch = pathname.match(/^\/(@[a-zA-Z0-9_-]+)\/?$/);
         return ytMatch ? ytMatch[1] : null;
 
       case 'tiktok':
-        const ttMatch = pathname.match(/^\/(@[a-zA-Z0-9_.]+)/?$/);
+        const ttMatch = pathname.match(/^\/(@[a-zA-Z0-9_.]+)\/?$/);
         return ttMatch ? ttMatch[1] : null;
 
       case 'facebook':
-        const fbMatch = pathname.match(/^\/([a-zA-Z0-9.]+)/?$/);
+        const fbMatch = pathname.match(/^\/([a-zA-Z0-9.]+)\/?$/);
         return fbMatch ? fbMatch[1] : null;
 
       case 'threads':
-        const thMatch = pathname.match(/^\/(@[a-zA-Z0-9_.]+)/?$/);
+        const thMatch = pathname.match(/^\/(@[a-zA-Z0-9_.]+)\/?$/);
         return thMatch ? thMatch[1] : null;
 
       default:
