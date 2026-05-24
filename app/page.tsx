@@ -278,13 +278,13 @@ export default function Home() {
         );
       }
 
-      // ユーザー名、SNSリンク、コメント数を取得
+      // ユーザー名、コメント数を取得
       const tracksWithExtra = await Promise.all(
         trackData.map(async (t: Record<string, unknown>) => {
-          // プロフィール情報を取得（ユーザー名、SNSリンク）
+          // ユーザー名を取得
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("username, twitter_url, instagram_url, facebook_url, threads_url, tiktok_url, youtube_url, discord_url")
+            .select("username")
             .eq("id", t.user_id as string)
             .single();
 
@@ -293,16 +293,6 @@ export default function Home() {
             .from("comments")
             .select("*", { count: "exact", head: true })
             .eq("track_id", t.id as number);
-
-          // SNSリンクをオブジェクトに変換
-          const social_links: Record<string, string> = {};
-          if (profileData?.twitter_url) social_links['x'] = profileData.twitter_url;
-          if (profileData?.instagram_url) social_links['instagram'] = profileData.instagram_url;
-          if (profileData?.facebook_url) social_links['facebook'] = profileData.facebook_url;
-          if (profileData?.threads_url) social_links['threads'] = profileData.threads_url;
-          if (profileData?.tiktok_url) social_links['tiktok'] = profileData.tiktok_url;
-          if (profileData?.youtube_url) social_links['youtube'] = profileData.youtube_url;
-          if (profileData?.discord_url) social_links['discord'] = profileData.discord_url;
 
           // YouTubeのサムネイル自動抽出
           let photoUrl = t.photo_url;
@@ -318,7 +308,6 @@ export default function Home() {
             liked: likedIds.includes(t.id as number),
             username: profileData?.username,
             comment_count: commentCount || 0,
-            social_links: social_links,
             photo_url: photoUrl
           };
         })
