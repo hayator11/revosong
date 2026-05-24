@@ -93,13 +93,36 @@ async function fetchYouTubeMetadata(videoId: string): Promise<Partial<ExtractedM
 async function fetchSoundCloudMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
   try {
     const oembedUrl = `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-    const response = await fetch(oembedUrl);
-    const data = await response.json();
+    const response = await fetch(oembedUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+
+    if (!response.ok) {
+      console.error(`SoundCloud oEmbed error: ${response.status}`);
+      return { title: 'SoundCloud Track' };
+    }
+
+    const text = await response.text();
+    if (!text) {
+      console.error('SoundCloud oEmbed returned empty response');
+      return { title: 'SoundCloud Track' };
+    }
+
+    const data = JSON.parse(text);
+
+    // Extract thumbnail from HTML response (SoundCloud includes it in the HTML)
+    let thumbnailUrl: string | null = null;
+    if (data.html) {
+      const match = data.html.match(/https:\/\/i1\.sndcdn\.com\/[^"]+/);
+      if (match) {
+        thumbnailUrl = match[0];
+      }
+    }
 
     return {
       title: data.title || 'Unknown Track',
       artist: data.author_name || null,
-      thumbnail_url: data.thumbnail_url || null
+      thumbnail_url: thumbnailUrl || data.thumbnail_url || null
     };
   } catch (error) {
     console.error('SoundCloud oEmbed error:', error);
