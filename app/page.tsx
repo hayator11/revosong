@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
+import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
+import { CategoryFilter } from "@/app/components/CategoryFilter";
 
 type Track = {
   id: number;
@@ -64,156 +66,7 @@ function formatNumber(n: number) {
   return n.toString();
 }
 
-function getYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-function isSoundCloudUrl(url: string): boolean {
-  return url.includes("soundcloud.com");
-}
-
-function getNiconicoId(url: string): string | null {
-  const m = url.match(/(?:nicovideo\.jp\/watch\/|nico\.ms\/)(sm\d+)/);
-  return m ? m[1] : null;
-}
-
-function getBandcampEmbedUrl(url: string): string | null {
-  if (url.includes("bandcamp.com")) return url;
-  return null;
-}
-
-function getSpotifyId(url: string): { type: string; id: string } | null {
-  const m = url.match(/open\.spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
-  if (m) return { type: m[1], id: m[2] };
-  return null;
-}
-
-function getAudiomackInfo(url: string): string | null {
-  if (url.includes("audiomack.com")) return url;
-  return null;
-}
-
-function getServiceName(url: string): string {
-  if (getYouTubeId(url)) return "YouTube";
-  if (isSoundCloudUrl(url)) return "SoundCloud";
-  if (getNiconicoId(url)) return "ニコニコ動画";
-  if (getSpotifyId(url)) return "Spotify";
-  if (getBandcampEmbedUrl(url)) return "Bandcamp";
-  if (getAudiomackInfo(url)) return "Audiomack";
-  return "外部サイト";
-}
-
-function EmbedPlayer({ url }: { url: string }) {
-  const ytId = getYouTubeId(url);
-  if (ytId) {
-    return (
-      <iframe
-        width="100%"
-        height="160"
-        src={"https://www.youtube.com/embed/" + ytId + "?autoplay=1"}
-        allow="autoplay; encrypted-media"
-        allowFullScreen
-        style={{ border: "none", borderRadius: 12 }}
-      />
-    );
-  }
-
-  if (isSoundCloudUrl(url)) {
-    const encoded = encodeURIComponent(url);
-    return (
-      <iframe
-        width="100%"
-        height="120"
-        scrolling="no"
-        frameBorder="no"
-        allow="autoplay"
-        src={"https://w.soundcloud.com/player/?url=" + encoded + "&auto_play=true&color=%23ff2d55&hide_related=true&show_comments=false&show_user=true&show_reposts=false"}
-        style={{ borderRadius: 12 }}
-      />
-    );
-  }
-
-  const nicoId = getNiconicoId(url);
-  if (nicoId) {
-    return (
-      <iframe
-        width="100%"
-        height="170"
-        src={"https://embed.nicovideo.jp/watch/" + nicoId}
-        style={{ border: "none", borderRadius: 12 }}
-        allowFullScreen
-      />
-    );
-  }
-
-  const spotify = getSpotifyId(url);
-  if (spotify) {
-    return (
-      <iframe
-        width="100%"
-        height="152"
-        src={"https://open.spotify.com/embed/" + spotify.type + "/" + spotify.id + "?theme=0"}
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        style={{ border: "none", borderRadius: 12 }}
-      />
-    );
-  }
-
-  if (url.includes("bandcamp.com")) {
-    return (
-      <div style={{ borderRadius: 12, overflow: "hidden" }}>
-        <a href={url} target="_blank" rel="noopener noreferrer" style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "16px",
-          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 12, color: "#1da0c3", textDecoration: "none", fontSize: 14,
-        }}>
-          <span style={{fontSize: 24}}>🎵</span>
-          <div>
-            <div style={{fontWeight: 700}}>Bandcampで再生</div>
-            <div style={{fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2}}>タップして開く</div>
-          </div>
-        </a>
-      </div>
-    );
-  }
-
-  if (url.includes("audiomack.com")) {
-    const encoded = encodeURIComponent(url);
-    return (
-      <iframe
-        width="100%"
-        height="150"
-        src={"https://audiomack.com/embed/song?url=" + encoded + "&background=1"}
-        style={{ border: "none", borderRadius: 12 }}
-      />
-    );
-  }
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        display: "block", padding: "16px", borderRadius: 12,
-        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-        color: "#ff2d55", textAlign: "center", textDecoration: "none", fontSize: 14,
-      }}
-    >
-      外部サイトで再生する
-    </a>
-  );
-}
+// All URL parsing and service detection functions are now imported from EmbedPlayer component
 
 function ShareButtons({ track }: { track: Track }) {
   const [copied, setCopied] = useState(false);
@@ -361,6 +214,7 @@ export default function Home() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [filter, setFilter] = useState("すべて");
   const [typeFilter, setTypeFilter] = useState("すべて");
+  const [musicTypeFilter, setMusicTypeFilter] = useState("すべて");
   const [period, setPeriod] = useState("全期間");
   const [showUpload, setShowUpload] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -646,9 +500,19 @@ export default function Home() {
     }
   }, [selectedTrack?.id, incrementPlayCount]);
 
+  // Helper function to detect music type (audio/video) based on URL
+  const getMusicContentType = (track: Track): string => {
+    if (!track.external_url) return "audio";
+    if (getYouTubeId(track.external_url)) return "video";
+    if (getNiconicoId(track.external_url)) return "video";
+    return "audio";
+  };
+
   const filtered = tracks.filter(
     (t) => (filter === "すべて" || t.ai_tool === filter) &&
-           (typeFilter === "すべて" || (typeFilter === "AI生成" ? t.music_type === "ai" : t.music_type === "original"))
+           (typeFilter === "すべて" || (typeFilter === "AI生成" ? t.music_type === "ai" : t.music_type === "original")) &&
+           (musicTypeFilter === "すべて" ||
+            (musicTypeFilter === "🎵 音源" ? getMusicContentType(t) === "audio" : getMusicContentType(t) === "video"))
   );
   const totalPlays = tracks.reduce((s, t) => s + t.play_count, 0);
   const totalLikes = tracks.reduce((s, t) => s + t.like_count, 0);
@@ -1569,6 +1433,7 @@ export default function Home() {
           <div className="top-menu">
             <a href="/about" className="menu-link">About</a>
             <a href="/information" className="menu-link">Information</a>
+            <a href="/playlists" className="menu-link">Playlist</a>
           </div>
           {user ? (
             <>
@@ -1651,6 +1516,16 @@ export default function Home() {
             {t === "AI生成" ? "🤖 AI生成" : t === "オリジナル" ? "🎤 オリジナル" : "🎵 すべて"}
           </div>
         ))}
+      </div>
+
+      <div className="filter-section-label">コンテンツ</div>
+      <div style={{ paddingBottom: '12px' }}>
+        <CategoryFilter
+          onFilterChange={(category) => {
+            setMusicTypeFilter(category);
+          }}
+          initialFilter={musicTypeFilter}
+        />
       </div>
 
       <div className="filter-section-label">期間</div>
