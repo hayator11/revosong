@@ -29,7 +29,7 @@ const CATEGORY_COLORS = {
 };
 
 const PROJECT_LOGOS = {
-  'revolist-lab': '/revolist-lab-logo.png',
+  'revolist-lab': '/revolislab.jpg',
   'bosai-bosai': '/bosai-bosai-logo.png',
 };
 
@@ -201,21 +201,7 @@ export function ArtistsSection() {
     const projectArtists = artists.filter(a => a.project === project);
 
     if (projectArtists.length === 0) {
-      return (
-        <div
-          style={{
-            padding: '48px 32px',
-            textAlign: 'center',
-            color: 'rgba(255,255,255,0.4)',
-            marginBottom: '40px',
-          }}
-        >
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>📋</div>
-          <div style={{ fontSize: '14px', fontWeight: 600 }}>
-            {PROJECT_NAMES[project]} 公式アーティスト掲載予定
-          </div>
-        </div>
-      );
+      return null;
     }
 
     const categories = ['model', 'dancer', 'performer', 'talent'] as const;
