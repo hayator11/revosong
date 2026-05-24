@@ -153,6 +153,7 @@ RETURNS TABLE (
   last_play_count_at TIMESTAMP WITH TIME ZONE,
   artist_social_url TEXT,
   social_links JSONB,
+  photo_url TEXT,
   like_count BIGINT
 ) LANGUAGE SQL STABLE SET search_path = 'public'
 AS $$
@@ -171,6 +172,7 @@ AS $$
     t.last_play_count_at,
     t.artist_social_url,
     COALESCE(t.social_links, '{}'::jsonb) as social_links,
+    t.photo_url,
     COALESCE(COUNT(l.id), 0) as like_count
   FROM public.tracks t
   LEFT JOIN public.likes l ON t.id = l.track_id
@@ -189,7 +191,8 @@ AS $$
     t.created_at,
     t.last_play_count_at,
     t.artist_social_url,
-    t.social_links
+    t.social_links,
+    t.photo_url
   ORDER BY (COUNT(l.id) + t.play_count) DESC;
 $$;
 
@@ -211,6 +214,7 @@ SELECT
   t.last_play_count_at,
   t.artist_social_url,
   COALESCE(t.social_links, '{}'::jsonb) as social_links,
+  t.photo_url,
   COALESCE(COUNT(l.id), 0) as like_count
 FROM public.tracks t
 LEFT JOIN public.likes l ON t.id = l.track_id
@@ -228,7 +232,8 @@ GROUP BY
   t.created_at,
   t.last_play_count_at,
   t.artist_social_url,
-  t.social_links
+  t.social_links,
+  t.photo_url
 ORDER BY (COUNT(l.id) + t.play_count) DESC;
 
 -- ============================================================================
