@@ -33,17 +33,9 @@ const PROJECT_LOGOS = {
   'bosai-bosai': '/bosai-bosai-logo.png',
 };
 
-// 3人ずつのグループに分割し、足りない場合はプレースホルダーを追加
-const padArtistsToGrid = (artists: Artist[]): (Artist | null)[] => {
-  const padded: (Artist | null)[] = [...artists];
-  const remainder = padded.length % 3;
-  if (remainder !== 0) {
-    const padding = 3 - remainder;
-    for (let i = 0; i < padding; i++) {
-      padded.push(null);
-    }
-  }
-  return padded;
+const PROJECT_NAMES = {
+  'revolist-lab': 'レボリストLab',
+  'bosai-bosai': '防災×帽祭',
 };
 
 export function ArtistsSection() {
@@ -73,16 +65,140 @@ export function ArtistsSection() {
     fetchArtists();
   }, []);
 
-  const renderProjectSection = (project: 'revolist-lab' | 'bosai-bosai') => {
-    const projectArtists = artists.filter(a => a.project === project);
+  const renderCategoryGroup = (categoryArtists: Artist[], category: 'model' | 'dancer' | 'performer' | 'talent') => {
+    if (categoryArtists.length === 0) return null;
 
-    if (loading) {
-      return (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
-          読み込み中...
+    const colors = CATEGORY_COLORS[category];
+
+    return (
+      <div key={category}>
+        <h4
+          style={{
+            fontSize: '13px',
+            fontWeight: 700,
+            color: colors.color,
+            marginBottom: '16px',
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+          }}
+        >
+          {CATEGORY_LABELS[category]}
+        </h4>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '20px',
+            marginBottom: '32px',
+          }}
+        >
+          {categoryArtists.map(artist => (
+            <div
+              key={artist.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '16px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '12px',
+                border: `1px solid ${colors.border}`,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.borderColor = colors.color;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                e.currentTarget.style.borderColor = colors.border;
+              }}
+            >
+              {artist.photo_url ? (
+                <img
+                  src={artist.photo_url}
+                  alt={artist.name}
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: `3px solid ${colors.color}`,
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${colors.color}22, ${colors.color}11)`,
+                    border: `3px solid ${colors.color}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '40px',
+                  }}
+                >
+                  🎭
+                </div>
+              )}
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  color: '#fff',
+                  textAlign: 'center',
+                }}
+              >
+                {artist.name}
+              </div>
+              {artist.x_handle && (
+                <a
+                  href={`https://x.com/${artist.x_handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: 'rgba(0,0,0,0.3)',
+                    borderRadius: '20px',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    transition: 'all 0.2s',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = colors.color;
+                    e.currentTarget.style.borderColor = colors.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                  }}
+                >
+                  <span>𝕏</span>
+                  <span>@{artist.x_handle}</span>
+                </a>
+              )}
+            </div>
+          ))}
         </div>
-      );
-    }
+      </div>
+    );
+  };
+
+  const renderProjectArtists = (project: 'revolist-lab' | 'bosai-bosai') => {
+    const projectArtists = artists.filter(a => a.project === project);
 
     if (projectArtists.length === 0) {
       return (
@@ -91,232 +207,54 @@ export function ArtistsSection() {
             padding: '48px 32px',
             textAlign: 'center',
             color: 'rgba(255,255,255,0.4)',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '12px',
-            border: '1px dashed rgba(255,255,255,0.1)',
+            marginBottom: '40px',
           }}
         >
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎭</div>
-          <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '6px' }}>
-            公式アーティスト掲載予定
-          </div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
-            公式モデル・ダンサー・パフォーマー・タレント<br />
-            今後、順次掲載予定です
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>📋</div>
+          <div style={{ fontSize: '14px', fontWeight: 600 }}>
+            {PROJECT_NAMES[project]} 公式アーティスト掲載予定
           </div>
         </div>
       );
     }
 
-    // カテゴリーごとにグループ化
     const categories = ['model', 'dancer', 'performer', 'talent'] as const;
-    const categoryGroups = categories.map(cat => ({
-      category: cat,
-      artists: projectArtists.filter(a => a.category === cat),
-    })).filter(g => g.artists.length > 0);
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
-        {categoryGroups.map(group => {
-          const colors = CATEGORY_COLORS[group.category];
-          const paddedArtists = padArtistsToGrid(group.artists);
-
-          return (
-            <div key={group.category}>
-              <h4
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  color: colors.color,
-                  marginBottom: '16px',
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {CATEGORY_LABELS[group.category]}
-              </h4>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '20px',
-                }}
-              >
-                {paddedArtists.map((artist, idx) => {
-                  if (!artist) {
-                    // プレースホルダー（準備中）
-                    return (
-                      <div
-                        key={`placeholder-${idx}`}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '16px',
-                          background: 'rgba(255,255,255,0.02)',
-                          borderRadius: '12px',
-                          border: `1px solid rgba(255,255,255,0.1)`,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: '100px',
-                            height: '100px',
-                            borderRadius: '50%',
-                            background: 'rgba(255,255,255,0.06)',
-                            border: `3px solid ${colors.color}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <img
-                            src={PROJECT_LOGOS[project]}
-                            alt="準備中"
-                            style={{
-                              width: '60px',
-                              height: '60px',
-                              objectFit: 'contain',
-                              opacity: 0.5,
-                            }}
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            color: 'rgba(255,255,255,0.4)',
-                            textAlign: 'center',
-                          }}
-                        >
-                          準備中
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // アーティスト表示
-                  return (
-                    <div
-                      key={artist.id}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '16px',
-                        background: 'rgba(255,255,255,0.03)',
-                        borderRadius: '12px',
-                        border: `1px solid ${colors.border}`,
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                        e.currentTarget.style.borderColor = colors.color;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                        e.currentTarget.style.borderColor = colors.border;
-                      }}
-                    >
-                      {artist.photo_url ? (
-                        <img
-                          src={artist.photo_url}
-                          alt={artist.name}
-                          style={{
-                            width: '100px',
-                            height: '100px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: `3px solid ${colors.color}`,
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: '100px',
-                            height: '100px',
-                            borderRadius: '50%',
-                            background: `linear-gradient(135deg, ${colors.color}22, ${colors.color}11)`,
-                            border: `3px solid ${colors.color}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '40px',
-                          }}
-                        >
-                          🎭
-                        </div>
-                      )}
-                      <div
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 700,
-                          color: '#fff',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {artist.name}
-                      </div>
-                      {artist.x_handle && (
-                        <a
-                          href={`https://x.com/${artist.x_handle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            padding: '6px 12px',
-                            background: 'rgba(0,0,0,0.3)',
-                            borderRadius: '20px',
-                            color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            transition: 'all 0.2s',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = colors.color;
-                            e.currentTarget.style.borderColor = colors.color;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-                          }}
-                        >
-                          <span>𝕏</span>
-                          <span>@{artist.x_handle}</span>
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
+      <div style={{ marginBottom: '40px' }}>
+        {categories.map(cat => {
+          const categoryArtists = projectArtists.filter(a => a.category === cat);
+          return renderCategoryGroup(categoryArtists, cat);
         })}
       </div>
     );
   };
 
+  if (loading) {
+    return (
+      <section style={{ marginBottom: '48px' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
+          読み込み中...
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section style={{ marginBottom: '48px' }}>
+    <section
+      style={{
+        background: 'rgba(0,212,255,0.08)',
+        border: '1px solid rgba(0,212,255,0.2)',
+        borderRadius: '16px',
+        padding: '32px 28px',
+        marginBottom: '48px',
+      }}
+    >
       <h2
         style={{
           fontSize: '24px',
           fontWeight: 700,
-          color: '#fff',
+          color: '#00d4ff',
           marginBottom: '24px',
         }}
       >
@@ -328,20 +266,20 @@ export function ArtistsSection() {
         style={{
           background: 'rgba(255,165,0,0.08)',
           border: '1px solid rgba(255,165,0,0.2)',
-          borderRadius: '16px',
-          padding: '28px 24px',
-          marginBottom: '40px',
+          borderRadius: '12px',
+          padding: '20px 20px',
+          marginBottom: '32px',
         }}
       >
-        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffa500', marginBottom: '12px' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#ffa500', marginBottom: '10px' }}>
           🔬 レボリストLab | 実験・実践の幹
         </h3>
         <p
           style={{
-            fontSize: '14px',
+            fontSize: '13px',
             color: 'rgba(255,255,255,0.8)',
-            lineHeight: 1.9,
-            marginBottom: '12px',
+            lineHeight: 1.8,
+            marginBottom: '10px',
           }}
         >
           <strong>「防災を、かろやかに」というコンセプト</strong>
@@ -349,28 +287,28 @@ export function ArtistsSection() {
         </p>
         <p
           style={{
-            fontSize: '14px',
+            fontSize: '13px',
             color: 'rgba(255,255,255,0.8)',
-            lineHeight: 1.9,
-            marginBottom: '20px',
+            lineHeight: 1.8,
+            marginBottom: '14px',
           }}
         >
-          インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、個人の力を活かしながら社会変革をもたらすことがビジョン。ここからすべての枝葉が生まれ、育つ場所です。
+          インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、個人の力を活かしながら社会変革をもたらすことがビジョン。
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
           <a
             href="https://revolist.earth/revolist-lab"
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              padding: '12px 16px',
+              padding: '10px 14px',
               background: 'rgba(255,165,0,0.15)',
               border: '1px solid rgba(255,165,0,0.3)',
               borderRadius: '8px',
               color: '#ffa500',
               textDecoration: 'none',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 600,
               textAlign: 'center',
               transition: 'all 0.2s',
@@ -389,13 +327,13 @@ export function ArtistsSection() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              padding: '12px 16px',
+              padding: '10px 14px',
               background: 'rgba(0,0,0,0.3)',
               border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: '8px',
               color: '#fff',
               textDecoration: 'none',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 600,
               textAlign: 'center',
               transition: 'all 0.2s',
@@ -414,13 +352,13 @@ export function ArtistsSection() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              padding: '12px 16px',
+              padding: '10px 14px',
               background: 'rgba(0,0,0,0.3)',
               border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: '8px',
               color: '#fff',
               textDecoration: 'none',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 600,
               textAlign: 'center',
               transition: 'all 0.2s',
@@ -437,68 +375,29 @@ export function ArtistsSection() {
         </div>
       </div>
 
-      {/* レボリストLab アーティスト一覧 */}
-      <div style={{ marginBottom: '48px' }}>
-        <h3
-          style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#ffa500',
-            marginBottom: '20px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid rgba(255,165,0,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span>🔬</span>
-          レボリストLab
-        </h3>
-        {renderProjectSection('revolist-lab')}
-      </div>
+      {/* レボリストLab アーティスト */}
+      {renderProjectArtists('revolist-lab')}
 
-      {/* 防災×帽祭 */}
-      <div style={{ marginBottom: '40px' }}>
-        <h3
-          style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#dc143c',
-            marginBottom: '20px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid rgba(220,20,60,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span>🎩</span>
-          防災×帽祭
-        </h3>
-        {renderProjectSection('bosai-bosai')}
-      </div>
+      {/* 防災×帽祭 アーティスト */}
+      {renderProjectArtists('bosai-bosai')}
 
       {/* 登録情報 */}
       <div
         style={{
-          padding: '20px 24px',
-          background: 'rgba(0,212,255,0.05)',
-          border: '1px solid rgba(0,212,255,0.2)',
-          borderRadius: '12px',
-          fontSize: '13px',
+          padding: '16px 20px',
+          background: 'rgba(100,200,255,0.05)',
+          border: '1px solid rgba(100,200,255,0.15)',
+          borderRadius: '10px',
+          fontSize: '12px',
           color: 'rgba(255,255,255,0.6)',
-          lineHeight: 1.8,
+          lineHeight: 1.7,
         }}
       >
-        <strong style={{ color: '#00d4ff', display: 'block', marginBottom: '8px' }}>
+        <strong style={{ color: '#00d4ff', display: 'block', marginBottom: '6px' }}>
           💡 アーティスト従事登録について
         </strong>
-        <div style={{ marginBottom: '8px' }}>
+        <div>
           レボリストLab および防災×帽祭の公式モデル・ダンサー・パフォーマー・タレントとして従事される方は、運営までお問い合わせください。
-        </div>
-        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
-          ※ 表示順序は運営側で管理しています
         </div>
       </div>
     </section>
