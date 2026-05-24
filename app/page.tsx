@@ -479,6 +479,11 @@ export default function Home() {
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [editTrack, setEditTrack] = useState<Track | null>(null);
 
+  // Playback state
+  const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(null);
+  const [playMode, setPlayMode] = useState<'once' | 'repeat-one' | 'repeat-all'>('once');
+  const [isPlaying, setIsPlaying] = useState(false);
+
   // コメント管理用のState
   const [comments, setComments] = useState<CommentWithUserInfo[]>([]);
   const [commentInput, setCommentInput] = useState("");
@@ -514,6 +519,56 @@ export default function Home() {
     else if (p === "月間") now.setMonth(now.getMonth() - 1);
     else return "2000-01-01T00:00:00Z";
     return now.toISOString();
+  };
+
+  // Playback control functions
+  const handlePlayTrack = (track: Track, index: number) => {
+    setSelectedTrack(track);
+    setSelectedTrackIndex(index);
+    setIsPlaying(true);
+  };
+
+  const handlePlayNext = () => {
+    if (selectedTrackIndex === null || tracks.length === 0) return;
+
+    const nextIndex = selectedTrackIndex + 1;
+    if (nextIndex < tracks.length) {
+      setSelectedTrackIndex(nextIndex);
+      setSelectedTrack(tracks[nextIndex]);
+      setIsPlaying(true);
+    } else {
+      // End of list
+      if (playMode === 'repeat-all') {
+        setSelectedTrackIndex(0);
+        setSelectedTrack(tracks[0]);
+        setIsPlaying(true);
+      } else {
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handlePlayPrevious = () => {
+    if (selectedTrackIndex === null) return;
+
+    if (selectedTrackIndex > 0) {
+      setSelectedTrackIndex(selectedTrackIndex - 1);
+      setSelectedTrack(tracks[selectedTrackIndex - 1]);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTrackEnd = () => {
+    if (playMode === 'repeat-one' && selectedTrackIndex !== null) {
+      // Restart the current song
+      setIsPlaying(true);
+    } else if (playMode === 'once' && selectedTrackIndex !== null) {
+      // Stop after current song
+      setIsPlaying(false);
+    } else if (playMode === 'repeat-all' || playMode === 'repeat-one') {
+      // Play next or restart
+      handlePlayNext();
+    }
   };
 
   const fetchTracks = useCallback(async () => {
@@ -1842,6 +1897,174 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Playback Controls */}
+      {filtered.length > 0 && (
+        <div style={{
+          background: 'rgba(0,212,255,0.05)',
+          border: '1px solid rgba(0,212,255,0.1)',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '20px'
+        }}>
+          {/* Currently playing */}
+          {selectedTrack && selectedTrackIndex !== null ? (
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
+                {isPlaying ? '▶ 再生中' : '⏸ 一時停止'}
+              </div>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#00d4ff',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {selectedTrack.title}
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.5)',
+                marginTop: '4px'
+              }}>
+                {selectedTrack.artist_name}
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              fontSize: '14px',
+              color: 'rgba(255,255,255,0.5)',
+              marginBottom: '20px'
+            }}>
+              再生する曲を選択してください
+            </div>
+          )}
+
+          {/* Playback controls */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+            marginBottom: '20px'
+          }}>
+            {/* Previous button */}
+            <button
+              onClick={handlePlayPrevious}
+              disabled={selectedTrackIndex === null || selectedTrackIndex === 0}
+              style={{
+                padding: '8px 16px',
+                background: selectedTrackIndex === null || selectedTrackIndex === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
+                border: '1px solid rgba(0,212,255,0.3)',
+                borderRadius: '6px',
+                color: selectedTrackIndex === null || selectedTrackIndex === 0 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: selectedTrackIndex === null || selectedTrackIndex === 0 ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              ⏮ 前曲
+            </button>
+
+            {/* Play/Pause button */}
+            <button
+              onClick={() => selectedTrackIndex !== null ? setIsPlaying(!isPlaying) : null}
+              disabled={selectedTrackIndex === null}
+              style={{
+                padding: '8px 16px',
+                background: selectedTrackIndex === null ? 'rgba(255,255,255,0.1)' : isPlaying ? 'rgba(255,45,85,0.2)' : 'rgba(0,212,255,0.2)',
+                border: selectedTrackIndex === null ? '1px solid rgba(255,255,255,0.2)' : isPlaying ? '1px solid rgba(255,45,85,0.3)' : '1px solid rgba(0,212,255,0.3)',
+                borderRadius: '6px',
+                color: selectedTrackIndex === null ? 'rgba(255,255,255,0.3)' : isPlaying ? '#ff2d55' : '#00d4ff',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: selectedTrackIndex === null ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {isPlaying ? '⏸ 一時停止' : '▶ 再生'}
+            </button>
+
+            {/* Next button */}
+            <button
+              onClick={handlePlayNext}
+              disabled={selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1}
+              style={{
+                padding: '8px 16px',
+                background: selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
+                border: '1px solid rgba(0,212,255,0.3)',
+                borderRadius: '6px',
+                color: selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1 ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              次曲 ⏭
+            </button>
+          </div>
+
+          {/* Repeat mode */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={() => setPlayMode('once')}
+              style={{
+                padding: '8px 16px',
+                background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                border: playMode === 'once' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '6px',
+                color: playMode === 'once' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              1曲のみ
+            </button>
+
+            <button
+              onClick={() => setPlayMode('repeat-one')}
+              style={{
+                padding: '8px 16px',
+                background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '6px',
+                color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              🔁 1曲リピート
+            </button>
+
+            <button
+              onClick={() => setPlayMode('repeat-all')}
+              style={{
+                padding: '8px 16px',
+                background: playMode === 'repeat-all' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                border: playMode === 'repeat-all' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '6px',
+                color: playMode === 'repeat-all' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              🔁 全曲リピート
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="ranking-header">
         <span>Ranking</span>
         <span className="ranking-count">{filtered.length}曲</span>
@@ -1867,9 +2090,11 @@ export default function Home() {
               }}
               onClick={() => {
                 if (selectedTrack?.id === track.id) {
-                  setSelectedTrack(null);
+                  // Toggle playback
+                  setIsPlaying(!isPlaying);
                 } else {
-                  setSelectedTrack(track);
+                  // Start playing new track
+                  handlePlayTrack(track, i);
                   // 再生回数カウントは useEffect で自動実行
                 }
               }}

@@ -63,6 +63,11 @@ export default function PlaylistPage() {
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const [dragOverItemId, setDragOverItemId] = useState<number | null>(null);
 
+  // Playback state
+  const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
+  const [playMode, setPlayMode] = useState<'once' | 'repeat-one' | 'repeat-all'>('once');
+  const [isPlaying, setIsPlaying] = useState(false);
+
   // Fetch current user and playlist
   useEffect(() => {
     const fetchData = async () => {
@@ -99,6 +104,52 @@ export default function PlaylistPage() {
       fetchData();
     }
   }, [playlistId]);
+
+  // Playback control functions
+  const handlePlayItem = (index: number) => {
+    setCurrentItemIndex(index);
+    setIsPlaying(true);
+  };
+
+  const handlePlayNext = () => {
+    if (currentItemIndex === null || items.length === 0) return;
+
+    const nextIndex = currentItemIndex + 1;
+    if (nextIndex < items.length) {
+      setCurrentItemIndex(nextIndex);
+      setIsPlaying(true);
+    } else {
+      // End of playlist
+      if (playMode === 'repeat-all') {
+        setCurrentItemIndex(0);
+        setIsPlaying(true);
+      } else {
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handlePlayPrevious = () => {
+    if (currentItemIndex === null) return;
+
+    if (currentItemIndex > 0) {
+      setCurrentItemIndex(currentItemIndex - 1);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTrackEnd = () => {
+    if (playMode === 'repeat-one' && currentItemIndex !== null) {
+      // Restart the current song
+      setIsPlaying(true);
+    } else if (playMode === 'once' && currentItemIndex !== null) {
+      // Stop after current song
+      setIsPlaying(false);
+    } else if (playMode === 'repeat-all' || playMode === 'repeat-one') {
+      // Play next or restart
+      handlePlayNext();
+    }
+  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -535,6 +586,174 @@ export default function PlaylistPage() {
           </div>
         )}
 
+        {/* Playback Controls */}
+        {items.length > 0 && (
+          <div style={{
+            background: 'rgba(0,212,255,0.05)',
+            border: '1px solid rgba(0,212,255,0.1)',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '30px'
+          }}>
+            {/* Currently playing */}
+            {currentItemIndex !== null && currentItemIndex < items.length ? (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
+                  ▶ 再生中
+                </div>
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#00d4ff',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {items[currentItemIndex].title}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'rgba(255,255,255,0.5)',
+                  marginTop: '4px'
+                }}>
+                  {items[currentItemIndex].artist}
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.5)',
+                marginBottom: '20px'
+              }}>
+                再生する曲を選択してください
+              </div>
+            )}
+
+            {/* Playback controls */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              flexWrap: 'wrap',
+              marginBottom: '20px'
+            }}>
+              {/* Previous button */}
+              <button
+                onClick={handlePlayPrevious}
+                disabled={currentItemIndex === null || currentItemIndex === 0}
+                style={{
+                  padding: '8px 16px',
+                  background: currentItemIndex === null || currentItemIndex === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
+                  border: '1px solid rgba(0,212,255,0.3)',
+                  borderRadius: '6px',
+                  color: currentItemIndex === null || currentItemIndex === 0 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: currentItemIndex === null || currentItemIndex === 0 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ⏮ 前曲
+              </button>
+
+              {/* Play/Pause button */}
+              <button
+                onClick={() => currentItemIndex !== null ? setIsPlaying(!isPlaying) : null}
+                disabled={currentItemIndex === null}
+                style={{
+                  padding: '8px 16px',
+                  background: currentItemIndex === null ? 'rgba(255,255,255,0.1)' : isPlaying ? 'rgba(255,45,85,0.2)' : 'rgba(0,212,255,0.2)',
+                  border: currentItemIndex === null ? '1px solid rgba(255,255,255,0.2)' : isPlaying ? '1px solid rgba(255,45,85,0.3)' : '1px solid rgba(0,212,255,0.3)',
+                  borderRadius: '6px',
+                  color: currentItemIndex === null ? 'rgba(255,255,255,0.3)' : isPlaying ? '#ff2d55' : '#00d4ff',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: currentItemIndex === null ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {isPlaying ? '⏸ 一時停止' : '▶ 再生'}
+              </button>
+
+              {/* Next button */}
+              <button
+                onClick={handlePlayNext}
+                disabled={currentItemIndex === null || currentItemIndex >= items.length - 1}
+                style={{
+                  padding: '8px 16px',
+                  background: currentItemIndex === null || currentItemIndex >= items.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
+                  border: '1px solid rgba(0,212,255,0.3)',
+                  borderRadius: '6px',
+                  color: currentItemIndex === null || currentItemIndex >= items.length - 1 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: currentItemIndex === null || currentItemIndex >= items.length - 1 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                次曲 ⏭
+              </button>
+            </div>
+
+            {/* Repeat mode */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <button
+                onClick={() => setPlayMode('once')}
+                style={{
+                  padding: '8px 16px',
+                  background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  border: playMode === 'once' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '6px',
+                  color: playMode === 'once' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                1曲のみ
+              </button>
+
+              <button
+                onClick={() => setPlayMode('repeat-one')}
+                style={{
+                  padding: '8px 16px',
+                  background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '6px',
+                  color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🔁 1曲リピート
+              </button>
+
+              <button
+                onClick={() => setPlayMode('repeat-all')}
+                style={{
+                  padding: '8px 16px',
+                  background: playMode === 'repeat-all' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  border: playMode === 'repeat-all' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '6px',
+                  color: playMode === 'repeat-all' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🔁 全曲リピート
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Add item form */}
         {isOwner && showAddForm && (
           <AddPlaylistItem
@@ -622,7 +841,7 @@ export default function PlaylistPage() {
             display: 'grid',
             gap: '12px'
           }}>
-            {items.map((item) => (
+            {items.map((item, index) => (
               <div
                 key={item.id}
                 draggable={isOwner}
@@ -633,7 +852,7 @@ export default function PlaylistPage() {
                 style={{
                   cursor: isOwner ? 'grab' : 'default',
                   opacity: draggedItemId === item.id ? 0.5 : 1,
-                  backgroundColor: dragOverItemId === item.id ? 'rgba(255, 45, 85, 0.1)' : 'transparent',
+                  backgroundColor: currentItemIndex === index ? 'rgba(0, 212, 255, 0.1)' : dragOverItemId === item.id ? 'rgba(255, 45, 85, 0.1)' : 'transparent',
                   transition: 'all 0.2s ease'
                 }}
               >
@@ -641,6 +860,7 @@ export default function PlaylistPage() {
                   item={item}
                   onDelete={isOwner ? handleDeleteItem : undefined}
                   isDragging={draggedItemId === item.id}
+                  onPlay={() => handlePlayItem(index)}
                 />
               </div>
             ))}

@@ -199,6 +199,31 @@ export function PlaylistItemCard({
             </button>
           )}
 
+          {onPlay && (
+            <button
+              onClick={() => onPlay(item)}
+              style={{
+                padding: '6px 12px',
+                background: 'rgba(0, 212, 255, 0.6)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 600,
+                transition: 'opacity 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.opacity = '1';
+              }}
+            >
+              ▶ 再生
+            </button>
+          )}
+
           {onEdit && (
             <button
               onClick={() => onEdit(item)}
