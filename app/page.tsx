@@ -69,103 +69,20 @@ function formatNumber(n: number) {
 
 // All URL parsing and service detection functions are now imported from EmbedPlayer component
 
-// Component to display SNS links with profile avatars
+// Component to display SNS links with platform icons
 function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, string> }) {
-  const [avatars, setAvatars] = useState<Record<string, string | null>>({});
-
-  useEffect(() => {
-    // Load avatars from cache first
-    const cached = localStorage.getItem('socialAvatarCache');
-    if (cached) {
-      try {
-        setAvatars(JSON.parse(cached));
-        return;
-      } catch (e) {
-        console.error('Failed to parse avatar cache:', e);
-      }
-    }
-
-    // Fetch avatars for all social links
-    const fetchAvatars = async () => {
-      const newAvatars: Record<string, string | null> = {};
-      for (const [platform, url] of Object.entries(socialLinks)) {
-        if (!url) continue;
-
-        try {
-          const res = await fetch('/api/get-social-avatar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url, platform })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            newAvatars[platform] = data.avatarUrl;
-          } else {
-            newAvatars[platform] = null;
-          }
-        } catch (e) {
-          console.error(`Failed to fetch avatar for ${platform}:`, e);
-          newAvatars[platform] = null;
-        }
-      }
-      setAvatars(newAvatars);
-      // Cache avatars
-      localStorage.setItem('socialAvatarCache', JSON.stringify(newAvatars));
+  const getSocialIcon = (platform: string) => {
+    const icons: Record<string, { icon: string; color: string; label: string }> = {
+      'x': { icon: '𝕏', color: '#fff', label: 'X' },
+      'twitter': { icon: '𝕏', color: '#fff', label: 'X' },
+      'instagram': { icon: '📷', color: '#E4405F', label: 'Instagram' },
+      'facebook': { icon: 'f', color: '#1877F2', label: 'Facebook' },
+      'youtube': { icon: '▶️', color: '#FF0000', label: 'YouTube' },
+      'tiktok': { icon: '♪', color: '#25F4EE', label: 'TikTok' },
+      'discord': { icon: '💬', color: '#5865F2', label: 'Discord' },
+      'threads': { icon: '@', color: '#000', label: 'Threads' }
     };
-
-    fetchAvatars();
-  }, [socialLinks]);
-
-  const getSocialSVG = (platform: string) => {
-    const svgs: Record<string, { svg: React.ReactNode; color: string }> = {
-      'x': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
-        color: '#fff'
-      },
-      'twitter': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
-        color: '#fff'
-      },
-      'instagram': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1 1 12.324 0 6.162 6.162 0 0 1-12.324 0zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm4.965-10.322a1.44 1.44 0 1 1 2.881.001 1.44 1.44 0 0 1-2.881-.001z"/></svg>,
-        color: '#E4405F'
-      },
-      'facebook': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>,
-        color: '#1877F2'
-      },
-      'youtube': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>,
-        color: '#FF0000'
-      },
-      'tiktok': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.66 0A2.85 2.85 0 0 1 8.41 9c.72-1.66 2.44-2.84 4.6-2.84v-3.33a6.61 6.61 0 0 0-5.07 2.29A7.73 7.73 0 0 0 5 19.07a7.7 7.7 0 0 0 10.15 7.39A7.73 7.73 0 0 0 20.85 12.9V9.63a9.18 9.18 0 0 0 3.15 1.85v-3.4a5.46 5.46 0 0 1-1.25-.53z"/></svg>,
-        color: '#25F4EE'
-      },
-      'discord': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.607 1.25a18.27 18.27 0 0 0-5.487 0c-.163-.386-.395-.875-.607-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .085-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.042-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.294.075.075 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.075.075 0 0 1 .079.009c.12.098.246.198.373.294a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.076.076 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-4.467.151-8.343-2.118-12.64a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-.965-2.157-2.156 0-1.193.973-2.157 2.157-2.157 1.193 0 2.157.964 2.157 2.157 0 1.19-.964 2.156-2.157 2.156zm7.975 0c-1.183 0-2.157-.965-2.157-2.156 0-1.193.973-2.157 2.157-2.157 1.193 0 2.157.964 2.157 2.157 0 1.19-.965 2.156-2.157 2.156z"/></svg>,
-        color: '#5865F2'
-      },
-      'threads': {
-        svg: <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M12.186 24h-.007c-3.582 0-6.857-1.563-9.011-4.27A9.806 9.806 0 0 1 .5 13.201c0-5.522 4.477-10 10-10s10 4.478 10 10-4.477 10-10 10Zm7.061-19.5A7.994 7.994 0 0 0 12.186 2h-.007a8 8 0 0 0-7.061 4.5m4.167 9.5c0 2.754-2.246 5-5 5s-5-2.246-5-5 2.246-5 5-5 5 2.246 5 5Z"/></svg>,
-        color: '#000'
-      }
-    };
-    return svgs[platform] || { svg: '🔗', color: '#fff' };
-  };
-
-  const getPlatformLabel = (platform: string) => {
-    const labels: Record<string, string> = {
-      'x': 'X',
-      'twitter': 'X',
-      'instagram': 'Instagram',
-      'facebook': 'Facebook',
-      'youtube': 'YouTube',
-      'tiktok': 'TikTok',
-      'discord': 'Discord',
-      'threads': 'Threads'
-    };
-    return labels[platform] || platform;
+    return icons[platform] || { icon: '🔗', color: '#fff', label: platform };
   };
 
   if (Object.keys(socialLinks).length === 0) return null;
@@ -174,8 +91,7 @@ function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, s
     <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
       {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
         if (!url) return null;
-        const avatarUrl = avatars[platform];
-        const sns = getSocialSVG(platform);
+        const icon = getSocialIcon(platform);
 
         return (
           <a
@@ -190,47 +106,25 @@ function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, s
               width: '24px',
               height: '24px',
               borderRadius: '50%',
-              background: avatarUrl ? 'transparent' : 'rgba(255,255,255,0.1)',
-              color: (sns as any).color,
+              background: 'rgba(255,255,255,0.1)',
+              color: icon.color,
+              fontSize: '12px',
               textDecoration: 'none',
               transition: 'all 0.2s',
               border: '1px solid rgba(255,255,255,0.2)',
-              overflow: 'hidden',
               flexShrink: 0
             }}
             onMouseEnter={(e) => {
-              if (!avatarUrl) {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-              }
+              e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
               e.currentTarget.style.transform = 'scale(1.1)';
             }}
             onMouseLeave={(e) => {
-              if (!avatarUrl) {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              }
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
               e.currentTarget.style.transform = 'scale(1)';
             }}
-            title={getPlatformLabel(platform)}
+            title={icon.label}
           >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={getPlatformLabel(platform)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  borderRadius: '50%'
-                }}
-                onError={(e) => {
-                  // Fallback to icon if image fails to load
-                  const img = e.target as HTMLImageElement;
-                  img.style.display = 'none';
-                }}
-              />
-            ) : (
-              (sns as any).svg
-            )}
+            {icon.icon}
           </a>
         );
       })}
@@ -240,50 +134,6 @@ function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, s
 
 // Component for player bar artist follow section
 function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: Record<string, string>; artist_social_url: string | null }) {
-  const [avatars, setAvatars] = useState<Record<string, string | null>>({});
-
-  useEffect(() => {
-    // Load avatars from cache first
-    const cached = localStorage.getItem('socialAvatarCache');
-    if (cached) {
-      try {
-        setAvatars(JSON.parse(cached));
-        return;
-      } catch (e) {
-        console.error('Failed to parse avatar cache:', e);
-      }
-    }
-
-    // Fetch avatars
-    const fetchAvatars = async () => {
-      const newAvatars: Record<string, string | null> = {};
-      for (const [platform, url] of Object.entries(socialLinks)) {
-        if (!url) continue;
-
-        try {
-          const res = await fetch('/api/get-social-avatar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url, platform })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            newAvatars[platform] = data.avatarUrl;
-          } else {
-            newAvatars[platform] = null;
-          }
-        } catch (e) {
-          console.error(`Failed to fetch avatar for ${platform}:`, e);
-          newAvatars[platform] = null;
-        }
-      }
-      setAvatars(newAvatars);
-      localStorage.setItem('socialAvatarCache', JSON.stringify(newAvatars));
-    };
-
-    fetchAvatars();
-  }, [socialLinks]);
-
   const getPlatformLabel = (platform: string) => {
     const labels: Record<string, string> = {
       'x': 'X',
@@ -296,6 +146,20 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
       'threads': 'Threads'
     };
     return labels[platform] || platform;
+  };
+
+  const getSocialIcon = (platform: string) => {
+    const icons: Record<string, string> = {
+      'x': '𝕏',
+      'twitter': '𝕏',
+      'instagram': '📷',
+      'facebook': 'f',
+      'youtube': '▶️',
+      'tiktok': '♪',
+      'discord': '💬',
+      'threads': '@'
+    };
+    return icons[platform] || '🔗';
   };
 
   const hasSocial = Object.keys(socialLinks).length > 0 || artist_social_url;
@@ -313,7 +177,8 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
         {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
           if (!url) return null;
-          const avatarUrl = avatars[platform];
+          const label = getPlatformLabel(platform);
+          const icon = getSocialIcon(platform);
 
           return (
             <a
@@ -339,22 +204,8 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
               onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
               onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
             >
-              {avatarUrl && (
-                <img
-                  src={avatarUrl}
-                  alt={getPlatformLabel(platform)}
-                  style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    objectFit: 'cover'
-                  }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              )}
-              <span style={{ textTransform: "capitalize" }}>{getPlatformLabel(platform)}</span>
+              <span>{icon}</span>
+              <span>{label}</span>
             </a>
           );
         })}
@@ -381,9 +232,7 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
             onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
             onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
           >
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75-3.54c-.3-.38-.77-.62-1.3-.62-.88 0-1.6.72-1.6 1.6 0 .53.24 1 .62 1.3l2.75 3.54c.3.38.77.62 1.3.62.88 0 1.6-.72 1.6-1.6 0-.53-.24-1-.62-1.3z"/></svg>
-            </span>
+            <span>🔗</span>
             <span>プロフィール</span>
           </a>
         )}
