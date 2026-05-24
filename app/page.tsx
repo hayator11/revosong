@@ -1098,10 +1098,10 @@ export default function Home() {
         }
         .track-row {
           display: grid;
-          grid-template-columns: 36px 1fr auto;
+          grid-template-columns: 36px 48px 1fr auto;
           align-items: center;
-          gap: 12px;
-          padding: 13px 14px;
+          gap: 10px;
+          padding: 10px 14px;
           border-radius: 12px;
           opacity: 0;
           cursor: pointer;
