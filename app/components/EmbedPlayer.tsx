@@ -170,61 +170,25 @@ export function EmbedPlayer({
 
   if (isSunoUrl(url)) {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '16px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
-          color: '#00d4ff',
-          textDecoration: 'none',
-          fontSize: 14,
-        }}
-      >
-        <span style={{ fontSize: 24 }}>🎵</span>
-        <div>
-          <div style={{ fontWeight: 700 }}>SUNO</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-            SUNOで再生
-          </div>
-        </div>
-      </a>
+      <iframe
+        width="100%"
+        height={height || 120}
+        src={url}
+        allow="autoplay; encrypted-media"
+        style={{ border: 'none', borderRadius: 12 }}
+      />
     );
   }
 
   if (isMurekaUrl(url)) {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '16px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
-          color: '#00d4ff',
-          textDecoration: 'none',
-          fontSize: 14,
-        }}
-      >
-        <span style={{ fontSize: 24 }}>🎵</span>
-        <div>
-          <div style={{ fontWeight: 700 }}>Mureka</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-            Murekaで再生
-          </div>
-        </div>
-      </a>
+      <iframe
+        width="100%"
+        height={height || 120}
+        src={url}
+        allow="autoplay; encrypted-media"
+        style={{ border: 'none', borderRadius: 12 }}
+      />
     );
   }
 
