@@ -92,42 +92,21 @@ async function fetchYouTubeMetadata(videoId: string): Promise<Partial<ExtractedM
 // Fetch SoundCloud metadata via oEmbed
 async function fetchSoundCloudMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
   try {
-    const oembedUrl = `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-    const response = await fetch(oembedUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-
-    if (!response.ok) {
-      console.error(`SoundCloud oEmbed error: ${response.status}`);
-      return { title: 'SoundCloud Track' };
-    }
-
-    const text = await response.text();
-    if (!text) {
-      console.error('SoundCloud oEmbed returned empty response');
-      return { title: 'SoundCloud Track' };
-    }
-
-    const data = JSON.parse(text);
-
-    // Extract thumbnail from HTML response (SoundCloud includes it in the HTML)
-    let thumbnailUrl: string | null = null;
-    if (data.html) {
-      const match = data.html.match(/https:\/\/i1\.sndcdn\.com\/[^"]+/);
-      if (match) {
-        thumbnailUrl = match[0];
-      }
-    }
+    // Try to extract track ID from URL and use it to build default thumbnail
+    // SoundCloud URL format: https://soundcloud.com/user/track
+    const urlObj = new URL(url);
+    const pathSegments = urlObj.pathname.split('/').filter(p => p);
 
     return {
-      title: data.title || 'Unknown Track',
-      artist: data.author_name || null,
-      thumbnail_url: thumbnailUrl || data.thumbnail_url || null
+      title: pathSegments[pathSegments.length - 1]?.replace(/-/g, ' ') || 'SoundCloud Track',
+      artist: pathSegments[0] || undefined,
+      thumbnail_url: undefined // SoundCloud oEmbed API not reliable for thumbnails
     };
   } catch (error) {
-    console.error('SoundCloud oEmbed error:', error);
+    console.error('SoundCloud metadata extraction error:', error);
     return {
-      title: 'SoundCloud Track'
+      title: 'SoundCloud Track',
+      thumbnail_url: undefined
     };
   }
 }
