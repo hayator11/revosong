@@ -225,14 +225,68 @@ async function fetchSunoMetadata(url: string): Promise<Partial<ExtractedMetadata
 // Parse Mureka URL metadata
 async function fetchMurekaMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
   try {
-    // Mureka URLs format: mureka.ai/{user}/{id} or similar
+    // Mureka URLs format: mureka.ai/create or mureka.ai/song/{id}
     const parts = url.split('/').filter(p => p && !p.includes('?'));
     const title = parts[parts.length - 1]?.replace(/-/g, ' ') || 'Mureka Track';
+
+    // Try to fetch Mureka metadata via oEmbed or API
+    let thumbnailUrl: string | undefined;
+
+    try {
+      // Try Mureka oEmbed API
+      const oembedUrl = `https://mureka.ai/oembed?url=${encodeURIComponent(url)}&format=json`;
+      const response = await fetch(oembedUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+
+      if (response.ok) {
+        const text = await response.text();
+        if (text) {
+          const data = JSON.parse(text);
+          if (data.thumbnail_url) {
+            thumbnailUrl = data.thumbnail_url;
+          } else if (data.thumbnail) {
+            thumbnailUrl = data.thumbnail;
+          } else if (data.image) {
+            thumbnailUrl = data.image;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Mureka oEmbed error:', e);
+      // Continue without thumbnail from API
+    }
+
+    // If no API thumbnail, try to extract from page metadata
+    if (!thumbnailUrl) {
+      try {
+        const pageResponse = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        if (pageResponse.ok) {
+          const html = await pageResponse.text();
+          // Try to find og:image meta tag
+          const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+          if (ogImageMatch) {
+            thumbnailUrl = ogImageMatch[1];
+          }
+          // Try to find twitter:image meta tag
+          if (!thumbnailUrl) {
+            const twitterImageMatch = html.match(/<meta name="twitter:image" content="([^"]+)"/);
+            if (twitterImageMatch) {
+              thumbnailUrl = twitterImageMatch[1];
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Mureka page scraping error:', e);
+      }
+    }
 
     return {
       title: title,
       artist: 'Mureka',
-      thumbnail_url: undefined
+      thumbnail_url: thumbnailUrl
     };
   } catch (error) {
     console.error('Mureka metadata error:', error);
