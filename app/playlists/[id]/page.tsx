@@ -1,13 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
+// Type definitions for SoundCloud Widget
+declare global {
+  interface Window {
+    SC: any;
+  }
+}
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { detectService, parseDefaultMetadata, fetchMetadataFromApi } from '@/lib/playlist-utils';
 import { AddPlaylistItem } from '@/app/components/AddPlaylistItem';
 import { PlaylistItemCard } from '@/app/components/PlaylistItemCard';
-import { EmbedPlayer } from '@/app/components/EmbedPlayer';
+import { EmbedPlayer, getYouTubeId, isSoundCloudUrl } from '@/app/components/EmbedPlayer';
 
 interface Playlist {
   id: number;
@@ -153,6 +160,86 @@ export default function PlaylistPage() {
       handlePlayNext();
     }
   };
+
+  // Setup auto-play for YouTube and SoundCloud
+  useEffect(() => {
+    if (currentItemIndex === null || !items[currentItemIndex]) return;
+    if (!isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) return;
+
+    const item = items[currentItemIndex];
+    const url = item.url || item.external_url;
+
+    if (!url) return;
+
+    // YouTube auto-play detection
+    if (getYouTubeId(url)) {
+      let checkCount = 0;
+      const maxChecks = 120;
+
+      const youtubeCheckInterval = setInterval(() => {
+        checkCount++;
+        const iframes = document.querySelectorAll('iframe');
+        let youtubeIframe: HTMLIFrameElement | null = null;
+
+        for (const iframe of iframes) {
+          if (iframe.src && iframe.src.includes('youtube.com/embed')) {
+            youtubeIframe = iframe;
+            break;
+          }
+        }
+
+        if (!youtubeIframe || checkCount >= maxChecks) {
+          clearInterval(youtubeCheckInterval);
+          if (checkCount >= maxChecks) {
+            handleTrackEnd();
+          }
+        }
+      }, 500);
+
+      return () => clearInterval(youtubeCheckInterval);
+    }
+
+    // SoundCloud auto-play detection
+    if (isSoundCloudUrl(url)) {
+      const setupSoundCloudListener = () => {
+        const iframes = document.querySelectorAll('iframe');
+        let scIframe: HTMLIFrameElement | null = null;
+
+        for (const iframe of iframes) {
+          if (iframe.src && iframe.src.includes('soundcloud.com')) {
+            scIframe = iframe;
+            break;
+          }
+        }
+
+        if (scIframe && window.SC) {
+          try {
+            const widget = window.SC.Widget(scIframe);
+            widget.bind(window.SC.Widget.Events.FINISH, () => {
+              handleTrackEnd();
+            });
+          } catch (e) {
+            setTimeout(() => {
+              if (isPlaying) handleTrackEnd();
+            }, 240000);
+          }
+        } else {
+          setTimeout(() => {
+            if (isPlaying) handleTrackEnd();
+          }, 240000);
+        }
+      };
+
+      if (!window.SC) {
+        const script = document.createElement('script');
+        script.src = 'https://w.soundcloud.com/player/api.js';
+        script.onload = setupSoundCloudListener;
+        document.body.appendChild(script);
+      } else {
+        setupSoundCloudListener();
+      }
+    }
+  }, [currentItemIndex, items, isPlaying, playMode, handleTrackEnd]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();

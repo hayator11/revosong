@@ -6,6 +6,13 @@ import { checkCommentSafety } from "@/lib/comment-filter";
 import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 
+// Type definitions for SoundCloud Widget
+declare global {
+  interface Window {
+    SC: any;
+  }
+}
+
 type Track = {
   id: number;
   user_id: string;
@@ -857,6 +864,96 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [selectedTrack?.id, incrementPlayCount]);
+
+  // Setup auto-play for YouTube and SoundCloud
+  useEffect(() => {
+    if (!selectedTrack || !isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
+      return;
+    }
+
+    const url = selectedTrack.external_url;
+    if (!url) return;
+
+    // YouTube auto-play detection
+    if (getYouTubeId(url)) {
+      let checkCount = 0;
+      const maxChecks = 120; // 60 seconds (500ms * 120)
+
+      const youtubeCheckInterval = setInterval(() => {
+        checkCount++;
+
+        const iframes = document.querySelectorAll('iframe');
+        let youtubeIframe: HTMLIFrameElement | null = null;
+
+        for (const iframe of iframes) {
+          if (iframe.src && iframe.src.includes('youtube.com/embed')) {
+            youtubeIframe = iframe;
+            break;
+          }
+        }
+
+        // Check if iframe is still there (video playing)
+        if (!youtubeIframe || checkCount >= maxChecks) {
+          clearInterval(youtubeCheckInterval);
+          if (checkCount >= maxChecks) {
+            // Timeout - assume video ended
+            handleTrackEnd();
+          }
+        }
+      }, 500);
+
+      return () => clearInterval(youtubeCheckInterval);
+    }
+
+    // SoundCloud auto-play detection
+    if (isSoundCloudUrl(url)) {
+      // SoundCloud widget auto-play detection
+      const setupSoundCloudListener = () => {
+        const iframes = document.querySelectorAll('iframe');
+        let scIframe: HTMLIFrameElement | null = null;
+
+        for (const iframe of iframes) {
+          if (iframe.src && iframe.src.includes('soundcloud.com')) {
+            scIframe = iframe;
+            break;
+          }
+        }
+
+        if (scIframe && window.SC) {
+          try {
+            const widget = window.SC.Widget(scIframe);
+            widget.bind(window.SC.Widget.Events.FINISH, () => {
+              handleTrackEnd();
+            });
+          } catch (e) {
+            // Fallback to timeout (average song length ~4 minutes)
+            setTimeout(() => {
+              if (isPlaying) {
+                handleTrackEnd();
+              }
+            }, 240000); // 4 minutes
+          }
+        } else {
+          // Fallback timeout
+          setTimeout(() => {
+            if (isPlaying) {
+              handleTrackEnd();
+            }
+          }, 240000); // 4 minutes
+        }
+      };
+
+      // Load SoundCloud widget script if needed
+      if (!window.SC) {
+        const script = document.createElement('script');
+        script.src = 'https://w.soundcloud.com/player/api.js';
+        script.onload = setupSoundCloudListener;
+        document.body.appendChild(script);
+      } else {
+        setupSoundCloudListener();
+      }
+    }
+  }, [selectedTrack?.external_url, isPlaying, playMode, handleTrackEnd]);
 
   // Helper function to detect music type (audio/video) based on URL
   const getMusicContentType = (track: Track): string => {
