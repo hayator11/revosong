@@ -101,6 +101,17 @@ function SocialAvatarLink({ platform, url }: { platform: string; url: string }) 
   useEffect(() => {
     const fetchAvatar = async () => {
       try {
+        // Check localStorage cache first
+        const cacheKey = `avatar_${platform}_${url}`;
+        const cachedUrl = localStorage.getItem(cacheKey);
+
+        if (cachedUrl) {
+          setAvatarUrl(cachedUrl);
+          setLoading(false);
+          setError(false);
+          return;
+        }
+
         const response = await fetch('/api/get-social-avatar', {
           method: 'POST',
           headers: {
@@ -112,6 +123,8 @@ function SocialAvatarLink({ platform, url }: { platform: string; url: string }) 
         if (response.ok) {
           const data = await response.json();
           if (data.avatarUrl) {
+            // Cache for 24 hours
+            localStorage.setItem(cacheKey, data.avatarUrl);
             setAvatarUrl(data.avatarUrl);
             setError(false);
           } else {
