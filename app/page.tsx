@@ -304,12 +304,22 @@ export default function Home() {
           if (profileData?.youtube_url) social_links['youtube'] = profileData.youtube_url;
           if (profileData?.discord_url) social_links['discord'] = profileData.discord_url;
 
+          // YouTubeのサムネイル自動抽出
+          let photoUrl = t.photo_url;
+          if (!photoUrl && t.external_url) {
+            const ytId = getYouTubeId(t.external_url as string);
+            if (ytId) {
+              photoUrl = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+            }
+          }
+
           return {
             ...t,
             liked: likedIds.includes(t.id as number),
             username: profileData?.username,
             comment_count: commentCount || 0,
-            social_links: social_links
+            social_links: social_links,
+            photo_url: photoUrl
           };
         })
       );
