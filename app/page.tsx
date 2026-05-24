@@ -444,6 +444,7 @@ export default function Home() {
 
     if (trackData && trackData.length > 0) {
       console.log("Sample track data:", trackData[0]);
+      console.log("Social links in first track:", (trackData[0] as any).social_links);
     }
 
     if (trackData) {
