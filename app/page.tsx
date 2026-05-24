@@ -1446,6 +1446,7 @@ export default function Home() {
             <a href="/information" className="menu-link">Information</a>
             <a href="/playlists" className="menu-link">Playlist</a>
           </div>
+          {/* Navigation menu updated */}
           {user ? (
             <>
               <button className="btn-upload" onClick={() => setShowUpload(true)}>
