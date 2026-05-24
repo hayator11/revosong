@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArtistsSection } from "@/app/information/artists-section";
 
 export const metadata: Metadata = {
   title: "運営情報 | MUSIC CHARTS REVOSONG - おのくんのエコシステム",
@@ -117,6 +118,9 @@ export default function InformationPage() {
             </div>
           </div>
         </section>
+
+        {/* レボハットアーティスト一覧 */}
+        <ArtistsSection />
 
         {/* レボリストLab - 幹 */}
         <section style={{ background: "rgba(255,165,0,0.08)", border: "1px solid rgba(255,165,0,0.2)", borderRadius: "16px", padding: "28px 24px", marginBottom: "48px" }}>
