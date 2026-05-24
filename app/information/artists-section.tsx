@@ -290,7 +290,6 @@ export function ArtistsSection() {
                   width: '100px',
                   height: '100px',
                   objectFit: 'cover',
-                  opacity: 0.5,
                 }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
