@@ -10,6 +10,7 @@ type Artist = {
   project: 'revolist-lab' | 'bosai-bosai';
   photo_url: string | null;
   x_handle: string | null;
+  order: number;
   created_at: string;
 };
 
@@ -21,10 +22,10 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_COLORS = {
-  model: { border: 'rgba(255,192,203,0.3)', bg: 'rgba(255,192,203,0.05)', color: '#ffc0cb' },
-  dancer: { border: 'rgba(100,200,255,0.3)', bg: 'rgba(100,200,255,0.05)', color: '#64c8ff' },
-  performer: { border: 'rgba(138,43,226,0.3)', bg: 'rgba(138,43,226,0.05)', color: '#8a2be2' },
-  talent: { border: 'rgba(255,165,0,0.3)', bg: 'rgba(255,165,0,0.05)', color: '#ffa500' },
+  model: { border: 'rgba(255,192,203,0.3)', color: '#ffc0cb' },
+  dancer: { border: 'rgba(100,200,255,0.3)', color: '#64c8ff' },
+  performer: { border: 'rgba(138,43,226,0.3)', color: '#8a2be2' },
+  talent: { border: 'rgba(255,165,0,0.3)', color: '#ffa500' },
 };
 
 export function ArtistsSection() {
@@ -37,7 +38,7 @@ export function ArtistsSection() {
         const { data, error } = await supabase
           .from('artists')
           .select('*')
-          .order('created_at', { ascending: true });
+          .order('order', { ascending: true });
 
         if (error) {
           console.error('アーティスト取得エラー:', error);
@@ -54,58 +55,94 @@ export function ArtistsSection() {
     fetchArtists();
   }, []);
 
-  const revolistLabArtists = artists.filter(a => a.project === 'revolist-lab');
-  const bosaiArtists = artists.filter(a => a.project === 'bosai-bosai');
+  const renderProjectSection = (project: 'revolist-lab' | 'bosai-bosai') => {
+    const projectArtists = artists.filter(a => a.project === project);
 
-  const renderArtistGrid = (projectArtists: Artist[]) => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
+          読み込み中...
+        </div>
+      );
+    }
+
+    if (projectArtists.length === 0) {
+      return (
+        <div
+          style={{
+            padding: '48px 32px',
+            textAlign: 'center',
+            color: 'rgba(255,255,255,0.4)',
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: '12px',
+            border: '1px dashed rgba(255,255,255,0.1)',
+          }}
+        >
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎭</div>
+          <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '6px' }}>
+            公式アーティスト掲載予定
+          </div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
+            公式モデル・ダンサー・パフォーマー・タレント<br />
+            今後、順次掲載予定です
+          </div>
+        </div>
+      );
+    }
+
+    // カテゴリーごとにグループ化
     const categories = ['model', 'dancer', 'performer', 'talent'] as const;
+    const categoryGroups = categories.map(cat => ({
+      category: cat,
+      artists: projectArtists.filter(a => a.category === cat),
+    })).filter(g => g.artists.length > 0);
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-        {categories.map(category => {
-          const categoryArtists = projectArtists.filter(a => a.category === category);
-          if (categoryArtists.length === 0) return null;
-
-          const colors = CATEGORY_COLORS[category];
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
+        {categoryGroups.map(group => {
+          const colors = CATEGORY_COLORS[group.category];
           return (
-            <div
-              key={category}
-              style={{
-                border: `1px solid ${colors.border}`,
-                background: colors.bg,
-                borderRadius: '12px',
-                padding: '16px',
-              }}
-            >
+            <div key={group.category}>
               <h4
                 style={{
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: 700,
                   color: colors.color,
                   marginBottom: '16px',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
                 }}
               >
-                {CATEGORY_LABELS[category]}
+                {CATEGORY_LABELS[group.category]}
               </h4>
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-                  gap: '12px',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '20px',
                 }}
               >
-                {categoryArtists.map(artist => (
+                {group.artists.map(artist => (
                   <div
                     key={artist.id}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '8px',
-                      padding: '12px',
+                      gap: '12px',
+                      padding: '16px',
                       background: 'rgba(255,255,255,0.03)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      border: `1px solid ${colors.border}`,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.borderColor = colors.color;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                      e.currentTarget.style.borderColor = colors.border;
                     }}
                   >
                     {artist.photo_url ? (
@@ -113,24 +150,28 @@ export function ArtistsSection() {
                         src={artist.photo_url}
                         alt={artist.name}
                         style={{
-                          width: '80px',
-                          height: '80px',
+                          width: '100px',
+                          height: '100px',
                           borderRadius: '50%',
                           objectFit: 'cover',
-                          border: `2px solid ${colors.color}`,
+                          border: `3px solid ${colors.color}`,
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
                         }}
                       />
                     ) : (
                       <div
                         style={{
-                          width: '80px',
-                          height: '80px',
+                          width: '100px',
+                          height: '100px',
                           borderRadius: '50%',
-                          background: 'rgba(255,255,255,0.1)',
+                          background: `linear-gradient(135deg, ${colors.color}22, ${colors.color}11)`,
+                          border: `3px solid ${colors.color}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '32px',
+                          fontSize: '40px',
                         }}
                       >
                         🎭
@@ -138,11 +179,10 @@ export function ArtistsSection() {
                     )}
                     <div
                       style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
+                        fontSize: '14px',
+                        fontWeight: 700,
                         color: '#fff',
                         textAlign: 'center',
-                        wordBreak: 'break-word',
                       }}
                     >
                       {artist.name}
@@ -156,18 +196,28 @@ export function ArtistsSection() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
+                          gap: '6px',
+                          padding: '6px 12px',
                           background: 'rgba(0,0,0,0.3)',
-                          borderRadius: '50%',
+                          borderRadius: '20px',
                           color: '#fff',
-                          fontSize: '14px',
+                          fontSize: '12px',
+                          fontWeight: 600,
                           textDecoration: 'none',
                           transition: 'all 0.2s',
+                          border: '1px solid rgba(255,255,255,0.2)',
                         }}
-                        title={`@${artist.x_handle}`}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = colors.color;
+                          e.currentTarget.style.borderColor = colors.color;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                        }}
                       >
-                        𝕏
+                        <span>𝕏</span>
+                        <span>@{artist.x_handle}</span>
                       </a>
                     )}
                   </div>
@@ -187,111 +237,75 @@ export function ArtistsSection() {
           fontSize: '24px',
           fontWeight: 700,
           color: '#fff',
-          marginBottom: '20px',
+          marginBottom: '32px',
         }}
       >
         🎩 レボハットアーティスト一覧
       </h2>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
-          読み込み中...
-        </div>
-      ) : (
-        <>
-          {/* レボリストLab */}
-          <div style={{ marginBottom: '40px' }}>
-            <h3
-              style={{
-                fontSize: '18px',
-                fontWeight: 700,
-                color: '#ffa500',
-                marginBottom: '16px',
-                paddingBottom: '12px',
-                borderBottom: '1px solid rgba(255,165,0,0.2)',
-              }}
-            >
-              🔬 レボリストLab
-            </h3>
-            {revolistLabArtists.length === 0 ? (
-              <div
-                style={{
-                  padding: '32px 16px',
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.4)',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '12px',
-                  border: '1px dashed rgba(255,255,255,0.1)',
-                }}
-              >
-                <div style={{ fontSize: '28px', marginBottom: '8px' }}>📋</div>
-                <div style={{ fontSize: '14px' }}>
-                  公式アーティスト登録予定<br />
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
-                    今後、公式モデル・ダンサー・パフォーマー・タレントを掲載予定です
-                  </span>
-                </div>
-              </div>
-            ) : (
-              renderArtistGrid(revolistLabArtists)
-            )}
-          </div>
+      {/* レボリストLab */}
+      <div style={{ marginBottom: '48px' }}>
+        <h3
+          style={{
+            fontSize: '18px',
+            fontWeight: 700,
+            color: '#ffa500',
+            marginBottom: '20px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid rgba(255,165,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>🔬</span>
+          レボリストLab
+        </h3>
+        {renderProjectSection('revolist-lab')}
+      </div>
 
-          {/* 防災×帽祭 */}
-          <div>
-            <h3
-              style={{
-                fontSize: '18px',
-                fontWeight: 700,
-                color: '#dc143c',
-                marginBottom: '16px',
-                paddingBottom: '12px',
-                borderBottom: '1px solid rgba(220,20,60,0.2)',
-              }}
-            >
-              🎩 防災×帽祭
-            </h3>
-            {bosaiArtists.length === 0 ? (
-              <div
-                style={{
-                  padding: '32px 16px',
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.4)',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '12px',
-                  border: '1px dashed rgba(255,255,255,0.1)',
-                }}
-              >
-                <div style={{ fontSize: '28px', marginBottom: '8px' }}>📋</div>
-                <div style={{ fontSize: '14px' }}>
-                  公式アーティスト登録予定<br />
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
-                    今後、公式モデル・ダンサー・パフォーマー・タレントを掲載予定です
-                  </span>
-                </div>
-              </div>
-            ) : (
-              renderArtistGrid(bosaiArtists)
-            )}
-          </div>
-        </>
-      )}
+      {/* 防災×帽祭 */}
+      <div style={{ marginBottom: '40px' }}>
+        <h3
+          style={{
+            fontSize: '18px',
+            fontWeight: 700,
+            color: '#dc143c',
+            marginBottom: '20px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid rgba(220,20,60,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>🎩</span>
+          防災×帽祭
+        </h3>
+        {renderProjectSection('bosai-bosai')}
+      </div>
 
       {/* 登録情報 */}
       <div
         style={{
-          marginTop: '32px',
-          padding: '16px',
+          padding: '20px 24px',
           background: 'rgba(0,212,255,0.05)',
           border: '1px solid rgba(0,212,255,0.2)',
           borderRadius: '12px',
           fontSize: '13px',
           color: 'rgba(255,255,255,0.6)',
-          lineHeight: 1.6,
+          lineHeight: 1.8,
         }}
       >
-        <strong style={{ color: '#00d4ff' }}>💡 従事登録について</strong><br />
-        レボリストLab および防災×帽祭の公式モデル・ダンサー・パフォーマー・タレントとして従事される方は、運営までお問い合わせください。プロフィール画像とXアカウントをご登録いただくと、このページに掲載されます。
+        <strong style={{ color: '#00d4ff', display: 'block', marginBottom: '8px' }}>
+          💡 アーティスト従事登録について
+        </strong>
+        <div style={{ marginBottom: '8px' }}>
+          レボリストLab および防災×帽祭の公式モデル・ダンサー・パフォーマー・タレントとして従事される方は、運営までお問い合わせください。
+        </div>
+        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+          ※ 表示順序は運営側で管理しています
+        </div>
       </div>
     </section>
   );
