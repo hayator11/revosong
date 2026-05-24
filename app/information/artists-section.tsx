@@ -28,6 +28,24 @@ const CATEGORY_COLORS = {
   talent: { border: 'rgba(255,165,0,0.3)', color: '#ffa500' },
 };
 
+const PROJECT_LOGOS = {
+  'revolist-lab': '/revolist-lab-logo.png',
+  'bosai-bosai': '/bosai-bosai-logo.png',
+};
+
+// 3人ずつのグループに分割し、足りない場合はプレースホルダーを追加
+const padArtistsToGrid = (artists: Artist[]): (Artist | null)[] => {
+  const padded: (Artist | null)[] = [...artists];
+  const remainder = padded.length % 3;
+  if (remainder !== 0) {
+    const padding = 3 - remainder;
+    for (let i = 0; i < padding; i++) {
+      padded.push(null);
+    }
+  }
+  return padded;
+};
+
 export function ArtistsSection() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +119,8 @@ export function ArtistsSection() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
         {categoryGroups.map(group => {
           const colors = CATEGORY_COLORS[group.category];
+          const paddedArtists = padArtistsToGrid(group.artists);
+
           return (
             <div key={group.category}>
               <h4
@@ -122,106 +142,166 @@ export function ArtistsSection() {
                   gap: '20px',
                 }}
               >
-                {group.artists.map(artist => (
-                  <div
-                    key={artist.id}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '16px',
-                      background: 'rgba(255,255,255,0.03)',
-                      borderRadius: '12px',
-                      border: `1px solid ${colors.border}`,
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                      e.currentTarget.style.borderColor = colors.color;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                      e.currentTarget.style.borderColor = colors.border;
-                    }}
-                  >
-                    {artist.photo_url ? (
-                      <img
-                        src={artist.photo_url}
-                        alt={artist.name}
-                        style={{
-                          width: '100px',
-                          height: '100px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: `3px solid ${colors.color}`,
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
+                {paddedArtists.map((artist, idx) => {
+                  if (!artist) {
+                    // プレースホルダー（準備中）
+                    return (
                       <div
+                        key={`placeholder-${idx}`}
                         style={{
-                          width: '100px',
-                          height: '100px',
-                          borderRadius: '50%',
-                          background: `linear-gradient(135deg, ${colors.color}22, ${colors.color}11)`,
-                          border: `3px solid ${colors.color}`,
                           display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '40px',
+                          gap: '12px',
+                          padding: '16px',
+                          background: 'rgba(255,255,255,0.02)',
+                          borderRadius: '12px',
+                          border: `1px solid rgba(255,255,255,0.1)`,
                         }}
                       >
-                        🎭
+                        <div
+                          style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.06)',
+                            border: `3px solid ${colors.color}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <img
+                            src={PROJECT_LOGOS[project]}
+                            alt="準備中"
+                            style={{
+                              width: '60px',
+                              height: '60px',
+                              objectFit: 'contain',
+                              opacity: 0.5,
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: 'rgba(255,255,255,0.4)',
+                            textAlign: 'center',
+                          }}
+                        >
+                          準備中
+                        </div>
                       </div>
-                    )}
+                    );
+                  }
+
+                  // アーティスト表示
+                  return (
                     <div
+                      key={artist.id}
                       style={{
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        color: '#fff',
-                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '16px',
+                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: '12px',
+                        border: `1px solid ${colors.border}`,
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.borderColor = colors.color;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                        e.currentTarget.style.borderColor = colors.border;
                       }}
                     >
-                      {artist.name}
-                    </div>
-                    {artist.x_handle && (
-                      <a
-                        href={`https://x.com/${artist.x_handle}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      {artist.photo_url ? (
+                        <img
+                          src={artist.photo_url}
+                          alt={artist.name}
+                          style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: `3px solid ${colors.color}`,
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '50%',
+                            background: `linear-gradient(135deg, ${colors.color}22, ${colors.color}11)`,
+                            border: `3px solid ${colors.color}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '40px',
+                          }}
+                        >
+                          🎭
+                        </div>
+                      )}
+                      <div
                         style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          background: 'rgba(0,0,0,0.3)',
-                          borderRadius: '20px',
+                          fontSize: '14px',
+                          fontWeight: 700,
                           color: '#fff',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          textDecoration: 'none',
-                          transition: 'all 0.2s',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = colors.color;
-                          e.currentTarget.style.borderColor = colors.color;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                          textAlign: 'center',
                         }}
                       >
-                        <span>𝕏</span>
-                        <span>@{artist.x_handle}</span>
-                      </a>
-                    )}
-                  </div>
-                ))}
+                        {artist.name}
+                      </div>
+                      {artist.x_handle && (
+                        <a
+                          href={`https://x.com/${artist.x_handle}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            padding: '6px 12px',
+                            background: 'rgba(0,0,0,0.3)',
+                            borderRadius: '20px',
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            transition: 'all 0.2s',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = colors.color;
+                            e.currentTarget.style.borderColor = colors.color;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                          }}
+                        >
+                          <span>𝕏</span>
+                          <span>@{artist.x_handle}</span>
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
