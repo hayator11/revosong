@@ -559,12 +559,32 @@ export default function Home() {
             .select("*", { count: "exact", head: true })
             .eq("track_id", t.id as number);
 
-          // YouTubeのサムネイル自動抽出
+          // サムネイル自動抽出（YouTube, SoundCloud等）
           let photoUrl = t.photo_url;
           if (!photoUrl && t.external_url) {
-            const ytId = getYouTubeId(t.external_url as string);
+            const externalUrl = t.external_url as string;
+
+            // YouTubeのサムネイル自動抽出
+            const ytId = getYouTubeId(externalUrl);
             if (ytId) {
               photoUrl = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+            }
+
+            // SoundCloudのサムネイル自動抽出
+            if (!photoUrl && externalUrl.includes('soundcloud.com')) {
+              try {
+                const scResponse = await fetch('/api/extract-metadata', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: externalUrl })
+                });
+                const scData = await scResponse.json();
+                if (scData.thumbnail_url) {
+                  photoUrl = scData.thumbnail_url;
+                }
+              } catch (err) {
+                console.error('SoundCloud thumbnail fetch error:', err);
+              }
             }
           }
 
