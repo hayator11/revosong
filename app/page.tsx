@@ -2337,6 +2337,7 @@ function UploadModal({
     prompt: "",
     external_url: "",
     artist_social_url: "",
+    copyright_acknowledged: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -2397,11 +2398,17 @@ function UploadModal({
           <div style={{ fontWeight: 700, color: "#ff6482", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
             ⚠️ 著作権に関する重要なお知らせ
           </div>
-          <p style={{ margin: "0 0 6px 0", fontSize: "11px" }}>
-            <strong>著作権のある既存楽曲の投稿は厳禁です。</strong>AI生成楽曲またはご自身が著作権を保有するオリジナル楽曲のみ投稿可能です。
+          <p style={{ margin: "0 0 8px 0", fontSize: "11px" }}>
+            <strong>著作権のある既存楽曲の投稿は厳禁です。</strong>
           </p>
-          <p style={{ margin: 0, fontSize: "11px", color: "rgba(255,255,255,0.9)" }}>
-            違反が判明した場合、予告なく削除されます。投稿者が著作権侵害の責任を負います。
+          <p style={{ margin: "0 0 8px 0", fontSize: "11px" }}>
+            AI生成楽曲またはご自身が著作権を保有するオリジナル楽曲のみ投稿可能です。
+          </p>
+          <p style={{ margin: "0 0 8px 0", fontSize: "11px", color: "#ffb3ba" }}>
+            ⚠️ 著作権侵害の疑いがある楽曲を投稿した場合、<strong>運営サイドで予告なく削除される可能性があります。</strong>
+          </p>
+          <p style={{ margin: 0, fontSize: "11px", color: "rgba(255,255,255,0.85)" }}>
+            違反が判明した場合の責任は投稿者が負担します。必ず著作権を確認してから投稿してください。
           </p>
         </div>
 
@@ -2504,6 +2511,42 @@ function UploadModal({
           あなたの Twitter/X、YouTube、Spotify などのプロフィールリンクを貼ると、リスナーがあなたをフォロー・応援できます
         </div>
 
+        {/* 著作権確認チェックボックス */}
+        <div style={{
+          background: "rgba(255,69,0,0.1)",
+          border: "1px solid rgba(255,69,0,0.3)",
+          borderRadius: "8px",
+          padding: "14px",
+          marginTop: "24px",
+          marginBottom: "20px"
+        }}>
+          <label style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "12px",
+            cursor: "pointer",
+            fontSize: "13px",
+            color: "#fff",
+            lineHeight: 1.5
+          }}>
+            <input
+              type="checkbox"
+              checked={form.copyright_acknowledged}
+              onChange={(e) => update("copyright_acknowledged", e.target.checked ? "true" : "false")}
+              style={{
+                marginTop: "3px",
+                width: "18px",
+                height: "18px",
+                cursor: "pointer",
+                accentColor: "#ff4500"
+              }}
+            />
+            <span>
+              <strong>著作権確認：</strong> この楽曲は、AI生成楽曲またはご自身が著作権を保有するオリジナル楽曲であることを確認しました。著作権侵害がある場合、運営サイドで予告なく削除される可能性があることに同意します。
+            </span>
+          </label>
+        </div>
+
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
           <button className="btn-cancel" onClick={onClose} style={{ flex: 1 }}>
             キャンセル
@@ -2511,8 +2554,9 @@ function UploadModal({
           <button
             className="btn-primary"
             onClick={handleSubmit}
-            disabled={!form.title || !form.artist_name || submitting}
+            disabled={!form.title || !form.artist_name || form.copyright_acknowledged !== "true" || submitting}
             style={{ flex: 1 }}
+            title={form.copyright_acknowledged !== "true" ? "著作権の確認チェックボックスにチェックしてください" : ""}
           >
             {submitting ? "投稿中..." : "投稿する 🎵"}
           </button>
