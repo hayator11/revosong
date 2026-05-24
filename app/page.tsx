@@ -579,8 +579,12 @@ export default function Home() {
                   body: JSON.stringify({ url: externalUrl })
                 });
                 const scData = await scResponse.json();
+                console.log(`SoundCloud metadata for ${externalUrl}:`, scData);
                 if (scData.thumbnail_url) {
                   photoUrl = scData.thumbnail_url;
+                  console.log(`✓ SoundCloud thumbnail found: ${photoUrl}`);
+                } else {
+                  console.warn(`⚠ SoundCloud thumbnail_url not found in response`);
                 }
               } catch (err) {
                 console.error('SoundCloud thumbnail fetch error:', err);
