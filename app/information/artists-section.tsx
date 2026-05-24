@@ -29,7 +29,7 @@ const CATEGORY_COLORS = {
 };
 
 const PROJECT_LOGOS = {
-  'revolist-lab': '/revolislab.jpg',
+  'revolist-lab': '/revolist-lab.jpg',
   'bosai-bosai': '/bosai-bosai-logo.png',
 };
 
