@@ -25,6 +25,7 @@ type Track = {
   social_links?: Record<string, string>;
   username?: string | null;
   comment_count?: number;
+  photo_url?: string | null;
 };
 
 type Comment = {
@@ -277,13 +278,13 @@ export default function Home() {
         );
       }
 
-      // ユーザー名とコメント数を取得
+      // ユーザー名、SNSリンク、コメント数を取得
       const tracksWithExtra = await Promise.all(
         trackData.map(async (t: Record<string, unknown>) => {
-          // ユーザー名を取得
+          // プロフィール情報を取得（ユーザー名、SNSリンク）
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("username")
+            .select("username, twitter_url, instagram_url, facebook_url, threads_url, tiktok_url, youtube_url, discord_url")
             .eq("id", t.user_id as string)
             .single();
 
@@ -293,11 +294,22 @@ export default function Home() {
             .select("*", { count: "exact", head: true })
             .eq("track_id", t.id as number);
 
+          // SNSリンクをオブジェクトに変換
+          const social_links: Record<string, string> = {};
+          if (profileData?.twitter_url) social_links['x'] = profileData.twitter_url;
+          if (profileData?.instagram_url) social_links['instagram'] = profileData.instagram_url;
+          if (profileData?.facebook_url) social_links['facebook'] = profileData.facebook_url;
+          if (profileData?.threads_url) social_links['threads'] = profileData.threads_url;
+          if (profileData?.tiktok_url) social_links['tiktok'] = profileData.tiktok_url;
+          if (profileData?.youtube_url) social_links['youtube'] = profileData.youtube_url;
+          if (profileData?.discord_url) social_links['discord'] = profileData.discord_url;
+
           return {
             ...t,
             liked: likedIds.includes(t.id as number),
             username: profileData?.username,
             comment_count: commentCount || 0,
+            social_links: social_links
           };
         })
       );
@@ -1582,6 +1594,22 @@ export default function Home() {
               ) : (
                 <span className="rank-num">{i + 1}</span>
               )}
+
+              {/* Thumbnail */}
+              {track.photo_url && (
+                <img
+                  src={track.photo_url}
+                  alt={track.title}
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '6px',
+                    objectFit: 'cover',
+                    flexShrink: 0
+                  }}
+                />
+              )}
+
               <div style={{ minWidth: 0 }}>
                 <div className={`track-title ${selectedTrack?.id === track.id ? "track-title-playing" : ""}`}>
                   {track.title}
@@ -1610,6 +1638,66 @@ export default function Home() {
                   <span className={track.music_type === "ai" ? "type-badge-ai" : "type-badge-original"}>
                     {track.music_type === "ai" ? "AI" : "Original"}
                   </span>
+
+                  {/* Artist Social Links */}
+                  {(() => {
+                    const socialLinks = (track as any).social_links || {};
+                    const hasSocial = Object.keys(socialLinks).length > 0;
+                    if (!hasSocial) return null;
+
+                    const snsIcons: Record<string, { icon: string; color: string }> = {
+                      'x': { icon: '𝕏', color: '#000' },
+                      'instagram': { icon: '📷', color: '#E4405F' },
+                      'facebook': { icon: '📘', color: '#1877F2' },
+                      'threads': { icon: '@', color: '#000' },
+                      'tiktok': { icon: '♪', color: '#25F4EE' },
+                      'youtube': { icon: '▶️', color: '#FF0000' },
+                      'discord': { icon: '💬', color: '#5865F2' },
+                      'twitter': { icon: '𝕏', color: '#000' }
+                    };
+
+                    return (
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
+                          if (!url) return null;
+                          const sns = snsIcons[platform] || { icon: '🔗', color: '#fff' };
+                          return (
+                            <a
+                              key={platform}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                background: 'rgba(255,255,255,0.1)',
+                                color: sns.color,
+                                fontSize: '12px',
+                                textDecoration: 'none',
+                                transition: 'all 0.2s',
+                                border: '1px solid rgba(255,255,255,0.2)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }}
+                              title={platform}
+                            >
+                              {sns.icon}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <button
