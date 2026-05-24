@@ -1644,22 +1644,22 @@ export default function Home() {
                     const hasSocial = Object.keys(socialLinks).length > 0;
                     if (!hasSocial) return null;
 
-                    const snsIcons: Record<string, { icon: string; color: string }> = {
-                      'x': { icon: '𝕏', color: '#000' },
-                      'instagram': { icon: '📷', color: '#E4405F' },
-                      'facebook': { icon: '📘', color: '#1877F2' },
-                      'threads': { icon: '@', color: '#000' },
-                      'tiktok': { icon: '♪', color: '#25F4EE' },
-                      'youtube': { icon: '▶️', color: '#FF0000' },
-                      'discord': { icon: '💬', color: '#5865F2' },
-                      'twitter': { icon: '𝕏', color: '#000' }
+                    const snsIcons: Record<string, { icon: string; color: string; label: string }> = {
+                      'x': { icon: '𝕏', color: '#000', label: 'X' },
+                      'instagram': { icon: '📷', color: '#E4405F', label: 'Instagram' },
+                      'facebook': { icon: '📘', color: '#1877F2', label: 'Facebook' },
+                      'threads': { icon: '@', color: '#000', label: 'Threads' },
+                      'tiktok': { icon: '♪', color: '#25F4EE', label: 'TikTok' },
+                      'youtube': { icon: '▶️', color: '#FF0000', label: 'YouTube' },
+                      'discord': { icon: '💬', color: '#5865F2', label: 'Discord' },
+                      'twitter': { icon: '𝕏', color: '#000', label: 'X' }
                     };
 
                     return (
                       <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
                         {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
                           if (!url) return null;
-                          const sns = snsIcons[platform] || { icon: '🔗', color: '#fff' };
+                          const sns = snsIcons[platform] || { icon: '🔗', color: '#fff', label: platform };
                           return (
                             <a
                               key={platform}
@@ -1688,7 +1688,7 @@ export default function Home() {
                                 e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
                                 e.currentTarget.style.transform = 'scale(1)';
                               }}
-                              title={platform}
+                              title={sns.label}
                             >
                               {sns.icon}
                             </a>
