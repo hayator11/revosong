@@ -15,14 +15,14 @@ export default function InformationPage() {
           ← トップページへ戻る
         </Link>
 
-        <h1 style={{ fontSize: "36px", fontWeight: 700, color: "#fff", marginBottom: "12px", letterSpacing: "2px", textAlign: "center" }}>🚀 運営情報</h1>
+        <h1 style={{ fontSize: "36px", fontWeight: 700, color: "#fff", marginBottom: "12px", letterSpacing: "2px", textAlign: "center" }}>🚀 Information</h1>
         <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, marginBottom: "40px", textAlign: "center" }}>
           REVOSONG、レボリストシリーズ、そしておのくんの社会貢献活動について
         </p>
 
         {/* エコシステム図解 */}
         <div style={{ marginBottom: "48px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <img src="/revosong-ecosystem.jpg" alt="REVOSONG エコシステム図解 - おのくんのルーツから展開する社会貢献プロジェクト群" style={{ width: "100%", maxWidth: "700px", height: "auto", borderRadius: "12px" }} />
+          <img src="/revosong-ecosystem.png" alt="REVOSONG エコシステム図解 - おのくんのルーツから展開する社会貢献プロジェクト群" style={{ width: "100%", maxWidth: "700px", height: "auto", borderRadius: "12px" }} />
         </div>
 
         {/* REVOSONG - 共有のプラットフォーム */}
