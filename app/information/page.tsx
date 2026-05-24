@@ -107,7 +107,7 @@ export default function InformationPage() {
                 <a href="https://revolist.earth/bosai-bosai" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(220,20,60,0.2)", border: "1px solid rgba(220,20,60,0.4)", borderRadius: "6px", color: "#dc143c", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   公式サイト
                 </a>
-                <a href="https://x.com/bosai_bosai" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                <a href="https://x.com/Bosai_Bosai_" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   𝕏 防災×帽祭
                 </a>
                 <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
@@ -132,7 +132,7 @@ export default function InformationPage() {
             <a href="https://revolist.earth/revolist-lab" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(255,165,0,0.15)", border: "1px solid rgba(255,165,0,0.3)", borderRadius: "8px", color: "#ffa500", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
               🌐 公式サイト
             </a>
-            <a href="https://x.com/revolist_lab" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
+            <a href="https://x.com/REVOLIST11" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
               𝕏 レボリストLab
             </a>
             <a href="https://x.com/Hayator" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
