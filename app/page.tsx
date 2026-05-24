@@ -435,8 +435,16 @@ export default function Home() {
   const fetchTracks = useCallback(async () => {
     setLoading(true);
     const periodStart = getPeriodStart(period);
-    const { data: trackData } = await supabase
+    const { data: trackData, error } = await supabase
       .rpc("get_rankings_by_period", { period_start: periodStart });
+
+    if (error) {
+      console.error("RPC Error:", error);
+    }
+
+    if (trackData && trackData.length > 0) {
+      console.log("Sample track data:", trackData[0]);
+    }
 
     if (trackData) {
       let likedIds: number[] = [];
