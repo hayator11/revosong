@@ -91,24 +91,110 @@ async function fetchYouTubeMetadata(videoId: string): Promise<Partial<ExtractedM
   }
 }
 
-// Fetch SoundCloud metadata via oEmbed
+// Fetch SoundCloud metadata via oEmbed and page scraping
 async function fetchSoundCloudMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
   try {
-    // Try to extract track ID from URL and use it to build default thumbnail
-    // SoundCloud URL format: https://soundcloud.com/user/track
     const urlObj = new URL(url);
     const pathSegments = urlObj.pathname.split('/').filter(p => p);
+    const title = pathSegments[pathSegments.length - 1]?.replace(/-/g, ' ') || 'SoundCloud Track';
+    const artist = pathSegments[0] || undefined;
+
+    let thumbnailUrl: string | undefined;
+
+    // Try method 1: Use SoundCloud's oEmbed API with timeout
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const scResponse = await fetch(
+        `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+        {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (scResponse.ok) {
+        const text = await scResponse.text();
+        if (text && text.length > 0) {
+          try {
+            const data = JSON.parse(text);
+            if (data.thumbnail_url) {
+              thumbnailUrl = data.thumbnail_url;
+            }
+          } catch (parseError) {
+            // JSON parse failed, continue to next method
+          }
+        }
+      }
+    } catch (oembedError) {
+      // oEmbed failed, continue to next method
+      if (!(oembedError instanceof Error && oembedError.name === 'AbortError')) {
+        console.error('SoundCloud oEmbed error:', oembedError);
+      }
+    }
+
+    // Try method 2: Fetch page and extract artwork_url from page data
+    if (!thumbnailUrl) {
+      try {
+        const pageResponse = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+
+        if (pageResponse.ok) {
+          const html = await pageResponse.text();
+
+          // Look for artwork_url in page data
+          const artworkMatch = html.match(/"artwork_url":"([^"]+)"/);
+          if (artworkMatch) {
+            thumbnailUrl = artworkMatch[1];
+          }
+
+          // Look for og:image
+          if (!thumbnailUrl) {
+            const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+            if (ogImageMatch) {
+              thumbnailUrl = ogImageMatch[1];
+            }
+          }
+
+          // Look for twitter:image
+          if (!thumbnailUrl) {
+            const twitterImageMatch = html.match(/<meta name="twitter:image" content="([^"]+)"/);
+            if (twitterImageMatch) {
+              thumbnailUrl = twitterImageMatch[1];
+            }
+          }
+        }
+      } catch (pageError) {
+        console.error('SoundCloud page fetch error:', pageError);
+      }
+    }
+
+    // Fallback: Use artist avatar as thumbnail if we can't extract artwork
+    if (!thumbnailUrl && artist) {
+      // Construct SoundCloud artist avatar URL
+      // unavatar.io can fetch social avatars from various platforms
+      // For SoundCloud, construct the profile URL and use unavatar service
+      const artistProfileUrl = `https://soundcloud.com/${artist}`;
+      // Try to get avatar from unavatar.io service
+      try {
+        thumbnailUrl = `https://unavatar.io/soundcloud/${encodeURIComponent(artist)}`;
+      } catch {
+        // Leave undefined if avatar construction fails
+      }
+    }
 
     return {
-      title: pathSegments[pathSegments.length - 1]?.replace(/-/g, ' ') || 'SoundCloud Track',
-      artist: pathSegments[0] || undefined,
-      thumbnail_url: undefined // SoundCloud oEmbed API not reliable for thumbnails
+      title: title,
+      artist: artist,
+      thumbnail_url: thumbnailUrl
     };
   } catch (error) {
     console.error('SoundCloud metadata extraction error:', error);
     return {
-      title: 'SoundCloud Track',
-      thumbnail_url: undefined
+      title: 'SoundCloud Track'
     };
   }
 }
