@@ -7,7 +7,6 @@ type UserProfile = {
   id: string;
   email: string;
   twitter_url: string | null;
-  github_url: string | null;
   discord_url: string | null;
   instagram_url: string | null;
   youtube_url: string | null;
@@ -23,7 +22,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     twitter_url: "",
-    github_url: "",
     discord_url: "",
     instagram_url: "",
     youtube_url: "",
@@ -39,14 +37,6 @@ export default function ProfilePage() {
       options: { redirectTo: window.location.origin + "/profile" }
     });
     if (error) console.error("X Sign-In Error:", error);
-  };
-
-  const handleGitHubSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: { redirectTo: window.location.origin + "/profile" }
-    });
-    if (error) console.error("GitHub Sign-In Error:", error);
   };
 
   const handleDiscordSignIn = async () => {
@@ -71,7 +61,6 @@ export default function ProfilePage() {
 
             // プロバイダーを特定
             const isX = userData.identities?.some((i: any) => i.provider === 'x' || i.provider === 'twitter');
-            const isGitHub = userData.identities?.some((i: any) => i.provider === 'github');
             const isDiscord = userData.identities?.some((i: any) => i.provider === 'discord');
 
             // プロバイダーごとに異なるフィールドからハンドルを取得
@@ -80,7 +69,7 @@ export default function ProfilePage() {
               // Discord: name が使用されることが多い
               handle = userData.user_metadata.name || userData.user_metadata.preferred_username || userData.user_metadata.user_name;
             } else {
-              // X, GitHub: user_name または preferred_username
+              // X: user_name または preferred_username
               handle = userData.user_metadata.user_name || userData.user_metadata.preferred_username;
             }
 
@@ -88,9 +77,6 @@ export default function ProfilePage() {
 
             if (isX && handle) {
               snsData.twitter_url = `https://x.com/${handle}`;
-            }
-            if (isGitHub && handle) {
-              snsData.github_url = `https://github.com/${handle}`;
             }
             if (isDiscord && userData.user_metadata.sub) {
               snsData.discord_url = `https://discord.com/users/${userData.user_metadata.sub}`;
@@ -147,7 +133,6 @@ export default function ProfilePage() {
       setProfile(data);
       setFormData({
         twitter_url: data.twitter_url || "",
-        github_url: data.github_url || "",
         discord_url: data.discord_url || "",
         instagram_url: data.instagram_url || "",
         youtube_url: data.youtube_url || "",
@@ -248,24 +233,6 @@ export default function ProfilePage() {
               𝕏 X
             </button>
             <button
-              onClick={handleGitHubSignIn}
-              style={{
-                padding: "10px",
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: "6px",
-                color: "#fff",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.5)")}
-              onMouseOut={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.3)")}
-            >
-              🐙 GitHub
-            </button>
-            <button
               onClick={handleDiscordSignIn}
               style={{
                 padding: "10px",
@@ -292,7 +259,6 @@ export default function ProfilePage() {
 
         {[
           { key: "twitter_url", label: "𝕏 X", placeholder: "https://x.com/username" },
-          { key: "github_url", label: "🐙 GitHub", placeholder: "https://github.com/username" },
           { key: "discord_url", label: "💜 Discord", placeholder: "https://discord.com/users/userid" },
           { key: "instagram_url", label: "📷 Instagram", placeholder: "https://instagram.com/username" },
           { key: "youtube_url", label: "🎬 YouTube", placeholder: "https://youtube.com/@username" },
@@ -366,7 +332,6 @@ export default function ProfilePage() {
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {formData.twitter_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>𝕏</span>}
-          {formData.github_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🐙</span>}
           {formData.discord_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>💜</span>}
           {formData.instagram_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>📷</span>}
           {formData.youtube_url && <span style={{ fontSize: "18px", cursor: "pointer" }}>🎬</span>}
