@@ -317,13 +317,127 @@ export function ArtistsSection() {
           fontSize: '24px',
           fontWeight: 700,
           color: '#fff',
-          marginBottom: '32px',
+          marginBottom: '24px',
         }}
       >
-        🎩 レボハットアーティスト一覧
+        🎩 レボハットアーティスト
       </h2>
 
-      {/* レボリストLab */}
+      {/* レボリストLab 説明セクション */}
+      <div
+        style={{
+          background: 'rgba(255,165,0,0.08)',
+          border: '1px solid rgba(255,165,0,0.2)',
+          borderRadius: '16px',
+          padding: '28px 24px',
+          marginBottom: '40px',
+        }}
+      >
+        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ffa500', marginBottom: '12px' }}>
+          🔬 レボリストLab | 実験・実践の幹
+        </h3>
+        <p
+          style={{
+            fontSize: '14px',
+            color: 'rgba(255,255,255,0.8)',
+            lineHeight: 1.9,
+            marginBottom: '12px',
+          }}
+        >
+          <strong>「防災を、かろやかに」というコンセプト</strong>
+          から生まれた、社会課題の検証・実践・実証を行う実験場・インキュベーター。
+        </p>
+        <p
+          style={{
+            fontSize: '14px',
+            color: 'rgba(255,255,255,0.8)',
+            lineHeight: 1.9,
+            marginBottom: '20px',
+          }}
+        >
+          インタビュー企画、ハットランウェイ、ものづくりLab、防災×帽祭など多様なプロジェクトを通じて、個人の力を活かしながら社会変革をもたらすことがビジョン。ここからすべての枝葉が生まれ、育つ場所です。
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <a
+            href="https://revolist.earth/revolist-lab"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '12px 16px',
+              background: 'rgba(255,165,0,0.15)',
+              border: '1px solid rgba(255,165,0,0.3)',
+              borderRadius: '8px',
+              color: '#ffa500',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: 600,
+              textAlign: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,165,0,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,165,0,0.15)';
+            }}
+          >
+            🌐 公式サイト
+          </a>
+          <a
+            href="https://x.com/REVOLIST11"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '12px 16px',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '8px',
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: 600,
+              textAlign: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+            }}
+          >
+            𝕏 レボリストLab
+          </a>
+          <a
+            href="https://x.com/Hayator"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '12px 16px',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '8px',
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: 600,
+              textAlign: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+            }}
+          >
+            𝕏 @hayator
+          </a>
+        </div>
+      </div>
+
+      {/* レボリストLab アーティスト一覧 */}
       <div style={{ marginBottom: '48px' }}>
         <h3
           style={{
