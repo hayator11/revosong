@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabase';
 // GET /api/campaigns/[id]/ranking - Get campaign-specific ranking
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const campaignId = parseInt(params.id);
+    const { id } = await params;
+    const campaignId = parseInt(id);
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const offset = parseInt(searchParams.get('offset') || '0');

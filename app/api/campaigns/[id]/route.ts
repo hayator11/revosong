@@ -15,10 +15,11 @@ async function isAdmin(userId: string): Promise<boolean> {
 // GET /api/campaigns/[id] - Get single campaign with submissions
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const campaignId = parseInt(params.id);
+    const { id } = await params;
+    const campaignId = parseInt(id);
 
     // Fetch campaign
     const { data: campaign, error: campaignError } = await supabase
@@ -89,9 +90,10 @@ export async function GET(
 // PATCH /api/campaigns/[id] - Update campaign (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session?.user) {
@@ -110,7 +112,7 @@ export async function PATCH(
       );
     }
 
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(id);
     const body = await request.json();
 
     const { data: updatedCampaign, error } = await supabase
@@ -141,9 +143,10 @@ export async function PATCH(
 // DELETE /api/campaigns/[id] - Delete campaign (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session?.user) {
@@ -162,7 +165,7 @@ export async function DELETE(
       );
     }
 
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(id);
 
     const { error } = await supabase
       .from('campaigns')
