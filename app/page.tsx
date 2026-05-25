@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
 import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
+import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
 
 // Type definitions for SoundCloud Widget
 declare global {
@@ -77,133 +78,6 @@ function formatNumber(n: number) {
 
 // All URL parsing and service detection functions are now imported from EmbedPlayer component
 
-// Component for individual SNS avatar link
-function SocialAvatarLink({ platform, url }: { platform: string; url: string }) {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const platformLabels: Record<string, string> = {
-    'x': 'X',
-    'twitter': 'X',
-    'instagram': 'Instagram',
-    'facebook': 'Facebook',
-    'youtube': 'YouTube',
-    'tiktok': 'TikTok',
-    'discord': 'Discord',
-    'threads': 'Threads'
-  };
-
-  // Fallback emoji icons in case avatar fails to load
-  const fallbackIcons: Record<string, string> = {
-    'x': '𝕏',
-    'twitter': '𝕏',
-    'instagram': '📷',
-    'facebook': 'f',
-    'youtube': '▶️',
-    'tiktok': '♪',
-    'discord': '💬',
-    'threads': '@'
-  };
-
-  useEffect(() => {
-    const fetchAvatar = async () => {
-      try {
-        // Check localStorage cache first
-        const cacheKey = `avatar_${platform}_${url}`;
-        const cachedUrl = localStorage.getItem(cacheKey);
-
-        if (cachedUrl) {
-          setAvatarUrl(cachedUrl);
-          setLoading(false);
-          setError(false);
-          return;
-        }
-
-        const response = await fetch('/api/get-social-avatar', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ url, platform })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.avatarUrl) {
-            // Cache for 24 hours
-            localStorage.setItem(cacheKey, data.avatarUrl);
-            setAvatarUrl(data.avatarUrl);
-            setError(false);
-          } else {
-            setError(true);
-          }
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error(`Failed to fetch avatar for ${platform}:`, err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAvatar();
-  }, [url, platform]);
-
-  const label = platformLabels[platform] || platform;
-  const fallbackIcon = fallbackIcons[platform] || '🔗';
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '28px',
-        height: '28px',
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,0.1)',
-        textDecoration: 'none',
-        transition: 'all 0.2s',
-        border: '1px solid rgba(255,255,255,0.2)',
-        flexShrink: 0,
-        overflow: 'hidden',
-        fontSize: '14px'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-        e.currentTarget.style.transform = 'scale(1.15)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-        e.currentTarget.style.transform = 'scale(1)';
-      }}
-      title={label}
-    >
-      {!loading && avatarUrl && !error ? (
-        <img
-          src={avatarUrl}
-          alt={label}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            borderRadius: '50%'
-          }}
-          onError={() => setError(true)}
-        />
-      ) : (
-        <span style={{ fontWeight: 'bold', color: '#fff' }}>{fallbackIcon}</span>
-      )}
-    </a>
-  );
-}
-
 // Component to display SNS links with profile avatars
 function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, string> }) {
   if (Object.keys(socialLinks).length === 0) return null;
@@ -214,13 +88,17 @@ function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, s
 
   return (
     <div style={{ display: 'inline-flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-      {validLinks.map(([platform, url]: [string, any]) => (
-        <SocialAvatarLink
-          key={platform}
-          platform={platform}
-          url={url}
-        />
-      ))}
+      {validLinks.map(([platform, url]: [string, any]) => {
+        // Normalize platform name (twitter -> x)
+        const normalizedPlatform = platform === 'twitter' ? 'x' : platform;
+        return (
+          <SocialAvatarLink
+            key={platform}
+            platform={normalizedPlatform}
+            url={url}
+          />
+        );
+      })}
     </div>
   );
 }
