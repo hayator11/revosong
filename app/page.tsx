@@ -1978,15 +1978,56 @@ export default function Home() {
           </div>
         </div>
 
-        {/* コンテンツ */}
+        {/* コンテンツ & Play Mode Controls */}
         <div style={{ marginBottom: '4px' }}>
           <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>コンテンツ</div>
-          <CategoryFilter
-            onFilterChange={(category) => {
-              setMusicTypeFilter(category);
-            }}
-            initialFilter={musicTypeFilter}
-          />
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <CategoryFilter
+              onFilterChange={(category) => {
+                setMusicTypeFilter(category);
+              }}
+              initialFilter={musicTypeFilter}
+            />
+
+            {/* Play Mode Controls - integrated into Content section */}
+            {filtered.length > 0 && (
+              <>
+                <button
+                  onClick={() => setPlayMode('shuffle')}
+                  style={{
+                    padding: '6px 12px',
+                    background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                    border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '6px',
+                    color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🎲 ランダム
+                </button>
+
+                <button
+                  onClick={() => setPlayMode('repeat-one')}
+                  style={{
+                    padding: '6px 12px',
+                    background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+                    border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '6px',
+                    color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🔁 リピート
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* 期間 */}
@@ -2007,49 +2048,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Play Mode Controls */}
-      {filtered.length > 0 && (
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap',
-          marginBottom: '12px'
-        }}>
-          <button
-            onClick={() => setPlayMode('shuffle')}
-            style={{
-              padding: '6px 12px',
-              background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-              border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '6px',
-              color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            🎲 ランダム
-          </button>
-
-          <button
-            onClick={() => setPlayMode('repeat-one')}
-            style={{
-              padding: '6px 12px',
-              background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-              border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '6px',
-              color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            🔁 リピート
-          </button>
-        </div>
-      )}
+      <div style={{ marginBottom: '12px' }} />
 
       <div className="ranking-header">
         <span>Ranking</span>
