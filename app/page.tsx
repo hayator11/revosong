@@ -1,6 +1,7 @@
 "use client";
 // Force redeploy trigger v3
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
 import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";

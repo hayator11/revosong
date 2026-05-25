@@ -36,10 +36,7 @@ export async function GET(
         track_id,
         campaign_theme_id,
         submitted_by,
-        is_selected_by_theme_author,
-        theme:campaign_themes(id, title),
-        track:tracks(id, title, artist_name, photo_url, external_url, play_count),
-        submitter:profiles(username, avatar_url, social_links)
+        is_selected_by_theme_author
         `
       )
       .eq('campaign_id', campaignId);
@@ -72,25 +69,65 @@ export async function GET(
       likesMap[like.track_id] = (likesMap[like.track_id] || 0) + 1;
     });
 
+    // Fetch track data for all submissions
+    const { data: tracks = [] } = await supabase
+      .from('tracks')
+      .select('id, title, artist_name, photo_url, external_url, play_count')
+      .in('id', trackIds);
+
+    const tracksMap: Record<number, any> = {};
+    (tracks || []).forEach((track) => {
+      tracksMap[track.id] = track;
+    });
+
+    // Fetch profile data for all submitters
+    const submitterIds = [...new Set(submissions.map((s) => s.submitted_by))];
+    const { data: profiles = [] } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, social_links')
+      .in('id', submitterIds);
+
+    const profilesMap: Record<string, any> = {};
+    (profiles || []).forEach((profile) => {
+      profilesMap[profile.id] = profile;
+    });
+
+    // Fetch theme data
+    const themeIds = [...new Set(submissions.map((s) => s.campaign_theme_id))];
+    const { data: themes = [] } = await supabase
+      .from('campaign_themes')
+      .select('id, title')
+      .in('id', themeIds);
+
+    const themesMap: Record<number, any> = {};
+    (themes || []).forEach((theme) => {
+      themesMap[theme.id] = theme;
+    });
+
     // Calculate scores and build ranking
     const rankingData = submissions
-      .map((submission) => ({
-        submission_id: submission.id,
-        track_id: submission.track_id,
-        track_title: submission.track?.title,
-        artist_name: submission.track?.artist_name,
-        artist_avatar: submission.submitter?.avatar_url,
-        artist_username: submission.submitter?.username,
-        artist_social_links: submission.submitter?.social_links || {},
-        photo_url: submission.track?.photo_url,
-        external_url: submission.track?.external_url,
-        campaign_likes: likesMap[submission.track_id] || 0,
-        campaign_theme_id: submission.campaign_theme_id,
-        theme_title: submission.theme?.title,
-        is_selected_by_theme_author: submission.is_selected_by_theme_author,
-        submitted_by: submission.submitted_by,
-        total_score: (likesMap[submission.track_id] || 0) + (submission.track?.play_count || 0),
-      }))
+      .map((submission) => {
+        const track = tracksMap[submission.track_id];
+        const profile = profilesMap[submission.submitted_by];
+        const theme = themesMap[submission.campaign_theme_id];
+        return {
+          submission_id: submission.id,
+          track_id: submission.track_id,
+          track_title: track?.title,
+          artist_name: track?.artist_name,
+          artist_avatar: profile?.avatar_url,
+          artist_username: profile?.username,
+          artist_social_links: profile?.social_links || {},
+          photo_url: track?.photo_url,
+          external_url: track?.external_url,
+          campaign_likes: likesMap[submission.track_id] || 0,
+          campaign_theme_id: submission.campaign_theme_id,
+          theme_title: theme?.title,
+          is_selected_by_theme_author: submission.is_selected_by_theme_author,
+          submitted_by: submission.submitted_by,
+          total_score: (likesMap[submission.track_id] || 0) + (track?.play_count || 0),
+        };
+      })
       .sort((a, b) => b.total_score - a.total_score)
       .map((item, index) => ({
         ...item,

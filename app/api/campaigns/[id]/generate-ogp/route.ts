@@ -22,15 +22,7 @@ export async function POST(
     // Fetch campaign and award data
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select(
-        `
-        id,
-        title,
-        awarded_submission_id,
-        theme_proposer_comment,
-        theme:campaign_themes(title, submitted_by, profiles(username))
-        `
-      )
+      .select('id, title, awarded_submission_id, theme_proposer_comment, theme_id')
       .eq('id', campaignId)
       .single();
 
@@ -41,19 +33,17 @@ export async function POST(
       );
     }
 
+    // Fetch theme data
+    const { data: theme } = await supabase
+      .from('campaign_themes')
+      .select('id, title, submitted_by')
+      .eq('id', campaign.theme_id)
+      .single();
+
     // Fetch submission and track data
     const { data: submission } = await supabase
       .from('campaign_submissions')
-      .select(
-        `
-        track:tracks(
-          title,
-          artist_name,
-          photo_url,
-          external_url
-        )
-        `
-      )
+      .select('track_id')
       .eq('id', submission_id)
       .single();
 
@@ -63,6 +53,13 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    // Fetch track data
+    const { data: track } = await supabase
+      .from('tracks')
+      .select('title, artist_name, photo_url, external_url')
+      .eq('id', submission.track_id)
+      .single();
 
     // Generate OGP image URL
     // In production, this would use sharp or canvas to generate an actual image
@@ -90,11 +87,11 @@ export async function POST(
       ogp_data: {
         campaign_title: campaign.title,
         campaign_id: campaignId,
-        theme_title: campaign.theme?.title,
-        theme_proposer: campaign.theme?.profiles?.username,
-        track_title: submission.track?.title,
-        artist_name: submission.track?.artist_name,
-        thumbnail_url: submission.track?.photo_url,
+        theme_title: theme?.title,
+        theme_proposer: theme?.submitted_by,
+        track_title: track?.title,
+        artist_name: track?.artist_name,
+        thumbnail_url: track?.photo_url,
         comment: campaign.theme_proposer_comment,
       },
     });

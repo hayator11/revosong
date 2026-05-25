@@ -1,10 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { BackButton } from '@/app/components/BackButton';
+import { Breadcrumb } from '@/app/components/Breadcrumb';
 
 export default function CampaignsAboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      {/* ナビゲーション */}
+      <div className="bg-white border-b border-gray-200 py-4 px-4">
+        <div className="max-w-6xl mx-auto">
+          <Breadcrumb
+            items={[
+              { label: 'キャンペーン', href: '/campaigns' },
+              { label: 'プロジェクト説明', current: true },
+            ]}
+          />
+          <BackButton href="/campaigns" label="キャンペーン一覧に戻る" />
+        </div>
+      </div>
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white py-16 px-4 md:py-24 md:px-8">
         <div className="max-w-6xl mx-auto text-center">
@@ -442,6 +457,66 @@ export default function CampaignsAboutPage() {
               className="inline-block bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-bold py-4 px-10 rounded-lg transition-all border-2 border-white"
             >
               🚀 応募ページを見る
+            </Link>
+          </div>
+        </section>
+
+        {/* Related Pages Section */}
+        <section className="mt-16 mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">
+            📍 関連ページ
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              href="/campaigns"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-pink-500"
+            >
+              <div className="text-4xl mb-3">🎵</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-pink-600">
+                キャンペーン一覧
+              </h3>
+              <p className="text-sm text-slate-600">
+                開催中のキャンペーンを表示
+              </p>
+            </Link>
+
+            <Link
+              href="/campaigns/awards"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-orange-500"
+            >
+              <div className="text-4xl mb-3">🏆</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-orange-600">
+                応援ソング殿堂入り
+              </h3>
+              <p className="text-sm text-slate-600">
+                過去の受賞曲を表示
+              </p>
+            </Link>
+
+            <Link
+              href="/campaign-themes"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-blue-500"
+            >
+              <div className="text-4xl mb-3">💬</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-blue-600">
+                テーマ募集
+              </h3>
+              <p className="text-sm text-slate-600">
+                応援テーマの投票
+              </p>
+            </Link>
+
+            <Link
+              href="/campaign-themes/apply"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-purple-500"
+            >
+              <div className="text-4xl mb-3">🚀</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-purple-600">
+                応募準備
+              </h3>
+              <p className="text-sm text-slate-600">
+                応募ページの準備中
+              </p>
             </Link>
           </div>
         </section>

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { BackButton } from '@/app/components/BackButton';
+import { Breadcrumb } from '@/app/components/Breadcrumb';
+import { SocialShareButtons } from '@/app/components/SocialShareButtons';
 
 interface Campaign {
   id: number;
@@ -9,10 +12,19 @@ interface Campaign {
   description: string;
   start_date: string;
   end_date: string;
+  status?: string;
   theme?: {
     submitted_by: string;
   };
   theme_id?: number;
+  proposer_name?: string;
+  proposer_message?: string;
+  participant_count?: number;
+  submission_count?: number;
+  awarded_submission_id?: number;
+  award_track_title?: string;
+  award_artist?: string;
+  theme_proposer_comment?: string;
 }
 
 export default function CampaignsPage() {
@@ -45,11 +57,16 @@ export default function CampaignsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
+        {/* パンくずナビゲーション */}
+        <Breadcrumb
+          items={[
+            { label: 'キャンペーン', current: true },
+          ]}
+        />
+
         {/* ヘッダー */}
         <div className="mb-8">
-          <Link href="/" className="text-blue-600 hover:text-blue-800 mb-4 inline-block">
-            ← トップページに戻る
-          </Link>
+          <BackButton href="/" label="トップページに戻る" />
 
           <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-xl p-8 text-white mb-8">
             <h1 className="text-4xl font-bold mb-2">✨ REVOSONG キャンペーン ✨</h1>
@@ -168,6 +185,66 @@ export default function CampaignsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* 関連ページ */}
+        <section className="mt-16 mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">
+            📍 関連ページ
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              href="/campaigns/about"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-purple-500"
+            >
+              <div className="text-4xl mb-3">📖</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-purple-600">
+                プロジェクト説明
+              </h3>
+              <p className="text-sm text-slate-600">
+                REVOSONG について
+              </p>
+            </Link>
+
+            <Link
+              href="/campaigns/awards"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-orange-500"
+            >
+              <div className="text-4xl mb-3">🏆</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-orange-600">
+                応援ソング殿堂入り
+              </h3>
+              <p className="text-sm text-slate-600">
+                過去の受賞曲
+              </p>
+            </Link>
+
+            <Link
+              href="/campaign-themes"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-blue-500"
+            >
+              <div className="text-4xl mb-3">💬</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-blue-600">
+                テーマ募集
+              </h3>
+              <p className="text-sm text-slate-600">
+                応援テーマの投票
+              </p>
+            </Link>
+
+            <Link
+              href="/campaign-themes/apply"
+              className="group bg-white rounded-lg shadow-md hover:shadow-lg p-6 text-center transition-all border-2 border-transparent hover:border-pink-500"
+            >
+              <div className="text-4xl mb-3">🚀</div>
+              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-pink-600">
+                応募準備
+              </h3>
+              <p className="text-sm text-slate-600">
+                応募ページの準備中
+              </p>
+            </Link>
           </div>
         </section>
       </div>

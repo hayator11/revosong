@@ -34,10 +34,7 @@ export async function GET(
         track_id,
         submitted_by,
         submitted_at,
-        is_selected_by_theme_author,
-        theme:campaign_themes(id, title),
-        track:tracks(id, title, artist_name, photo_url, external_url),
-        submitter:profiles(username, avatar_url)
+        is_selected_by_theme_author
         `
       )
       .eq('campaign_id', campaignId)
@@ -52,18 +49,63 @@ export async function GET(
       );
     }
 
+    // Fetch themes
+    const themeIds = [...new Set((submissions || []).map((s) => s.campaign_theme_id))];
+    const { data: themes = [] } = await supabase
+      .from('campaign_themes')
+      .select('id, title')
+      .in('id', themeIds);
+
+    const themesMap: Record<number, any> = {};
+    (themes || []).forEach((theme) => {
+      themesMap[theme.id] = theme;
+    });
+
+    // Fetch tracks
+    const trackIds = [...new Set((submissions || []).map((s) => s.track_id))];
+    const { data: tracks = [] } = await supabase
+      .from('tracks')
+      .select('id, title, artist_name, photo_url, external_url')
+      .in('id', trackIds);
+
+    const tracksMap: Record<number, any> = {};
+    (tracks || []).forEach((track) => {
+      tracksMap[track.id] = track;
+    });
+
+    // Fetch profiles
+    const submitterIds = [...new Set((submissions || []).map((s) => s.submitted_by))];
+    const { data: profiles = [] } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .in('id', submitterIds);
+
+    const profilesMap: Record<string, any> = {};
+    (profiles || []).forEach((profile) => {
+      profilesMap[profile.id] = profile;
+    });
+
     // Group by theme
     const groupedByTheme: Record<number, any> = {};
-    submissions?.forEach((submission) => {
+    (submissions || []).forEach((submission) => {
       const themeId = submission.campaign_theme_id;
       if (!groupedByTheme[themeId]) {
         groupedByTheme[themeId] = {
           theme_id: themeId,
-          theme_title: submission.theme?.title,
+          theme_title: themesMap[themeId]?.title,
           submissions: [],
         };
       }
-      groupedByTheme[themeId].submissions.push(submission);
+      groupedByTheme[themeId].submissions.push({
+        id: submission.id,
+        campaign_theme_id: submission.campaign_theme_id,
+        track_id: submission.track_id,
+        submitted_by: submission.submitted_by,
+        submitted_at: submission.submitted_at,
+        is_selected_by_theme_author: submission.is_selected_by_theme_author,
+        track: tracksMap[submission.track_id],
+        submitter: profilesMap[submission.submitted_by],
+      });
     });
 
     const campaignEnded = new Date(campaign.end_date) < new Date();

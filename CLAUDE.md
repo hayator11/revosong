@@ -35,25 +35,56 @@
 - ✅ キャンペーン詳細ページの表示確認完了
 - ✅ Next.js 15 params Promise 対応一括修正完了
   - 全ダイナミックルート（Page + API）修正
-- ⏳ テーマプロポーザー選択UI実装（進行中）
+- ✅ テーマプロポーザー選択UI実装
   - ✅ ThemeProposerChoice.tsx - 投稿一覧から選択
   - ✅ AwardCommentForm.tsx - 応援コメント入力
   - ✅ CampaignAwardCard.tsx - 受賞曲表示
-  - ⏳ キャンペーン詳細ページへの統合
-  - ⏳ OGP画像生成機能
-  - ⏳ 応援ソング殿堂入りページ（/campaigns/awards）
 
-## 次のタスク（優先度順）
-1. **キャンペーン詳細ページに award 機能を統合**
-   - キャンペーン終了後のプロポーザー選択UI表示
-   - ThemeProposerChoice コンポーネント統合
-   - AwardCommentForm コンポーネント統合
+## フェーズ2.5（ナビゲーション階層 & ソーシャルシェア機能）
+### 実装完了
+- ✅ SocialShareButtons.tsx - Twitter/X, Facebook, LINE, WhatsApp, リンクコピー対応
+- ✅ BackButton.tsx - 戻るボタンコンポーネント
+- ✅ Breadcrumb.tsx - パンくずナビゲーション
+- ✅ GlobalHeader.tsx - グローバルヘッダー（デスクトップ・モバイル対応）
+- ✅ 全キャンペーンページへのナビゲーション追加
+  - `/campaigns` - キャンペーン一覧ページ
+  - `/campaigns/[id]` - キャンペーン詳細ページ（シェアボタン統合）
+  - `/campaign-themes` - テーマ募集ページ
+  - `/campaign-themes/apply` - 応募準備ページ
+  - `/campaigns/about` - プロジェクト説明ページ
+  - `/campaigns/awards` - 応援ソング殿堂入りページ（新規作成）
 
-2. **OGP画像生成機能の実装**
+### ページ階層構造
+```
+/
+├── /campaigns (キャンペーン)
+│   ├── /campaigns/[id] (詳細 - シェア機能付き)
+│   ├── /campaigns/about (プロジェクト説明)
+│   └── /campaigns/awards (応援ソング殿堂入り)
+└── /campaign-themes (テーマ募集)
+    ├── /campaign-themes/apply (応募準備)
+    └── /campaign-themes/submit (テーマ投稿)
+```
+
+## フェーズ2.6（Award機能統合 & グローバルナビゲーション完成）
+### 実装完了
+- ✅ GlobalHeader.tsx を app/layout.tsx に統合
+  - 全ページでグローバルナビゲーション表示
+  - デスクトップ・モバイルメニュー対応
+- ✅ キャンペーン詳細ページへ award 機能を統合
+  - ThemeProposerChoice コンポーネント統合
+  - AwardCommentForm コンポーネント統合  
+  - CampaignAwardCard コンポーネント統合
+  - キャンペーン終了後に自動的にaward UIを表示
+  - 現在ユーザーがテーマプロポーザーかどうかを判定
+
+### 次のタスク（優先度順）
+1. **OGP画像生成機能の実装**
    - sharp ライブラリで画像合成
    - キャンペーンテーマ + トラック + 提案者名を合成
+   - API: `/api/campaigns/[id]/generate-ogp`
 
-3. **応援ソング殿堂入りページの作成**
-   - /campaigns/awards ページ作成
-   - 過去の受賞曲一覧表示
-   - OGP画像表示とシェア機能
+2. **Navigation & Award機能の動作確認**
+   - 各ページの遷移確認
+   - キャンペーン詳細ページでawardコンポーネントの表示確認
+   - テーマプロポーザー選択機能の動作確認
