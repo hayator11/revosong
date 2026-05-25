@@ -29,19 +29,31 @@
 - ✅ TEST_DATA_SETUP.md - テストデータセットアップガイド
 - ✅ IMPLEMENTATION_CHECKLIST.md - 実装チェックリスト
 
+## フェーズ2（テーマプロポーザー選択 & OGP生成）
+### 進捗状況
+- ✅ テストデータの投入と動作確認完了
+- ✅ キャンペーン詳細ページの表示確認完了
+- ✅ Next.js 15 params Promise 対応一括修正完了
+  - 全ダイナミックルート（Page + API）修正
+- ⏳ テーマプロポーザー選択UI実装（進行中）
+  - ✅ ThemeProposerChoice.tsx - 投稿一覧から選択
+  - ✅ AwardCommentForm.tsx - 応援コメント入力
+  - ✅ CampaignAwardCard.tsx - 受賞曲表示
+  - ⏳ キャンペーン詳細ページへの統合
+  - ⏳ OGP画像生成機能
+  - ⏳ 応援ソング殿堂入りページ（/campaigns/awards）
+
 ## 次のタスク（優先度順）
-1. **テストデータ実行**
-   - Supabaseで `migrations/seed-test-campaigns.sql` を実行
-   - TEST_DATA_SETUP.md の手順に従う
-   - 参考： https://app.supabase.com
+1. **キャンペーン詳細ページに award 機能を統合**
+   - キャンペーン終了後のプロポーザー選択UI表示
+   - ThemeProposerChoice コンポーネント統合
+   - AwardCommentForm コンポーネント統合
 
-2. **動作確認**
-   - Firefoxで `/campaigns` ページにアクセス
-   - キャンペーン一覧が表示される
-   - キャンペーン詳細ページが正しく表示される
-   - SNS プロフィール画像が表示される
+2. **OGP画像生成機能の実装**
+   - sharp ライブラリで画像合成
+   - キャンペーンテーマ + トラック + 提案者名を合成
 
-3. **フェーズ2の実装開始**
-   - テーマプロポーザー選択機能
-   - OGP画像生成（sharp/Canvas）
-   - 応援ソング殿堂入りページ
+3. **応援ソング殿堂入りページの作成**
+   - /campaigns/awards ページ作成
+   - 過去の受賞曲一覧表示
+   - OGP画像表示とシェア機能
