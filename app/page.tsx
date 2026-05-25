@@ -1943,10 +1943,10 @@ export default function Home() {
       </div>
 
       {/* フィルター全体（統一レイアウト） */}
-      <div style={{ marginBottom: '12px' }}>
+      <div style={{ marginBottom: '8px' }}>
         {/* AIツール */}
-        <div style={{ marginBottom: '10px' }}>
-          <div className="filter-section-label" style={{ marginBottom: '8px', fontSize: '13px' }}>AIツール</div>
+        <div style={{ marginBottom: '8px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '6px', fontSize: '13px' }}>AIツール</div>
           <div className="filters" style={{ gap: '8px' }}>
             {FILTERS.map((f) => (
               <div
@@ -1962,9 +1962,9 @@ export default function Home() {
         </div>
 
         {/* タイプ・コンテンツ・期間 */}
-        <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%' }}>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%' }}>
           {/* タイプ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '0 0 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
             <div className="filter-section-label" style={{ fontSize: '13px' }}>タイプ</div>
             <div className="type-filters" style={{ display: 'flex', gap: '8px' }}>
               {MUSIC_TYPES.map((t) => (
@@ -1981,7 +1981,7 @@ export default function Home() {
           </div>
 
           {/* コンテンツ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '0 0 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
             <div className="filter-section-label" style={{ fontSize: '13px' }}>コンテンツ</div>
             <CategoryFilter
               onFilterChange={(category) => {
@@ -1992,7 +1992,7 @@ export default function Home() {
           </div>
 
           {/* 期間 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '0 0 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
             <div className="filter-section-label" style={{ fontSize: '13px' }}>期間</div>
             <div className="period-bar" style={{ gap: '8px' }}>
               {PERIODS.map((p) => (
@@ -2016,7 +2016,7 @@ export default function Home() {
           display: 'flex',
           gap: '12px',
           flexWrap: 'wrap',
-          marginBottom: '16px'
+          marginBottom: '12px'
         }}>
           <button
             onClick={() => setPlayMode('shuffle')}
