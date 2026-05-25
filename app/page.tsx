@@ -105,34 +105,6 @@ function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, s
 
 // Component for player bar artist follow section
 function ArtistFollowSection({ socialLinks, artist_social_url, avatarUrl, artistName }: { socialLinks: Record<string, string>; artist_social_url: string | null; avatarUrl?: string | null; artistName?: string | null }) {
-  const getPlatformLabel = (platform: string) => {
-    const labels: Record<string, string> = {
-      'x': 'X',
-      'twitter': 'X',
-      'instagram': 'Instagram',
-      'facebook': 'Facebook',
-      'youtube': 'YouTube',
-      'tiktok': 'TikTok',
-      'discord': 'Discord',
-      'threads': 'Threads'
-    };
-    return labels[platform] || platform;
-  };
-
-  const getSocialIcon = (platform: string) => {
-    const icons: Record<string, string> = {
-      'x': '𝕏',
-      'twitter': '𝕏',
-      'instagram': '📷',
-      'facebook': 'f',
-      'youtube': '▶️',
-      'tiktok': '♪',
-      'discord': '💬',
-      'threads': '@'
-    };
-    return icons[platform] || '🔗';
-  };
-
   const hasSocial = Object.keys(socialLinks).length > 0 || artist_social_url;
   if (!hasSocial && !avatarUrl) return null;
 
@@ -187,36 +159,14 @@ function ArtistFollowSection({ socialLinks, artist_social_url, avatarUrl, artist
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
           {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
             if (!url) return null;
-            const label = getPlatformLabel(platform);
-            const icon = getSocialIcon(platform);
-
+            // Normalize platform name (twitter -> x)
+            const normalizedPlatform = platform === 'twitter' ? 'x' : platform;
             return (
-              <a
+              <SocialAvatarLink
                 key={platform}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  background: "rgba(255,45,85,0.2)",
-                  border: "1px solid rgba(255,45,85,0.4)",
-                  borderRadius: "16px",
-                  color: "#ff2d55",
-                  textDecoration: "none",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
-                onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
-              >
-                <span>{icon}</span>
-                <span>{label}</span>
-              </a>
+                platform={normalizedPlatform}
+                url={url}
+              />
             );
           })}
           {artist_social_url && (
@@ -2435,15 +2385,14 @@ export default function Home() {
                 </div>
               ) : (
                 comments.map((comment) => {
-                  // SNSプラットフォームのマッピング
-                  const snsLinks = [
-                    { platform: "X", url: comment.twitter_url, icon: "𝕏" },
-                    { platform: "Discord", url: comment.discord_url, icon: "💜" },
-                    { platform: "Instagram", url: comment.instagram_url, icon: "📷" },
-                    { platform: "YouTube", url: comment.youtube_url, icon: "🎬" },
-                    { platform: "TikTok", url: comment.tiktok_url, icon: "🎵" },
-                    { platform: "Threads", url: comment.threads_url, icon: "@" },
-                  ].filter((s): s is { platform: string; url: string; icon: string } => !!s.url);
+                  // SNSプラットフォームのマッピング（SocialLinksWithAvatarsのためにオブジェクト化）
+                  const commentSocialLinks: Record<string, string> = {};
+                  if (comment.twitter_url) commentSocialLinks['x'] = comment.twitter_url;
+                  if (comment.discord_url) commentSocialLinks['discord'] = comment.discord_url;
+                  if (comment.instagram_url) commentSocialLinks['instagram'] = comment.instagram_url;
+                  if (comment.youtube_url) commentSocialLinks['youtube'] = comment.youtube_url;
+                  if (comment.tiktok_url) commentSocialLinks['tiktok'] = comment.tiktok_url;
+                  if (comment.threads_url) commentSocialLinks['threads'] = comment.threads_url;
 
                   return (
                     <div
@@ -2506,8 +2455,8 @@ export default function Home() {
                         </span>
                       </div>
 
-                      {/* SNSアイコン表示 */}
-                      {snsLinks.length > 0 && (
+                      {/* SNS プロフィール画像表示 */}
+                      {Object.keys(commentSocialLinks).length > 0 && (
                         <div style={{
                           display: "flex",
                           gap: "6px",
@@ -2515,39 +2464,12 @@ export default function Home() {
                           flexWrap: "wrap",
                           alignItems: "center"
                         }}>
-                          {snsLinks.map(({ platform, url, icon }) => (
-                            <a
+                          {Object.entries(commentSocialLinks).map(([platform, url]) => (
+                            <SocialAvatarLink
                               key={platform}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={platform}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: "20px",
-                                height: "20px",
-                                fontSize: "10px",
-                                background: "rgba(255,45,85,0.15)",
-                                border: "1px solid rgba(255,45,85,0.3)",
-                                borderRadius: "4px",
-                                textDecoration: "none",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                                flexShrink: 0
-                              }}
-                              onMouseOver={(e) => {
-                                e.currentTarget.style.background = "rgba(255,45,85,0.3)";
-                                e.currentTarget.style.borderColor = "rgba(255,45,85,0.6)";
-                              }}
-                              onMouseOut={(e) => {
-                                e.currentTarget.style.background = "rgba(255,45,85,0.15)";
-                                e.currentTarget.style.borderColor = "rgba(255,45,85,0.3)";
-                              }}
-                            >
-                              {icon}
-                            </a>
+                              platform={platform}
+                              url={url}
+                            />
                           ))}
                         </div>
                       )}
