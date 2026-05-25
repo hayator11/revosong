@@ -53,6 +53,7 @@ type CommentWithUserInfo = Comment & {
   youtube_url?: string | null;
   tiktok_url?: string | null;
   threads_url?: string | null;
+  show_avatar_on_comments?: boolean;
 };
 
 type User = { id: string; email?: string } | null;
@@ -65,7 +66,7 @@ const GENRES = [
 ];
 const FILTERS = ["すべて", "Suno", "Udio", "MusicLM", "Stable Audio"];
 const PERIODS = ["日間", "週間", "月間", "全期間"];
-const MUSIC_TYPES = ["すべて", "AI生成", "オリジナル"];
+const MUSIC_TYPES = ["すべて", "オリジナル楽曲", "AI生成楽曲"];
 const SITE_URL = "https://revosong-charts.vercel.app";
 
 function formatNumber(n: number) {
@@ -207,24 +208,25 @@ function SocialAvatarLink({ platform, url }: { platform: string; url: string }) 
 function SocialLinksWithAvatars({ socialLinks }: { socialLinks: Record<string, string> }) {
   if (Object.keys(socialLinks).length === 0) return null;
 
+  const validLinks = Object.entries(socialLinks).filter(([_, url]: [string, any]) => !!url);
+
+  if (validLinks.length === 0) return null;
+
   return (
-    <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-      {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
-        if (!url) return null;
-        return (
-          <SocialAvatarLink
-            key={platform}
-            platform={platform}
-            url={url}
-          />
-        );
-      })}
+    <div style={{ display: 'inline-flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+      {validLinks.map(([platform, url]: [string, any]) => (
+        <SocialAvatarLink
+          key={platform}
+          platform={platform}
+          url={url}
+        />
+      ))}
     </div>
   );
 }
 
 // Component for player bar artist follow section
-function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: Record<string, string>; artist_social_url: string | null }) {
+function ArtistFollowSection({ socialLinks, artist_social_url, avatarUrl, artistName }: { socialLinks: Record<string, string>; artist_social_url: string | null; avatarUrl?: string | null; artistName?: string | null }) {
   const getPlatformLabel = (platform: string) => {
     const labels: Record<string, string> = {
       'x': 'X',
@@ -254,7 +256,7 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
   };
 
   const hasSocial = Object.keys(socialLinks).length > 0 || artist_social_url;
-  if (!hasSocial) return null;
+  if (!hasSocial && !avatarUrl) return null;
 
   return (
     <div style={{
@@ -265,22 +267,89 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
       <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", marginBottom: "10px", fontWeight: 600 }}>
         アーティストをフォロー
       </div>
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-        {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
-          if (!url) return null;
-          const label = getPlatformLabel(platform);
-          const icon = getSocialIcon(platform);
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+        {/* アバター表示 */}
+        {avatarUrl && (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "6px"
+          }}>
+            <img
+              src={avatarUrl}
+              alt="artist avatar"
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "2px solid rgba(255,45,85,0.4)"
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+            {artistName && (
+              <div style={{
+                fontSize: "10px",
+                color: "rgba(255,255,255,0.6)",
+                textAlign: "center",
+                maxWidth: "60px",
+                whiteSpace: "normal",
+                wordBreak: "break-word"
+              }}>
+                {artistName}
+              </div>
+            )}
+          </div>
+        )}
 
-          return (
+        {/* SNSリンク */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          {Object.entries(socialLinks).map(([platform, url]: [string, any]) => {
+            if (!url) return null;
+            const label = getPlatformLabel(platform);
+            const icon = getSocialIcon(platform);
+
+            return (
+              <a
+                key={platform}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  background: "rgba(255,45,85,0.2)",
+                  border: "1px solid rgba(255,45,85,0.4)",
+                  borderRadius: "16px",
+                  color: "#ff2d55",
+                  textDecoration: "none",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
+                onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
+              >
+                <span>{icon}</span>
+                <span>{label}</span>
+              </a>
+            );
+          })}
+          {artist_social_url && (
             <a
-              key={platform}
-              href={url}
+              href={artist_social_url}
               target="_blank"
               rel="noopener noreferrer"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "4px",
                 padding: "6px 12px",
                 background: "rgba(255,45,85,0.2)",
                 border: "1px solid rgba(255,45,85,0.4)",
@@ -295,40 +364,13 @@ function ArtistFollowSection({ socialLinks, artist_social_url }: { socialLinks: 
               onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
               onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
             >
-              <span>{icon}</span>
-              <span>{label}</span>
+              <span>🔗</span>
+              <span>プロフィール</span>
             </a>
-          );
-        })}
-        {artist_social_url && (
-          <a
-            href={artist_social_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "6px 12px",
-              background: "rgba(255,45,85,0.2)",
-              border: "1px solid rgba(255,45,85,0.4)",
-              borderRadius: "16px",
-              color: "#ff2d55",
-              textDecoration: "none",
-              fontSize: "11px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.3)")}
-            onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,45,85,0.2)")}
-          >
-            <span>🔗</span>
-            <span>プロフィール</span>
-          </a>
         )}
       </div>
     </div>
+  </div>
   );
 }
 
@@ -490,6 +532,9 @@ export default function Home() {
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(null);
   const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // アーティストプロフィール情報
+  const [artistProfile, setArtistProfile] = useState<{ avatar_url?: string | null; username?: string | null } | null>(null);
 
   // コメント管理用のState
   const [comments, setComments] = useState<CommentWithUserInfo[]>([]);
@@ -772,7 +817,7 @@ export default function Home() {
           commentsData.map(async (comment) => {
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("email, username, avatar_url, twitter_url, discord_url, instagram_url, youtube_url, tiktok_url, threads_url")
+              .select("email, username, avatar_url, twitter_url, discord_url, instagram_url, youtube_url, tiktok_url, threads_url, show_avatar_on_comments")
               .eq("id", comment.user_id)
               .single();
 
@@ -787,6 +832,7 @@ export default function Home() {
               youtube_url: profileData?.youtube_url,
               tiktok_url: profileData?.tiktok_url,
               threads_url: profileData?.threads_url,
+              show_avatar_on_comments: profileData?.show_avatar_on_comments ?? true,
             };
           })
         );
@@ -842,13 +888,29 @@ export default function Home() {
     setSubmitComment(false);
   };
 
-  // selectedTrackが変わったらコメントを再取得
+  // selectedTrackが変わったらコメントを再取得とアーティストプロフィール取得
   useEffect(() => {
     if (selectedTrack) {
       fetchComments(selectedTrack.id);
+
+      // アーティストプロフィール取得
+      const fetchArtistProfile = async () => {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("avatar_url, username")
+          .eq("id", selectedTrack.user_id)
+          .single();
+
+        if (profileData) {
+          setArtistProfile(profileData);
+        }
+      };
+
+      fetchArtistProfile();
     } else {
       setComments([]);
       setCommentInput("");
+      setArtistProfile(null);
     }
   }, [selectedTrack?.id]);
 
@@ -867,92 +929,156 @@ export default function Home() {
 
   // Setup auto-play for YouTube and SoundCloud
   useEffect(() => {
+    console.log('Auto-play effect triggered', {
+      trackTitle: selectedTrack?.title,
+      isPlaying,
+      playMode,
+      hasExternalUrl: !!selectedTrack?.external_url
+    });
+
     if (!selectedTrack || !isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
+      console.log('Auto-play conditions not met', {
+        hasTrack: !!selectedTrack,
+        isPlaying,
+        playMode
+      });
       return;
     }
 
     const url = selectedTrack.external_url;
-    if (!url) return;
-
-    // YouTube auto-play detection
-    if (getYouTubeId(url)) {
-      let checkCount = 0;
-      const maxChecks = 120; // 60 seconds (500ms * 120)
-
-      const youtubeCheckInterval = setInterval(() => {
-        checkCount++;
-
-        const iframes = document.querySelectorAll('iframe');
-        let youtubeIframe: HTMLIFrameElement | null = null;
-
-        for (const iframe of iframes) {
-          if (iframe.src && iframe.src.includes('youtube.com/embed')) {
-            youtubeIframe = iframe;
-            break;
-          }
-        }
-
-        // Check if iframe is still there (video playing)
-        if (!youtubeIframe || checkCount >= maxChecks) {
-          clearInterval(youtubeCheckInterval);
-          if (checkCount >= maxChecks) {
-            // Timeout - assume video ended
-            handleTrackEnd();
-          }
-        }
-      }, 500);
-
-      return () => clearInterval(youtubeCheckInterval);
+    console.log('Auto-play URL:', url);
+    if (!url) {
+      console.log('No URL found');
+      return;
     }
 
-    // SoundCloud auto-play detection
-    if (isSoundCloudUrl(url)) {
-      // SoundCloud widget auto-play detection
-      const setupSoundCloudListener = () => {
-        const iframes = document.querySelectorAll('iframe');
-        let scIframe: HTMLIFrameElement | null = null;
+    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
+    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
 
-        for (const iframe of iframes) {
-          if (iframe.src && iframe.src.includes('soundcloud.com')) {
-            scIframe = iframe;
-            break;
+    // Add a small delay to allow iframe to render
+    const delayTimer = setTimeout(() => {
+      // YouTube auto-play detection
+      const ytId = getYouTubeId(url);
+      if (ytId) {
+        console.log('YouTube detected, setting up auto-play for:', ytId);
+        let checkCount = 0;
+        const maxChecks = 120; // 60 seconds (500ms * 120)
+
+        youtubeCheckInterval = setInterval(() => {
+          checkCount++;
+
+          // Look for YouTube iframe more carefully
+          const iframes = document.querySelectorAll('iframe');
+          let youtubeIframe: HTMLIFrameElement | null = null;
+
+          for (const iframe of iframes) {
+            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
+              youtubeIframe = iframe;
+              console.log(`YouTube iframe found on check ${checkCount}`);
+              break;
+            }
           }
-        }
 
-        if (scIframe && window.SC) {
-          try {
-            const widget = window.SC.Widget(scIframe);
-            widget.bind(window.SC.Widget.Events.FINISH, () => {
-              handleTrackEnd();
-            });
-          } catch (e) {
-            // Fallback to timeout (average song length ~4 minutes)
-            setTimeout(() => {
+          if (checkCount % 20 === 0) {
+            console.log('YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
+          }
+
+          // If iframe disappears or we hit timeout, play next track
+          if (!youtubeIframe) {
+            // Check if this is a timeout or just not rendered yet
+            if (checkCount >= 20) { // Give it at least 10 seconds to find iframe
+              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+              if (checkCount >= maxChecks) {
+                console.log('YouTube timeout - playing next track');
+                handleTrackEnd();
+              }
+            }
+          } else if (checkCount >= maxChecks) {
+            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+            console.log('YouTube maxChecks reached - playing next track');
+            handleTrackEnd();
+          }
+        }, 500);
+        return;
+      }
+
+      // SoundCloud auto-play detection
+      if (isSoundCloudUrl(url)) {
+        console.log('SoundCloud detected, setting up auto-play');
+
+        const setupSoundCloudListener = () => {
+          console.log('Setting up SoundCloud listener');
+          const iframes = document.querySelectorAll('iframe');
+          let scIframe: HTMLIFrameElement | null = null;
+
+          for (const iframe of iframes) {
+            if (iframe.src && iframe.src.includes('soundcloud.com')) {
+              scIframe = iframe;
+              console.log('SoundCloud iframe found');
+              break;
+            }
+          }
+
+          console.log('SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
+
+          if (scIframe && window.SC) {
+            try {
+              console.log('Creating SoundCloud widget...');
+              const widget = window.SC.Widget(scIframe);
+              console.log('SoundCloud widget created successfully');
+
+              widget.bind(window.SC.Widget.Events.FINISH, () => {
+                console.log('SoundCloud track finished event - playing next');
+                handleTrackEnd();
+              });
+            } catch (e) {
+              console.log('SoundCloud API error, using timeout:', e);
+              // Fallback to timeout (average song length ~4 minutes)
+              soundCloudTimeout = setTimeout(() => {
+                if (isPlaying) {
+                  console.log('SoundCloud timeout - playing next track');
+                  handleTrackEnd();
+                }
+              }, 240000); // 4 minutes
+            }
+          } else {
+            console.log('Using SoundCloud timeout fallback (iframe or SC not available)');
+            // Fallback timeout
+            soundCloudTimeout = setTimeout(() => {
               if (isPlaying) {
+                console.log('SoundCloud fallback timeout - playing next track');
                 handleTrackEnd();
               }
             }, 240000); // 4 minutes
           }
-        } else {
-          // Fallback timeout
-          setTimeout(() => {
-            if (isPlaying) {
-              handleTrackEnd();
-            }
-          }, 240000); // 4 minutes
-        }
-      };
+        };
 
-      // Load SoundCloud widget script if needed
-      if (!window.SC) {
-        const script = document.createElement('script');
-        script.src = 'https://w.soundcloud.com/player/api.js';
-        script.onload = setupSoundCloudListener;
-        document.body.appendChild(script);
-      } else {
-        setupSoundCloudListener();
+        // Load SoundCloud widget script if needed
+        if (!window.SC) {
+          console.log('Loading SoundCloud widget API');
+          const script = document.createElement('script');
+          script.src = 'https://w.soundcloud.com/player/api.js';
+          script.onload = () => {
+            console.log('SoundCloud API loaded');
+            setupSoundCloudListener();
+          };
+          script.onerror = () => {
+            console.log('Failed to load SoundCloud API, using timeout');
+            setupSoundCloudListener();
+          };
+          document.body.appendChild(script);
+        } else {
+          console.log('SoundCloud API already loaded');
+          setupSoundCloudListener();
+        }
       }
-    }
+    }, 500); // Wait 500ms for iframe to render
+
+    return () => {
+      clearTimeout(delayTimer);
+      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
+    };
   }, [selectedTrack?.external_url, isPlaying, playMode, handleTrackEnd]);
 
   // Helper function to detect music type (audio/video) based on URL
@@ -965,7 +1091,7 @@ export default function Home() {
 
   const filtered = tracks.filter(
     (t) => (filter === "すべて" || t.ai_tool === filter) &&
-           (typeFilter === "すべて" || (typeFilter === "AI生成" ? t.music_type === "ai" : t.music_type === "original")) &&
+           (typeFilter === "すべて" || (typeFilter === "AI生成楽曲" ? t.music_type === "ai" : t.music_type === "original")) &&
            (musicTypeFilter === "すべて" ||
             (musicTypeFilter === "🎵 音源" ? getMusicContentType(t) === "audio" : getMusicContentType(t) === "video"))
   );
@@ -1277,9 +1403,9 @@ export default function Home() {
         }
         .track-row {
           display: grid;
-          grid-template-columns: 36px 48px 1fr auto;
+          grid-template-columns: 36px 56px 1fr auto;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           padding: 10px 14px;
           border-radius: 12px;
           opacity: 0;
@@ -1299,14 +1425,25 @@ export default function Home() {
         .rank-medal {
           font-size: 28px;
           text-align: center;
-          line-height: 1;
+          line-height: 1.2;
+          display: inline-block;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .rank-num {
           font-family: 'Oswald', sans-serif;
-          font-size: 22px;
+          font-size: 24px;
           font-weight: 700;
           color: rgba(255,255,255,0.55);
           text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
         }
         .track-title {
           font-size: 15px;
@@ -1325,6 +1462,9 @@ export default function Home() {
           margin-top: 3px;
           font-size: 11px;
           color: rgba(255,255,255,0.5);
+          flex-wrap: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .ai-badge {
           padding: 1px 6px;
@@ -1877,24 +2017,50 @@ export default function Home() {
       <div className="page-wrapper">
       <header className="hero">
         <div className="hero-bg" />
-        <h1 className="hero-title">MUSIC CHARTS</h1>
-        <p style={{ margin: "4px 0 12px", fontSize: "18px", fontWeight: "bold", color: "#00d4ff" }}>REVOSONG</p>
-        <p className="hero-sub">みんなの音楽ランキング</p>
-        <div className="hero-type-badges">
-          <span className="hero-type-badge hero-badge-ai">🤖 AI生成楽曲</span>
-          <span className="hero-type-badge hero-badge-orig">🎤 オリジナル楽曲</span>
-        </div>
-        <div className="top-buttons">
-          <div className="top-menu">
+        <h1 className="hero-title" style={{ fontSize: "5.5rem", letterSpacing: "2px" }}>MUSIC CHARTS</h1>
+        <p style={{ margin: "8px 0 16px", fontSize: "2.5rem", fontWeight: "bold", color: "#00d4ff", letterSpacing: "1px" }}>REVOSONG</p>
+        <p className="hero-sub" style={{ fontSize: "1.8rem", fontWeight: "600" }}>みんなの音楽ランキング</p>
+        {/* ナビゲーションメニュー */}
+        <nav style={{
+          textAlign: 'center',
+          padding: '20px 0',
+          marginTop: '12px',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
             <a href="/about" className="menu-link">About</a>
             <a href="/information" className="menu-link">Information</a>
             <a href="/playlists" className="menu-link">Playlist</a>
+            <a href="/campaigns" className="menu-link" style={{ color: '#FF6B9D', fontWeight: 'bold' }}>🎵 キャンペーン</a>
+            <a href="/campaign-themes/submit" className="menu-link" style={{ color: '#FFD700', fontWeight: 'bold' }}>💬 テーマ申請</a>
           </div>
-          {/* Navigation menu updated */}
+        </nav>
+
+        {/* ユーザーアクションボタン */}
+        <div style={{ textAlign: 'center', padding: '12px 0 20px 0', display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', zIndex: 10 }}>
+          {/* ユーザーボタン（右上） */}
           {user ? (
             <>
               <button className="btn-upload" onClick={() => setShowUpload(true)}>
                 + 投稿
+              </button>
+              <button
+                className="btn-profile"
+                onClick={() => (window.location.href = "/settings")}
+                style={{
+                  padding: "10px 16px",
+                  background: "rgba(0,212,255,0.2)",
+                  border: "1px solid rgba(0,212,255,0.4)",
+                  borderRadius: "8px",
+                  color: "#00d4ff",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                ⚙️ 設定
               </button>
               <button
                 className="btn-profile"
@@ -1948,237 +2114,115 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="filter-section-label">AIツール</div>
-      <div className="filters">
-        {FILTERS.map((f) => (
-          <div
-            key={f}
-            className={`filter-chip ${filter === f ? "filter-chip-on" : "filter-chip-off"}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
+      {/* フィルター全体（統一レイアウト） */}
+      <div style={{ marginBottom: '12px' }}>
+        {/* AIツール */}
+        <div style={{ marginBottom: '10px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '8px', fontSize: '13px' }}>AIツール</div>
+          <div className="filters" style={{ gap: '8px' }}>
+            {FILTERS.map((f) => (
+              <div
+                key={f}
+                className={`filter-chip ${filter === f ? "filter-chip-on" : "filter-chip-off"}`}
+                onClick={() => setFilter(f)}
+                style={{ fontSize: '13px', padding: '6px 14px' }}
+              >
+                {f}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="filter-section-label">タイプ</div>
-      <div className="type-filters">
-        {MUSIC_TYPES.map((t) => (
-          <div
-            key={t}
-            className={`type-chip ${typeFilter === t ? "type-chip-on" : "type-chip-off"}`}
-            onClick={() => setTypeFilter(t)}
-          >
-            {t === "AI生成" ? "🤖 AI生成" : t === "オリジナル" ? "🎤 オリジナル" : "🎵 すべて"}
+        {/* タイプ・コンテンツ・期間 */}
+        <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%' }}>
+          {/* タイプ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '0 0 auto' }}>
+            <div className="filter-section-label" style={{ fontSize: '13px' }}>タイプ</div>
+            <div className="type-filters" style={{ display: 'flex', gap: '8px' }}>
+              {MUSIC_TYPES.map((t) => (
+                <div
+                  key={t}
+                  className={`type-chip ${typeFilter === t ? "type-chip-on" : "type-chip-off"}`}
+                  onClick={() => setTypeFilter(t)}
+                  style={{ fontSize: '13px', padding: '6px 12px' }}
+                >
+                  {t === "AI生成楽曲" ? "🤖 AI生成楽曲" : t === "オリジナル楽曲" ? "🎤 オリジナル楽曲" : "🎵 " + t}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+
+          {/* コンテンツ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '0 0 auto' }}>
+            <div className="filter-section-label" style={{ fontSize: '13px' }}>コンテンツ</div>
+            <CategoryFilter
+              onFilterChange={(category) => {
+                setMusicTypeFilter(category);
+              }}
+              initialFilter={musicTypeFilter}
+            />
+          </div>
+
+          {/* 期間 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '0 0 auto' }}>
+            <div className="filter-section-label" style={{ fontSize: '13px' }}>期間</div>
+            <div className="period-bar" style={{ gap: '8px' }}>
+              {PERIODS.map((p) => (
+                <button
+                  key={p}
+                  className={`period-chip ${period === p ? "period-chip-on" : "period-chip-off"}`}
+                  onClick={() => setPeriod(p)}
+                  style={{ fontSize: '13px', padding: '6px 12px' }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="filter-section-label">コンテンツ</div>
-      <div style={{ paddingBottom: '12px' }}>
-        <CategoryFilter
-          onFilterChange={(category) => {
-            setMusicTypeFilter(category);
-          }}
-          initialFilter={musicTypeFilter}
-        />
-      </div>
-
-      <div className="filter-section-label">期間</div>
-      <div className="period-bar">
-        {PERIODS.map((p) => (
-          <button
-            key={p}
-            className={`period-chip ${period === p ? "period-chip-on" : "period-chip-off"}`}
-            onClick={() => setPeriod(p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
-      {/* Playback Controls */}
+      {/* Play Mode Controls */}
       {filtered.length > 0 && (
         <div style={{
-          background: 'rgba(0,212,255,0.05)',
-          border: '1px solid rgba(0,212,255,0.1)',
-          borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '20px'
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginBottom: '16px'
         }}>
-          {/* Currently playing */}
-          {selectedTrack && selectedTrackIndex !== null ? (
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
-                {isPlaying ? '▶ 再生中' : '⏸ 一時停止'}
-              </div>
-              <div style={{
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#00d4ff',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                {selectedTrack.title}
-              </div>
-              <div style={{
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.5)',
-                marginTop: '4px'
-              }}>
-                {selectedTrack.artist_name}
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.5)',
-              marginBottom: '20px'
-            }}>
-              再生する曲を選択してください
-            </div>
-          )}
+          <button
+            onClick={() => setPlayMode('shuffle')}
+            style={{
+              padding: '8px 16px',
+              background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+              border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '6px',
+              color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            🎲 ランダム
+          </button>
 
-          {/* Playback controls */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
-            marginBottom: '20px'
-          }}>
-            {/* Previous button */}
-            <button
-              onClick={handlePlayPrevious}
-              disabled={selectedTrackIndex === null || selectedTrackIndex === 0}
-              style={{
-                padding: '8px 16px',
-                background: selectedTrackIndex === null || selectedTrackIndex === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
-                border: '1px solid rgba(0,212,255,0.3)',
-                borderRadius: '6px',
-                color: selectedTrackIndex === null || selectedTrackIndex === 0 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: selectedTrackIndex === null || selectedTrackIndex === 0 ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              ⏮ 前曲
-            </button>
-
-            {/* Play/Pause button */}
-            <button
-              onClick={() => selectedTrackIndex !== null ? setIsPlaying(!isPlaying) : null}
-              disabled={selectedTrackIndex === null}
-              style={{
-                padding: '8px 16px',
-                background: selectedTrackIndex === null ? 'rgba(255,255,255,0.1)' : isPlaying ? 'rgba(255,45,85,0.2)' : 'rgba(0,212,255,0.2)',
-                border: selectedTrackIndex === null ? '1px solid rgba(255,255,255,0.2)' : isPlaying ? '1px solid rgba(255,45,85,0.3)' : '1px solid rgba(0,212,255,0.3)',
-                borderRadius: '6px',
-                color: selectedTrackIndex === null ? 'rgba(255,255,255,0.3)' : isPlaying ? '#ff2d55' : '#00d4ff',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: selectedTrackIndex === null ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {isPlaying ? '⏸ 一時停止' : '▶ 再生'}
-            </button>
-
-            {/* Next button */}
-            <button
-              onClick={handlePlayNext}
-              disabled={selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1}
-              style={{
-                padding: '8px 16px',
-                background: selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
-                border: '1px solid rgba(0,212,255,0.3)',
-                borderRadius: '6px',
-                color: selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: selectedTrackIndex === null || selectedTrackIndex >= filtered.length - 1 ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              次曲 ⏭
-            </button>
-          </div>
-
-          {/* Play mode */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap'
-          }}>
-            <button
-              onClick={() => setPlayMode('auto')}
-              style={{
-                padding: '8px 16px',
-                background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                border: playMode === 'auto' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '6px',
-                color: playMode === 'auto' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              順番に流れる
-            </button>
-
-            <button
-              onClick={() => setPlayMode('shuffle')}
-              style={{
-                padding: '8px 16px',
-                background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '6px',
-                color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              🎲 ランダム
-            </button>
-
-            <button
-              onClick={() => setPlayMode('once')}
-              style={{
-                padding: '8px 16px',
-                background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                border: playMode === 'once' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '6px',
-                color: playMode === 'once' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              1曲だけ
-            </button>
-
-            <button
-              onClick={() => setPlayMode('repeat-one')}
-              style={{
-                padding: '8px 16px',
-                background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '6px',
-                color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              🔁 1曲リピート
-            </button>
-          </div>
+          <button
+            onClick={() => setPlayMode('repeat-one')}
+            style={{
+              padding: '8px 16px',
+              background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
+              border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '6px',
+              color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            🔁 リピート
+          </button>
         </div>
       )}
 
@@ -2368,6 +2412,8 @@ export default function Home() {
             <ArtistFollowSection
               socialLinks={(selectedTrack as any).social_links || {}}
               artist_social_url={selectedTrack.artist_social_url}
+              avatarUrl={artistProfile?.avatar_url}
+              artistName={artistProfile?.username || selectedTrack.artist_name}
             />
           )}
 
@@ -2546,8 +2592,8 @@ export default function Home() {
                           gap: "6px",
                           flex: 1
                         }}>
-                          {/* アバター画像 */}
-                          {comment.avatar_url && (
+                          {/* アバター画像 - ユーザーがアバター表示を許可している場合のみ表示 */}
+                          {comment.avatar_url && comment.show_avatar_on_comments !== false && (
                             <img
                               src={comment.avatar_url}
                               alt="avatar"
@@ -2586,9 +2632,10 @@ export default function Home() {
                       {snsLinks.length > 0 && (
                         <div style={{
                           display: "flex",
-                          gap: "4px",
+                          gap: "6px",
                           marginBottom: "6px",
-                          flexWrap: "wrap"
+                          flexWrap: "wrap",
+                          alignItems: "center"
                         }}>
                           {snsLinks.map(({ platform, url, icon }) => (
                             <a
@@ -2601,20 +2648,24 @@ export default function Home() {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                width: "18px",
-                                height: "18px",
-                                fontSize: "11px",
-                                background: "rgba(255,45,85,0.2)",
-                                borderRadius: "3px",
+                                width: "20px",
+                                height: "20px",
+                                fontSize: "10px",
+                                background: "rgba(255,45,85,0.15)",
+                                border: "1px solid rgba(255,45,85,0.3)",
+                                borderRadius: "4px",
                                 textDecoration: "none",
                                 cursor: "pointer",
-                                transition: "all 0.2s"
+                                transition: "all 0.2s",
+                                flexShrink: 0
                               }}
                               onMouseOver={(e) => {
-                                e.currentTarget.style.background = "rgba(255,45,85,0.4)";
+                                e.currentTarget.style.background = "rgba(255,45,85,0.3)";
+                                e.currentTarget.style.borderColor = "rgba(255,45,85,0.6)";
                               }}
                               onMouseOut={(e) => {
-                                e.currentTarget.style.background = "rgba(255,45,85,0.2)";
+                                e.currentTarget.style.background = "rgba(255,45,85,0.15)";
+                                e.currentTarget.style.borderColor = "rgba(255,45,85,0.3)";
                               }}
                             >
                               {icon}
