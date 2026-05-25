@@ -1942,11 +1942,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* フィルター全体（統一レイアウト） */}
+      {/* フィルター全体（統一レイアウト - 左揃え） */}
       <div style={{ marginBottom: '0px' }}>
         {/* AIツール */}
-        <div style={{ marginBottom: '6px' }}>
-          <div className="filter-section-label" style={{ marginBottom: '6px', fontSize: '13px' }}>AIツール</div>
+        <div style={{ marginBottom: '4px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>AIツール</div>
           <div className="filters" style={{ gap: '8px' }}>
             {FILTERS.map((f) => (
               <div
@@ -1961,51 +1961,48 @@ export default function Home() {
           </div>
         </div>
 
-        {/* タイプ・コンテンツ・期間 */}
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%', marginBottom: '8px' }}>
-          {/* タイプ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
-            <div className="filter-section-label" style={{ fontSize: '13px' }}>タイプ</div>
-            <div className="type-filters" style={{ display: 'flex', gap: '8px' }}>
-              {MUSIC_TYPES.map((t) => (
-                <div
-                  key={t}
-                  className={`type-chip ${typeFilter === t ? "type-chip-on" : "type-chip-off"}`}
-                  onClick={() => setTypeFilter(t)}
-                  style={{ fontSize: '13px', padding: '6px 12px' }}
-                >
-                  {t === "AI生成楽曲" ? "🤖 AI生成楽曲" : t === "オリジナル楽曲" ? "🎤 オリジナル楽曲" : "🎵 " + t}
-                </div>
-              ))}
-            </div>
+        {/* タイプ */}
+        <div style={{ marginBottom: '4px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>タイプ</div>
+          <div className="type-filters" style={{ display: 'flex', gap: '8px' }}>
+            {MUSIC_TYPES.map((t) => (
+              <div
+                key={t}
+                className={`type-chip ${typeFilter === t ? "type-chip-on" : "type-chip-off"}`}
+                onClick={() => setTypeFilter(t)}
+                style={{ fontSize: '13px', padding: '6px 12px' }}
+              >
+                {t === "AI生成楽曲" ? "🤖 AI生成楽曲" : t === "オリジナル楽曲" ? "🎤 オリジナル楽曲" : "🎵 " + t}
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* コンテンツ */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
-            <div className="filter-section-label" style={{ fontSize: '13px' }}>コンテンツ</div>
-            <CategoryFilter
-              onFilterChange={(category) => {
-                setMusicTypeFilter(category);
-              }}
-              initialFilter={musicTypeFilter}
-            />
-          </div>
+        {/* コンテンツ */}
+        <div style={{ marginBottom: '4px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>コンテンツ</div>
+          <CategoryFilter
+            onFilterChange={(category) => {
+              setMusicTypeFilter(category);
+            }}
+            initialFilter={musicTypeFilter}
+          />
+        </div>
 
-          {/* 期間 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
-            <div className="filter-section-label" style={{ fontSize: '13px' }}>期間</div>
-            <div className="period-bar" style={{ gap: '8px' }}>
-              {PERIODS.map((p) => (
-                <button
-                  key={p}
-                  className={`period-chip ${period === p ? "period-chip-on" : "period-chip-off"}`}
-                  onClick={() => setPeriod(p)}
-                  style={{ fontSize: '13px', padding: '6px 12px' }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+        {/* 期間 */}
+        <div style={{ marginBottom: '4px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>期間</div>
+          <div className="period-bar" style={{ gap: '8px' }}>
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                className={`period-chip ${period === p ? "period-chip-on" : "period-chip-off"}`}
+                onClick={() => setPeriod(p)}
+                style={{ fontSize: '13px', padding: '6px 12px' }}
+              >
+                {p}
+              </button>
+            ))}
           </div>
         </div>
       </div>
