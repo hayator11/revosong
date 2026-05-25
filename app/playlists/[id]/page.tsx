@@ -163,82 +163,150 @@ export default function PlaylistPage() {
 
   // Setup auto-play for YouTube and SoundCloud
   useEffect(() => {
-    if (currentItemIndex === null || !items[currentItemIndex]) return;
-    if (!isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) return;
+    console.log('Playlist auto-play effect triggered', {
+      currentItemIndex,
+      isPlaying,
+      playMode,
+      hasItems: items.length > 0
+    });
+
+    if (currentItemIndex === null || !items[currentItemIndex]) {
+      console.log('Playlist auto-play: no current item');
+      return;
+    }
+
+    if (!isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
+      console.log('Playlist auto-play: not playing or wrong mode', { isPlaying, playMode });
+      return;
+    }
 
     const item = items[currentItemIndex];
     const url = item.url || item.external_url;
 
-    if (!url) return;
+    console.log('Playlist auto-play URL:', url);
+    if (!url) {
+      console.log('Playlist auto-play: no URL');
+      return;
+    }
 
-    // YouTube auto-play detection
-    if (getYouTubeId(url)) {
-      let checkCount = 0;
-      const maxChecks = 120;
+    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
+    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
 
-      const youtubeCheckInterval = setInterval(() => {
-        checkCount++;
-        const iframes = document.querySelectorAll('iframe');
-        let youtubeIframe: HTMLIFrameElement | null = null;
+    // Add a small delay to allow iframe to render
+    const delayTimer = setTimeout(() => {
+      // YouTube auto-play detection
+      if (getYouTubeId(url)) {
+        console.log('Playlist YouTube detected, setting up auto-play');
+        let checkCount = 0;
+        const maxChecks = 120;
 
-        for (const iframe of iframes) {
-          if (iframe.src && iframe.src.includes('youtube.com/embed')) {
-            youtubeIframe = iframe;
-            break;
+        youtubeCheckInterval = setInterval(() => {
+          checkCount++;
+          const iframes = document.querySelectorAll('iframe');
+          let youtubeIframe: HTMLIFrameElement | null = null;
+
+          for (const iframe of iframes) {
+            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
+              youtubeIframe = iframe;
+              console.log(`Playlist YouTube iframe found on check ${checkCount}`);
+              break;
+            }
           }
-        }
 
-        if (!youtubeIframe || checkCount >= maxChecks) {
-          clearInterval(youtubeCheckInterval);
-          if (checkCount >= maxChecks) {
+          if (checkCount % 20 === 0) {
+            console.log('Playlist YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
+          }
+
+          if (!youtubeIframe) {
+            if (checkCount >= 20) {
+              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+              if (checkCount >= maxChecks) {
+                console.log('Playlist YouTube timeout - playing next track');
+                handleTrackEnd();
+              }
+            }
+          } else if (checkCount >= maxChecks) {
+            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+            console.log('Playlist YouTube maxChecks reached - playing next track');
             handleTrackEnd();
           }
-        }
-      }, 500);
+        }, 500);
 
-      return () => clearInterval(youtubeCheckInterval);
-    }
+        return;
+      }
 
-    // SoundCloud auto-play detection
-    if (isSoundCloudUrl(url)) {
-      const setupSoundCloudListener = () => {
-        const iframes = document.querySelectorAll('iframe');
-        let scIframe: HTMLIFrameElement | null = null;
+      // SoundCloud auto-play detection
+      if (isSoundCloudUrl(url)) {
+        console.log('Playlist SoundCloud detected, setting up auto-play');
+        const setupSoundCloudListener = () => {
+          console.log('Playlist setting up SoundCloud listener');
+          const iframes = document.querySelectorAll('iframe');
+          let scIframe: HTMLIFrameElement | null = null;
 
-        for (const iframe of iframes) {
-          if (iframe.src && iframe.src.includes('soundcloud.com')) {
-            scIframe = iframe;
-            break;
+          for (const iframe of iframes) {
+            if (iframe.src && iframe.src.includes('soundcloud.com')) {
+              scIframe = iframe;
+              console.log('Playlist SoundCloud iframe found');
+              break;
+            }
           }
-        }
 
-        if (scIframe && window.SC) {
-          try {
-            const widget = window.SC.Widget(scIframe);
-            widget.bind(window.SC.Widget.Events.FINISH, () => {
-              handleTrackEnd();
-            });
-          } catch (e) {
-            setTimeout(() => {
-              if (isPlaying) handleTrackEnd();
+          console.log('Playlist SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
+
+          if (scIframe && window.SC) {
+            try {
+              console.log('Playlist creating SoundCloud widget');
+              const widget = window.SC.Widget(scIframe);
+              console.log('Playlist SoundCloud widget created');
+              widget.bind(window.SC.Widget.Events.FINISH, () => {
+                console.log('Playlist SoundCloud track finished - playing next');
+                handleTrackEnd();
+              });
+            } catch (e) {
+              console.log('Playlist SoundCloud API error, using timeout:', e);
+              soundCloudTimeout = setTimeout(() => {
+                if (isPlaying) {
+                  console.log('Playlist SoundCloud timeout - playing next track');
+                  handleTrackEnd();
+                }
+              }, 240000);
+            }
+          } else {
+            console.log('Playlist using SoundCloud timeout fallback');
+            soundCloudTimeout = setTimeout(() => {
+              if (isPlaying) {
+                console.log('Playlist SoundCloud fallback timeout - playing next track');
+                handleTrackEnd();
+              }
             }, 240000);
           }
-        } else {
-          setTimeout(() => {
-            if (isPlaying) handleTrackEnd();
-          }, 240000);
-        }
-      };
+        };
 
-      if (!window.SC) {
-        const script = document.createElement('script');
-        script.src = 'https://w.soundcloud.com/player/api.js';
-        script.onload = setupSoundCloudListener;
-        document.body.appendChild(script);
-      } else {
-        setupSoundCloudListener();
+        if (!window.SC) {
+          console.log('Playlist loading SoundCloud widget API');
+          const script = document.createElement('script');
+          script.src = 'https://w.soundcloud.com/player/api.js';
+          script.onload = () => {
+            console.log('Playlist SoundCloud API loaded');
+            setupSoundCloudListener();
+          };
+          script.onerror = () => {
+            console.log('Playlist failed to load SoundCloud API, using timeout');
+            setupSoundCloudListener();
+          };
+          document.body.appendChild(script);
+        } else {
+          console.log('Playlist SoundCloud API already loaded');
+          setupSoundCloudListener();
+        }
       }
-    }
+    }, 500); // Wait 500ms for iframe to render
+
+    return () => {
+      clearTimeout(delayTimer);
+      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
+    };
   }, [currentItemIndex, items, isPlaying, playMode, handleTrackEnd]);
 
   const handleAddItem = async (e: React.FormEvent) => {

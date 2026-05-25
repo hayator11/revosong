@@ -1945,8 +1945,8 @@ export default function Home() {
       {/* フィルター全体（統一レイアウト - 左揃え） */}
       <div style={{ marginBottom: '0px' }}>
         {/* AIツール */}
-        <div style={{ marginBottom: '4px' }}>
-          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>AIツール</div>
+        <div style={{ marginBottom: '2px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '2px', fontSize: '13px' }}>AIツール</div>
           <div className="filters" style={{ gap: '8px' }}>
             {FILTERS.map((f) => (
               <div
@@ -1962,9 +1962,9 @@ export default function Home() {
         </div>
 
         {/* タイプ */}
-        <div style={{ marginBottom: '4px' }}>
-          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>タイプ</div>
-          <div className="type-filters" style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ marginBottom: '2px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '2px', fontSize: '13px' }}>タイプ</div>
+          <div className="type-filters" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
             {MUSIC_TYPES.map((t) => (
               <div
                 key={t}
@@ -1979,9 +1979,18 @@ export default function Home() {
         </div>
 
         {/* コンテンツ & Play Mode Controls */}
-        <div style={{ marginBottom: '4px' }}>
-          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>コンテンツ</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ marginBottom: '2px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '2px', fontSize: '13px' }}>コンテンツ</div>
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            padding: '8px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '8px'
+          }}>
             <CategoryFilter
               onFilterChange={(category) => {
                 setMusicTypeFilter(category);
@@ -2031,8 +2040,8 @@ export default function Home() {
         </div>
 
         {/* 期間 */}
-        <div style={{ marginBottom: '4px' }}>
-          <div className="filter-section-label" style={{ marginBottom: '4px', fontSize: '13px' }}>期間</div>
+        <div style={{ marginBottom: '2px' }}>
+          <div className="filter-section-label" style={{ marginBottom: '2px', fontSize: '13px' }}>期間</div>
           <div className="period-bar" style={{ gap: '8px' }}>
             {PERIODS.map((p) => (
               <button
@@ -2048,7 +2057,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={{ marginBottom: '12px' }} />
+      <div style={{ marginBottom: '8px' }} />
 
       <div className="ranking-header">
         <span>Ranking</span>
