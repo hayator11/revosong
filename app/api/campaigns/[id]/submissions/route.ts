@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabase';
 // GET /api/campaigns/[id]/submissions - Get submissions grouped by theme
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(resolvedParams.id);
 
     // Fetch campaign to check dates
     const { data: campaign, error: campaignError } = await supabase
@@ -84,8 +85,9 @@ export async function GET(
 // POST /api/campaigns/[id]/submissions - Submit track to campaign
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -96,7 +98,7 @@ export async function POST(
       );
     }
 
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { campaign_theme_id, track_id } = body;
 

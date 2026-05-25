@@ -10,8 +10,9 @@ const supabaseAdmin = createClient(
 // PATCH /api/admin/recruitment/[id] - Update application status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const body = await request.json();
     const { status } = body;
@@ -24,7 +25,7 @@ export async function PATCH(
       );
     }
 
-    const themeId = parseInt(params.id);
+    const themeId = parseInt(resolvedParams.id);
     if (isNaN(themeId)) {
       return NextResponse.json(
         { error: 'Invalid ID' },
@@ -72,10 +73,11 @@ export async function PATCH(
 // GET /api/admin/recruitment/[id] - Get specific application details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
-    const themeId = parseInt(params.id);
+    const themeId = parseInt(resolvedParams.id);
     if (isNaN(themeId)) {
       return NextResponse.json(
         { error: 'Invalid ID' },

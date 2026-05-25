@@ -15,8 +15,9 @@ async function isAdmin(userId: string): Promise<boolean> {
 // DELETE /api/campaigns/[id]/submissions/[submissionId] - Delete submission
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; submissionId: string } }
+  { params }: { params: Promise<{ id: string; submissionId: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -27,7 +28,7 @@ export async function DELETE(
       );
     }
 
-    const submissionId = parseInt(params.submissionId);
+    const submissionId = parseInt(resolvedParams.submissionId);
 
     // Get submission to check ownership
     const { data: submission, error: submitError } = await supabase

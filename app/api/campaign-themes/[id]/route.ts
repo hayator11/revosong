@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabase';
 // GET /api/campaign-themes/[id] - Get single theme
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(resolvedParams.id);
 
     const { data: theme, error } = await supabase
       .from('campaign_themes')

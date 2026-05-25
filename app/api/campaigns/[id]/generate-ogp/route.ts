@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabase';
 // POST /api/campaigns/[id]/generate-ogp - Generate OGP image for campaign award
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { submission_id } = body;
 

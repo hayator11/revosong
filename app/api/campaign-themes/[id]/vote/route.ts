@@ -4,8 +4,9 @@ import { supabase } from '@/lib/supabase';
 // POST /api/campaign-themes/[id]/vote - Vote on a campaign theme
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -16,7 +17,7 @@ export async function POST(
       );
     }
 
-    const id = parseInt(params.id);
+    const id = parseInt(resolvedParams.id);
 
     // Get the current theme
     const { data: theme, error: fetchError } = await supabase

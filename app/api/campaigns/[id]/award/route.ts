@@ -23,10 +23,11 @@ async function getThemeProposer(campaignId: number): Promise<string | null> {
 // GET /api/campaigns/[id]/award - Get award selection for campaign
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(resolvedParams.id);
 
     const { data: campaign, error } = await supabase
       .from('campaigns')
@@ -82,8 +83,9 @@ export async function GET(
 // POST /api/campaigns/[id]/award - Theme proposer selects favorite submission
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -94,7 +96,7 @@ export async function POST(
       );
     }
 
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { submission_id, theme_proposer_comment } = body;
 
@@ -207,8 +209,9 @@ export async function POST(
 // PATCH /api/campaigns/[id]/award - Update theme proposer's comment
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -219,7 +222,7 @@ export async function PATCH(
       );
     }
 
-    const campaignId = parseInt(params.id);
+    const campaignId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { theme_proposer_comment } = body;
 
