@@ -1943,9 +1943,9 @@ export default function Home() {
       </div>
 
       {/* フィルター全体（統一レイアウト） */}
-      <div style={{ marginBottom: '8px' }}>
+      <div style={{ marginBottom: '0px' }}>
         {/* AIツール */}
-        <div style={{ marginBottom: '8px' }}>
+        <div style={{ marginBottom: '6px' }}>
           <div className="filter-section-label" style={{ marginBottom: '6px', fontSize: '13px' }}>AIツール</div>
           <div className="filters" style={{ gap: '8px' }}>
             {FILTERS.map((f) => (
@@ -1962,7 +1962,7 @@ export default function Home() {
         </div>
 
         {/* タイプ・コンテンツ・期間 */}
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%', marginBottom: '8px' }}>
           {/* タイプ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '0 0 auto' }}>
             <div className="filter-section-label" style={{ fontSize: '13px' }}>タイプ</div>
@@ -2014,14 +2014,14 @@ export default function Home() {
       {filtered.length > 0 && (
         <div style={{
           display: 'flex',
-          gap: '12px',
+          gap: '8px',
           flexWrap: 'wrap',
           marginBottom: '12px'
         }}>
           <button
             onClick={() => setPlayMode('shuffle')}
             style={{
-              padding: '8px 16px',
+              padding: '6px 12px',
               background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
               border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
               borderRadius: '6px',
@@ -2038,7 +2038,7 @@ export default function Home() {
           <button
             onClick={() => setPlayMode('repeat-one')}
             style={{
-              padding: '8px 16px',
+              padding: '6px 12px',
               background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
               border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
               borderRadius: '6px',
