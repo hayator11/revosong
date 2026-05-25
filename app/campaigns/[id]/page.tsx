@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { TrackCard } from '@/app/components/TrackCard';
 import { CampaignComment } from '@/app/components/CampaignComment';
@@ -28,7 +28,8 @@ interface RankingItem {
   votes: number;
 }
 
-export default function CampaignDetailPage({ params }: { params: { id: string } }) {
+export default function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [selectedTrack, setSelectedTrack] = useState<number | null>(null);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [rankings, setRankings] = useState<RankingItem[]>([]);
@@ -38,7 +39,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     const fetchCampaignData = async () => {
       try {
         // Fetch campaign detail
-        const campaignRes = await fetch(`/api/campaigns/${params.id}`);
+        const campaignRes = await fetch(`/api/campaigns/${id}`);
         const campaignData = await campaignRes.json();
 
         if (campaignData.campaign) {
@@ -53,7 +54,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         }
 
         // Fetch campaign ranking
-        const rankingRes = await fetch(`/api/campaigns/${params.id}/ranking`);
+        const rankingRes = await fetch(`/api/campaigns/${id}/ranking`);
         const rankingData = await rankingRes.json();
 
         // Transform ranking data to match TrackCard props format
@@ -83,7 +84,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     };
 
     fetchCampaignData();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
