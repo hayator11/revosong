@@ -78,13 +78,44 @@
   - キャンペーン終了後に自動的にaward UIを表示
   - 現在ユーザーがテーマプロポーザーかどうかを判定
 
-### 次のタスク（優先度順）
-1. **OGP画像生成機能の実装**
-   - sharp ライブラリで画像合成
-   - キャンペーンテーマ + トラック + 提案者名を合成
-   - API: `/api/campaigns/[id]/generate-ogp`
+## フェーズ3（OGP画像生成機能の実装）
+### 実装完了
+- ✅ sharpライブラリ統合（既にインストール済み）
+- ✅ `/api/campaigns/[id]/generate-ogp` - OGP画像生成エンドポイント実装
+  - SVG背景（グラデーション: ピンク→紫→青）
+  - トラックサムネイル処理（250x250、中央配置）
+  - テキストレイヤー（キャンペーン名 + 提案者名 + REVOSONG ブランド）
+  - `/public/ogp/campaigns/` への画像保存
+  - XMLエスケープ処理で安全性確保
+  - フォールバック機能（生成失敗時は別URLを返却）
+  
+- ✅ `/api/og/campaigns/[id]` - OGP画像配信エンドポイント実装
+  - キャッシング機能（ファイル存在確認）
+  - オンデマンド生成機能（キャッシュ未存在時に動的生成）
+  - 24時間キャッシュヘッダー設定
+  - HTTPレスポンスで画像を直接配信
 
-2. **Navigation & Award機能の動作確認**
-   - 各ページの遷移確認
-   - キャンペーン詳細ページでawardコンポーネントの表示確認
-   - テーマプロポーザー選択機能の動作確認
+- ✅ Award API の OGP生成トリガー統合
+  - POST /api/campaigns/[id]/award でOGP生成を自動実行
+  - OGP URLをキャンペーンDB に保存
+
+### 実装ファイル
+- ✅ app/api/campaigns/[id]/generate-ogp/route.ts - OGP画像生成
+- ✅ app/api/og/campaigns/[id]/route.ts - OGP画像配信
+
+### 次のタスク（優先度順）
+1. **Meta タグの実装**
+   - キャンペーン詳細ページに og:image メタタグ追加
+   - og:title, og:description, twitter:image 設定
+   - Next.js generateMetadata での動的設定
+
+2. **Awards Showcase ページ（応援ソング殿堂入り）の実装**
+   - /campaigns/awards ページ実装
+   - 過去のキャンペーン受賞曲表示
+   - OGP画像表示
+   - フィルタリング機能（年度、提案者）
+
+3. **デプロイ確認**
+   - Vercelへのデプロイ
+   - revosong.onokun.com アクセス確認
+   - OGP画像生成の動作確認
