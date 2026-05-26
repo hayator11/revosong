@@ -103,11 +103,35 @@
 - ✅ app/api/campaigns/[id]/generate-ogp/route.ts - OGP画像生成
 - ✅ app/api/og/campaigns/[id]/route.ts - OGP画像配信
 
+## フェーズ4（Meta タグ実装とドメイン設定完成）
+### 実装完了
+- ✅ カスタムドメイン設定完了
+  - revosong.onokun.com → Vercel CNAME 設定完了
+  - SSL証明書自動発行完了
+  - revosong.onokun.com でライブ運用中
+  
+- ✅ Meta タグの実装
+  - app/campaigns/[id]/layout.tsx 作成
+  - generateMetadata でキャンペーン情報を動的取得
+  - og:image, og:title, og:description 設定
+  - twitter:card, twitter:image 設定
+  - Service Role Key を使用した確実なサーバーサイド実装
+  
+- ✅ 環境変数設定
+  - .env.local: NEXT_PUBLIC_BASE_URL=http://localhost:3000
+  - .env.production: NEXT_PUBLIC_BASE_URL=https://revosong.onokun.com
+  - Vercel 環境変数に登録完了
+
+### 実装ファイル
+- ✅ app/campaigns/[id]/layout.tsx - Meta タグ動的生成
+- ✅ .env.local - ローカル環境変数
+- ✅ .env.production - 本番環境変数
+
 ### 次のタスク（優先度順）
-1. **Meta タグの実装**
-   - キャンペーン詳細ページに og:image メタタグ追加
-   - og:title, og:description, twitter:image 設定
-   - Next.js generateMetadata での動的設定
+1. **Meta タグの動作確認**（デプロイ後）
+   - revosong.onokun.com/campaigns/1 にアクセス
+   - ページソースで og:image, og:title を確認
+   - Twitter/Facebook でシェアプレビューを確認
 
 2. **Awards Showcase ページ（応援ソング殿堂入り）の実装**
    - /campaigns/awards ページ実装
@@ -115,7 +139,6 @@
    - OGP画像表示
    - フィルタリング機能（年度、提案者）
 
-3. **デプロイ確認**
-   - Vercelへのデプロイ
-   - revosong.onokun.com アクセス確認
-   - OGP画像生成の動作確認
+3. **その他の機能実装**
+   - Playlist 機能
+   - Meta タグの他のページへの展開
