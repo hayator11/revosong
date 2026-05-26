@@ -127,18 +127,27 @@
 - ✅ .env.local - ローカル環境変数
 - ✅ .env.production - 本番環境変数
 
-### 次のタスク（優先度順）
-1. **Meta タグの動作確認**（デプロイ後）
-   - revosong.onokun.com/campaigns/1 にアクセス
-   - ページソースで og:image, og:title を確認
-   - Twitter/Facebook でシェアプレビューを確認
+### 動作確認完了（2026-05-26）
+- ✅ **Meta タグの動作確認完了**
+  - revosong.onokun.com/campaigns/1 のページソースで og:image タグ確認
+  - og:title, og:description タグ確認
+  - twitter:card, twitter:image タグ確認
+  - すべてのOGPメタタグが正常に生成・配信されている
 
-2. **Awards Showcase ページ（応援ソング殿堂入り）の実装**
-   - /campaigns/awards ページ実装
-   - 過去のキャンペーン受賞曲表示
-   - OGP画像表示
-   - フィルタリング機能（年度、提案者）
+## フェーズ5（Awards Showcase ページ & Social Sharing 強化）
+### 優先タスク
+1. **Awards Showcase ページ（応援ソング殿堂入り）の実装**
+   - `/campaigns/awards` ページ作成
+   - 過去のキャンペーン受賞曲ギャラリー表示
+   - OGP画像を活用したサムネイル表示
+   - フィルタリング機能（年度、テーマ提案者）
+   - ソーシャルシェア統合
+
+2. **Social Sharing テスト**
+   - Twitter/X Card Validator でプレビュー確認
+   - Facebook Share Debugger でプレビュー確認
+   - 実際のシェアテスト
 
 3. **その他の機能実装**
-   - Playlist 機能
-   - Meta タグの他のページへの展開
+   - Playlist 機能（後続フェーズ）
+   - Meta タグの他のページへの展開（main page, theme pages など）
