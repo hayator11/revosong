@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 interface CampaignData {
   id: number;
@@ -8,54 +8,66 @@ interface CampaignData {
   ogp_image_url?: string;
 }
 
+// サーバーサイド専用 Supabase クライアント
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
 // キャンペーンデータを取得してMetadataを生成
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
   const resolvedParams = await params;
   const campaignId = parseInt(resolvedParams.id);
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://revosong.onokun.com';
 
   try {
+    const supabase = getSupabaseClient();
+
     // キャンペーンデータを取得
-    const { data: campaign } = await supabase
+    const { data: campaign, error } = await supabase
       .from('campaigns')
       .select('id, title, description, ogp_image_url')
       .eq('id', campaignId)
       .single();
 
-    if (!campaign) {
+    if (error || !campaign) {
       return {
         title: 'キャンペーン - REVOSONG',
         description: 'REVOSONGのキャンペーン詳細ページです',
       };
     }
 
-    // OGP画像URL（なければAPI経由で動的生成）
+    // OGP画像URL
     const ogpImageUrl = campaign.ogp_image_url || `/api/og/campaigns/${campaignId}`;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://revosong.onokun.com';
+    const fullOgpUrl = ogpImageUrl.startsWith('http') ? ogpImageUrl : `${baseUrl}${ogpImageUrl}`;
 
     return {
       title: `${campaign.title} - REVOSONG`,
-      description: campaign.description || 'REVOSONGのキャンペーンに参加しよう',
+      description: campaign.description || 'REVOSONGのキャンペーンに参加しよう！',
+      metadataBase: new URL(baseUrl),
       openGraph: {
         title: campaign.title,
-        description: campaign.description || 'REVOSONGのキャンペーンに参加しよう',
+        description: campaign.description || 'REVOSONGのキャンペーンに参加しよう！',
         type: 'website',
         images: [
           {
-            url: ogpImageUrl.startsWith('http') ? ogpImageUrl : `${baseUrl}${ogpImageUrl}`,
+            url: fullOgpUrl,
             width: 1200,
             height: 630,
             alt: campaign.title,
           },
         ],
-        url: `${baseUrl}/campaigns/${campaignId}`,
+        url: `/campaigns/${campaignId}`,
       },
       twitter: {
         card: 'summary_large_image',
         title: campaign.title,
-        description: campaign.description || 'REVOSONGのキャンペーンに参加しよう',
-        images: [ogpImageUrl.startsWith('http') ? ogpImageUrl : `${baseUrl}${ogpImageUrl}`],
+        description: campaign.description || 'REVOSONGのキャンペーンに参加しよう！',
+        images: [fullOgpUrl],
       },
     };
   } catch (error) {
