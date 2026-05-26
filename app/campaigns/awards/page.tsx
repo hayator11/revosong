@@ -1,34 +1,74 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { BackButton } from '@/app/components/BackButton';
 import { Breadcrumb } from '@/app/components/Breadcrumb';
 
-export default function AwardsPage() {
-  // TODO: データベースから過去の受賞曲を取得
+interface Award {
+  id: number;
+  campaignId: number;
+  campaignTitle: string;
+  campaignDescription?: string;
+  themeTitle?: string;
+  themeProposeId?: string;
+  awardedDate: string;
+  trackTitle: string;
+  artistName: string;
+  proposerName: string;
+  proposerAvatar?: string;
+  proposerComment: string;
+  thumbnailUrl?: string;
+  ogpImageUrl?: string;
+}
 
-  const awards = [
-    {
-      id: 1,
-      campaignTitle: '🎨 Revo Art Project - 見るアートではなく、関わるアート',
-      trackTitle: 'Colors of Hope',
-      artistName: 'REVO ARTIST 001',
-      proposerName: '@ffdca163',
-      proposerComment: '街にいろどりを。地域に記憶を。このアーティストの表現がまさにそれを実現しています。',
-      thumbnailUrl: '/placeholder-music.jpg',
-      awardedDate: '2026-06-24',
-    },
-    {
-      id: 2,
-      campaignTitle: '🚐 Onokun Art Caravan - 街にいろどりを',
-      trackTitle: 'New Horizon',
-      artistName: 'REVO ARTIST 002',
-      proposerName: '@onokun_admin',
-      proposerComment: 'この曲を聴いていると、自分の街への新しい見方が生まれてくる。まさに共創の力を感じます。',
-      thumbnailUrl: '/placeholder-music.jpg',
-      awardedDate: '2026-06-22',
-    },
-  ];
+export default function AwardsPage() {
+  const [awards, setAwards] = useState<Award[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [years, setYears] = useState<number[]>([]);
+
+  useEffect(() => {
+    const fetchAwards = async () => {
+      try {
+        setLoading(true);
+        const url = new URL('/api/campaigns/awards', window.location.origin);
+        if (selectedYear) {
+          url.searchParams.set('year', selectedYear);
+        }
+
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+          throw new Error('Failed to fetch awards');
+        }
+
+        const data = await response.json();
+        setAwards(data.awards || []);
+
+        // Extract unique years
+        if (data.awards && data.awards.length > 0) {
+          const uniqueYears = new Set<number>();
+          data.awards.forEach((award: Award) => {
+            if (award.awardedDate) {
+              const year = new Date(award.awardedDate).getFullYear();
+              uniqueYears.add(year);
+            }
+          });
+          setYears(Array.from(uniqueYears).sort((a, b) => b - a));
+        }
+      } catch (err) {
+        console.error('Error fetching awards:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load awards');
+        // Fallback to empty array if API fails
+        setAwards([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAwards();
+  }, [selectedYear]);
 
   const handleShare = (platform: string, award: typeof awards[0]) => {
     const text = `🎁 ${award.campaignTitle}\n応援ソング殿堂入り: ${award.trackTitle} by ${award.artistName}\n${window.location.href}`;
@@ -84,7 +124,61 @@ export default function AwardsPage() {
           </p>
         </div>
 
+        {/* Filter Section */}
+        {years.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-3 justify-center">
+            <button
+              onClick={() => setSelectedYear('')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                selectedYear === ''
+                  ? 'bg-pink-500 text-white'
+                  : 'bg-white text-slate-700 border-2 border-pink-200 hover:border-pink-500'
+              }`}
+            >
+              すべての年
+            </button>
+            {years.map((year) => (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year.toString())}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  selectedYear === year.toString()
+                    ? 'bg-pink-500 text-white'
+                    : 'bg-white text-slate-700 border-2 border-pink-200 hover:border-pink-500'
+                }`}
+              >
+                {year}年
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="col-span-full bg-white rounded-lg shadow-md p-12 text-center">
+            <div className="inline-block animate-spin">
+              <div className="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full"></div>
+            </div>
+            <p className="text-gray-600 text-lg mt-4">
+              受賞曲を読み込んでいます...
+            </p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="col-span-full bg-red-50 border-2 border-red-200 rounded-lg shadow-md p-8 text-center">
+            <p className="text-red-600 text-lg font-semibold">
+              ⚠️ データの読み込みに失敗しました
+            </p>
+            <p className="text-red-500 text-sm mt-2">
+              {error}
+            </p>
+          </div>
+        )}
+
         {/* Awards Grid */}
+        {!loading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {awards.length > 0 ? (
             awards.map((award) => (
@@ -105,22 +199,32 @@ export default function AwardsPage() {
                   {award.campaignTitle}
                 </h2>
 
-                {/* Track Info */}
-                <div className="bg-white rounded-lg p-6 mb-6">
-                  <div className="flex gap-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl">
-                      🎵
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-slate-900 mb-2">
-                        {award.trackTitle}
-                      </h3>
-                      <p className="text-slate-600 font-semibold">
-                        🎤 {award.artistName}
-                      </p>
+                {/* OGP Image or Track Info */}
+                {award.ogpImageUrl ? (
+                  <div className="bg-white rounded-lg p-4 mb-6 overflow-hidden">
+                    <img
+                      src={award.ogpImageUrl}
+                      alt={award.trackTitle}
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg p-6 mb-6">
+                    <div className="flex gap-4">
+                      <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl">
+                        🎵
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">
+                          {award.trackTitle}
+                        </h3>
+                        <p className="text-slate-600 font-semibold">
+                          🎤 {award.artistName}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Proposer Message */}
                 <div className="bg-white rounded-lg p-6 mb-6">
@@ -179,6 +283,7 @@ export default function AwardsPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* CTA Section */}
         <section className="mt-16 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-xl shadow-lg p-8 md:p-12 text-white text-center">
