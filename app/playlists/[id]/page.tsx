@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Type definitions for SoundCloud Widget
 declare global {
@@ -11,10 +11,10 @@ declare global {
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { detectService, parseDefaultMetadata, fetchMetadataFromApi } from '@/lib/playlist-utils';
+import { detectService, fetchMetadataFromApi } from '@/lib/playlist-utils';
 import { AddPlaylistItem } from '@/app/components/AddPlaylistItem';
 import { PlaylistItemCard } from '@/app/components/PlaylistItemCard';
-import { EmbedPlayer, getYouTubeId, isSoundCloudUrl } from '@/app/components/EmbedPlayer';
+import { EmbedPlayer, isSoundCloudUrl } from '@/app/components/EmbedPlayer';
 
 interface Playlist {
   id: number;
@@ -72,19 +72,25 @@ export default function PlaylistPage() {
 
   // Playback state
   const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
-  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
+  const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('auto');
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // playerKey forces EmbedPlayer remount (used for repeat-one)
+  const [playerKey, setPlayerKey] = useState(0);
+  // isMobile for responsive player height
+  const [isMobile, setIsMobile] = useState(false);
+  // ref to always have the latest handleTrackEnd without stale closure issues
+  const handleTrackEndRef = useRef<() => void>(() => {});
 
   // Fetch current user and playlist
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser) {
           setUser(currentUser);
         }
 
-        // Fetch playlist
         const response = await fetch(`/api/playlists/${playlistId}`);
 
         if (!response.ok) {
@@ -95,7 +101,6 @@ export default function PlaylistPage() {
         setPlaylist(data.playlist);
         setItems(data.items || []);
 
-        // Check if current user is owner
         if (currentUser && data.playlist.user_id === currentUser.id) {
           setIsOwner(true);
         }
@@ -112,6 +117,14 @@ export default function PlaylistPage() {
     }
   }, [playlistId]);
 
+  // Mobile detection
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   // Playback control functions
   const handlePlayItem = (index: number) => {
     setCurrentItemIndex(index);
@@ -122,18 +135,16 @@ export default function PlaylistPage() {
     if (currentItemIndex === null || items.length === 0) return;
 
     if (playMode === 'shuffle') {
-      // Random next song
       const randomIndex = Math.floor(Math.random() * items.length);
       setCurrentItemIndex(randomIndex);
       setIsPlaying(true);
     } else {
-      // Sequential next song
       const nextIndex = currentItemIndex + 1;
       if (nextIndex < items.length) {
         setCurrentItemIndex(nextIndex);
         setIsPlaying(true);
       } else {
-        // End of playlist - stop
+        // End of playlist
         setIsPlaying(false);
       }
     }
@@ -150,164 +161,70 @@ export default function PlaylistPage() {
 
   const handleTrackEnd = () => {
     if (playMode === 'repeat-one' && currentItemIndex !== null) {
-      // Restart the current song
-      setIsPlaying(true);
+      // Increment playerKey to force EmbedPlayer remount, replaying the same track
+      setPlayerKey(prev => prev + 1);
     } else if (playMode === 'once') {
-      // Stop after current song
       setIsPlaying(false);
-    } else if (playMode === 'auto' || playMode === 'shuffle') {
-      // Play next song automatically
+    } else {
+      // auto or shuffle
       handlePlayNext();
     }
   };
 
-  // Setup auto-play for YouTube and SoundCloud
+  // Keep ref current on every render (avoids stale closure in event listeners)
+  handleTrackEndRef.current = handleTrackEnd;
+
+  // YouTube auto-advance: listen for postMessage onStateChange=0 (video ended)
   useEffect(() => {
-    console.log('Playlist auto-play effect triggered', {
-      currentItemIndex,
-      isPlaying,
-      playMode,
-      hasItems: items.length > 0
-    });
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.event === 'onStateChange' && data.info === 0) {
+          handleTrackEndRef.current();
+        }
+      } catch {
+        // Ignore parse errors from non-YouTube messages
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
-    if (currentItemIndex === null || !items[currentItemIndex]) {
-      console.log('Playlist auto-play: no current item');
-      return;
-    }
-
-    if (!isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
-      console.log('Playlist auto-play: not playing or wrong mode', { isPlaying, playMode });
-      return;
-    }
-
+  // SoundCloud auto-advance: bind Widget FINISH event when SC track is active
+  useEffect(() => {
+    if (currentItemIndex === null || !items[currentItemIndex]) return;
     const item = items[currentItemIndex];
     const url = item.url || item.external_url;
+    if (!url || !isSoundCloudUrl(url)) return;
 
-    console.log('Playlist auto-play URL:', url);
-    if (!url) {
-      console.log('Playlist auto-play: no URL');
-      return;
-    }
-
-    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
-    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    // Add a small delay to allow iframe to render
-    const delayTimer = setTimeout(() => {
-      // YouTube auto-play detection
-      if (getYouTubeId(url)) {
-        console.log('Playlist YouTube detected, setting up auto-play');
-        let checkCount = 0;
-        const maxChecks = 120;
-
-        youtubeCheckInterval = setInterval(() => {
-          checkCount++;
-          const iframes = document.querySelectorAll('iframe');
-          let youtubeIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
-              youtubeIframe = iframe;
-              console.log(`Playlist YouTube iframe found on check ${checkCount}`);
-              break;
-            }
-          }
-
-          if (checkCount % 20 === 0) {
-            console.log('Playlist YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
-          }
-
-          if (!youtubeIframe) {
-            if (checkCount >= 20) {
-              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-              if (checkCount >= maxChecks) {
-                console.log('Playlist YouTube timeout - playing next track');
-                handleTrackEnd();
-              }
-            }
-          } else if (checkCount >= maxChecks) {
-            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-            console.log('Playlist YouTube maxChecks reached - playing next track');
-            handleTrackEnd();
-          }
-        }, 500);
-
-        return;
+    const setupSCListener = () => {
+      const iframe = document.querySelector('iframe[src*="soundcloud.com"]') as HTMLIFrameElement;
+      if (!iframe || !window.SC) return;
+      try {
+        const widget = window.SC.Widget(iframe);
+        widget.bind(window.SC.Widget.Events.FINISH, () => handleTrackEndRef.current());
+      } catch {
+        // SoundCloud Widget API unavailable
       }
+    };
 
-      // SoundCloud auto-play detection
-      if (isSoundCloudUrl(url)) {
-        console.log('Playlist SoundCloud detected, setting up auto-play');
-        const setupSoundCloudListener = () => {
-          console.log('Playlist setting up SoundCloud listener');
-          const iframes = document.querySelectorAll('iframe');
-          let scIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('soundcloud.com')) {
-              scIframe = iframe;
-              console.log('Playlist SoundCloud iframe found');
-              break;
-            }
-          }
-
-          console.log('Playlist SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
-
-          if (scIframe && window.SC) {
-            try {
-              console.log('Playlist creating SoundCloud widget');
-              const widget = window.SC.Widget(scIframe);
-              console.log('Playlist SoundCloud widget created');
-              widget.bind(window.SC.Widget.Events.FINISH, () => {
-                console.log('Playlist SoundCloud track finished - playing next');
-                handleTrackEnd();
-              });
-            } catch (e) {
-              console.log('Playlist SoundCloud API error, using timeout:', e);
-              soundCloudTimeout = setTimeout(() => {
-                if (isPlaying) {
-                  console.log('Playlist SoundCloud timeout - playing next track');
-                  handleTrackEnd();
-                }
-              }, 240000);
-            }
-          } else {
-            console.log('Playlist using SoundCloud timeout fallback');
-            soundCloudTimeout = setTimeout(() => {
-              if (isPlaying) {
-                console.log('Playlist SoundCloud fallback timeout - playing next track');
-                handleTrackEnd();
-              }
-            }, 240000);
-          }
-        };
-
-        if (!window.SC) {
-          console.log('Playlist loading SoundCloud widget API');
+    // Give EmbedPlayer iframe time to mount before binding
+    const timer = setTimeout(() => {
+      if (window.SC) {
+        setupSCListener();
+      } else {
+        const existing = document.querySelector('script[src*="soundcloud.com/player/api"]');
+        if (!existing) {
           const script = document.createElement('script');
           script.src = 'https://w.soundcloud.com/player/api.js';
-          script.onload = () => {
-            console.log('Playlist SoundCloud API loaded');
-            setupSoundCloudListener();
-          };
-          script.onerror = () => {
-            console.log('Playlist failed to load SoundCloud API, using timeout');
-            setupSoundCloudListener();
-          };
+          script.onload = setupSCListener;
           document.body.appendChild(script);
-        } else {
-          console.log('Playlist SoundCloud API already loaded');
-          setupSoundCloudListener();
         }
       }
-    }, 500); // Wait 500ms for iframe to render
+    }, 1000);
 
-    return () => {
-      clearTimeout(delayTimer);
-      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
-    };
-  }, [currentItemIndex, items, isPlaying, playMode, handleTrackEnd]);
+    return () => clearTimeout(timer);
+  }, [currentItemIndex, items]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,7 +246,6 @@ export default function PlaylistPage() {
       };
 
       if (addFormData.url) {
-        // External URL
         const service = detectService(addFormData.url);
         if (!service) {
           setError('サポートされていないURLです');
@@ -352,7 +268,6 @@ export default function PlaylistPage() {
           return;
         }
       } else if (addFormData.selectedTrackId) {
-        // DB track
         itemData = {
           ...itemData,
           track_id: addFormData.selectedTrackId
@@ -443,22 +358,18 @@ export default function PlaylistPage() {
         return;
       }
 
-      // Find the indices of the dragged and target items
       const draggedIndex = items.findIndex(item => item.id === draggedItemId);
       const targetIndex = items.findIndex(item => item.id === targetItemId);
 
       if (draggedIndex === -1 || targetIndex === -1) return;
 
-      // Create a new order
       const newItems = [...items];
       const [draggedItem] = newItems.splice(draggedIndex, 1);
       newItems.splice(targetIndex, 0, draggedItem);
 
-      // Update the local state immediately for better UX
       setItems(newItems);
       setDraggedItemId(null);
 
-      // Send reorder request to server
       const reorderData = newItems.map((item, index) => ({
         id: item.id,
         order_index: index
@@ -479,12 +390,9 @@ export default function PlaylistPage() {
     } catch (err) {
       console.error('Error reordering items:', err);
       setError(err instanceof Error ? err.message : 'Failed to reorder items');
-      // Revert the optimistic update on error
-      // In a production app, you might want to refetch the items here
     }
   };
 
-  // Toggle privacy setting
   const handleTogglePrivacy = async () => {
     if (!playlist) return;
 
@@ -565,7 +473,7 @@ export default function PlaylistPage() {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)',
       color: '#fff',
-      padding: '40px 20px'
+      padding: isMobile ? '20px 16px' : '40px 20px'
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Breadcrumb */}
@@ -588,13 +496,13 @@ export default function PlaylistPage() {
         {/* Header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '200px 1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '200px 1fr',
           gap: '30px',
-          marginBottom: '40px',
+          marginBottom: '30px',
           alignItems: 'start'
         }}>
           {/* Cover */}
-          <div>
+          <div style={{ maxWidth: isMobile ? '120px' : '200px' }}>
             {playlist.cover_image_url ? (
               <img
                 src={playlist.cover_image_url}
@@ -618,7 +526,7 @@ export default function PlaylistPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '60px'
+                  fontSize: isMobile ? '40px' : '60px'
                 }}>
                 🎵
               </div>
@@ -628,7 +536,7 @@ export default function PlaylistPage() {
           {/* Info */}
           <div>
             <h1 style={{
-              fontSize: '28px',
+              fontSize: isMobile ? '22px' : '28px',
               fontWeight: 700,
               marginBottom: '10px',
               color: '#00d4ff'
@@ -649,10 +557,11 @@ export default function PlaylistPage() {
 
             <div style={{
               display: 'flex',
-              gap: '30px',
+              gap: isMobile ? '16px' : '30px',
               fontSize: '14px',
               color: 'rgba(255,255,255,0.6)',
-              marginBottom: '20px'
+              marginBottom: '20px',
+              flexWrap: 'wrap'
             }}>
               <div>
                 <span style={{ color: '#00d4ff', fontWeight: 600 }}>🎵</span> {items.length} 曲
@@ -662,19 +571,15 @@ export default function PlaylistPage() {
               </div>
               <div>
                 {playlist.is_public ? (
-                  <>
-                    <span style={{ color: '#00d4ff', fontWeight: 600 }}>🌐</span> 公開
-                  </>
+                  <><span style={{ color: '#00d4ff', fontWeight: 600 }}>🌐</span> 公開</>
                 ) : (
-                  <>
-                    <span style={{ color: '#00d4ff', fontWeight: 600 }}>🔒</span> プライベート
-                  </>
+                  <><span style={{ color: '#00d4ff', fontWeight: 600 }}>🔒</span> プライベート</>
                 )}
               </div>
             </div>
 
             {isOwner && (
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setShowAddForm(!showAddForm)}
                   style={{
@@ -688,12 +593,8 @@ export default function PlaylistPage() {
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(0,212,255,0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(0,212,255,0.2)';
-                  }}>
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.3)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.2)'; }}>
                   + 曲を追加
                 </button>
 
@@ -712,16 +613,8 @@ export default function PlaylistPage() {
                     transition: 'all 0.2s',
                     opacity: toggleLoading ? 0.6 : 1
                   }}
-                  onMouseEnter={(e) => {
-                    if (!toggleLoading) {
-                      e.currentTarget.style.background = playlist.is_public ? 'rgba(0,212,255,0.3)' : 'rgba(255,45,85,0.3)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!toggleLoading) {
-                      e.currentTarget.style.background = playlist.is_public ? 'rgba(0,212,255,0.2)' : 'rgba(255,45,85,0.2)';
-                    }
-                  }}>
+                  onMouseEnter={(e) => { if (!toggleLoading) e.currentTarget.style.background = playlist.is_public ? 'rgba(0,212,255,0.3)' : 'rgba(255,45,85,0.3)'; }}
+                  onMouseLeave={(e) => { if (!toggleLoading) e.currentTarget.style.background = playlist.is_public ? 'rgba(0,212,255,0.2)' : 'rgba(255,45,85,0.2)'; }}>
                   {playlist.is_public ? '🌐 公開中' : '🔒 プライベート'}
                 </button>
               </div>
@@ -744,67 +637,77 @@ export default function PlaylistPage() {
           </div>
         )}
 
-        {/* Playback Controls */}
+        {/* ===== NOW PLAYING / PLAYER SECTION ===== */}
         {items.length > 0 && (
           <div style={{
             background: 'rgba(0,212,255,0.05)',
-            border: '1px solid rgba(0,212,255,0.1)',
-            borderRadius: '12px',
-            padding: '20px',
+            border: '1px solid rgba(0,212,255,0.15)',
+            borderRadius: '16px',
+            padding: isMobile ? '16px' : '24px',
             marginBottom: '30px'
           }}>
-            {/* Currently playing */}
+
+            {/* EmbedPlayer — renders when a track is selected */}
+            {currentItemIndex !== null && items[currentItemIndex] && (() => {
+              const item = items[currentItemIndex];
+              const url = item.url || item.external_url;
+              if (!url) return null;
+              return (
+                <div style={{ marginBottom: '20px' }}>
+                  <EmbedPlayer
+                    key={`embed-${currentItemIndex}-${playerKey}`}
+                    url={url}
+                    autoplay={true}
+                    height={isMobile ? 220 : 340}
+                  />
+                </div>
+              );
+            })()}
+
+            {/* Track info */}
             {currentItemIndex !== null && currentItemIndex < items.length ? (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
-                  ▶ 再生中
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  ▶ 再生中  {currentItemIndex + 1} / {items.length}
                 </div>
                 <div style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
+                  fontSize: isMobile ? '15px' : '17px',
+                  fontWeight: 700,
                   color: '#00d4ff',
-                  whiteSpace: 'nowrap',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis'
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
                 }}>
-                  {items[currentItemIndex].title}
+                  {items[currentItemIndex].title || items[currentItemIndex].external_title || '無題'}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: 'rgba(255,255,255,0.5)',
-                  marginTop: '4px'
-                }}>
-                  {items[currentItemIndex].artist}
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                  {items[currentItemIndex].artist || items[currentItemIndex].external_artist || ''}
                 </div>
               </div>
             ) : (
-              <div style={{
-                fontSize: '14px',
-                color: 'rgba(255,255,255,0.5)',
-                marginBottom: '20px'
-              }}>
-                再生する曲を選択してください
+              <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', marginBottom: '16px' }}>
+                曲を選んで再生しましょう ↓
               </div>
             )}
 
             {/* Playback controls */}
             <div style={{
               display: 'flex',
-              gap: '12px',
+              gap: '10px',
               flexWrap: 'wrap',
-              marginBottom: '20px'
+              alignItems: 'center',
+              marginBottom: '16px'
             }}>
-              {/* Previous button */}
               <button
                 onClick={handlePlayPrevious}
                 disabled={currentItemIndex === null || currentItemIndex === 0}
                 style={{
-                  padding: '8px 16px',
-                  background: currentItemIndex === null || currentItemIndex === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
-                  border: '1px solid rgba(0,212,255,0.3)',
-                  borderRadius: '6px',
-                  color: currentItemIndex === null || currentItemIndex === 0 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
-                  fontSize: '12px',
+                  padding: '10px 18px',
+                  background: currentItemIndex === null || currentItemIndex === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(0,212,255,0.15)',
+                  border: '1px solid rgba(0,212,255,0.25)',
+                  borderRadius: '8px',
+                  color: currentItemIndex === null || currentItemIndex === 0 ? 'rgba(255,255,255,0.25)' : '#00d4ff',
+                  fontSize: '14px',
                   fontWeight: 600,
                   cursor: currentItemIndex === null || currentItemIndex === 0 ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s'
@@ -813,18 +716,17 @@ export default function PlaylistPage() {
                 ⏮ 前曲
               </button>
 
-              {/* Play/Pause button */}
               <button
                 onClick={() => currentItemIndex !== null ? setIsPlaying(!isPlaying) : null}
                 disabled={currentItemIndex === null}
                 style={{
-                  padding: '8px 16px',
-                  background: currentItemIndex === null ? 'rgba(255,255,255,0.1)' : isPlaying ? 'rgba(255,45,85,0.2)' : 'rgba(0,212,255,0.2)',
-                  border: currentItemIndex === null ? '1px solid rgba(255,255,255,0.2)' : isPlaying ? '1px solid rgba(255,45,85,0.3)' : '1px solid rgba(0,212,255,0.3)',
-                  borderRadius: '6px',
-                  color: currentItemIndex === null ? 'rgba(255,255,255,0.3)' : isPlaying ? '#ff2d55' : '#00d4ff',
-                  fontSize: '12px',
-                  fontWeight: 600,
+                  padding: '10px 24px',
+                  background: currentItemIndex === null ? 'rgba(255,255,255,0.07)' : isPlaying ? 'rgba(255,45,85,0.25)' : 'rgba(0,212,255,0.25)',
+                  border: currentItemIndex === null ? '1px solid rgba(255,255,255,0.15)' : isPlaying ? '1px solid rgba(255,45,85,0.4)' : '1px solid rgba(0,212,255,0.4)',
+                  borderRadius: '8px',
+                  color: currentItemIndex === null ? 'rgba(255,255,255,0.25)' : isPlaying ? '#ff2d55' : '#00d4ff',
+                  fontSize: '14px',
+                  fontWeight: 700,
                   cursor: currentItemIndex === null ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s'
                 }}
@@ -832,19 +734,18 @@ export default function PlaylistPage() {
                 {isPlaying ? '⏸ 一時停止' : '▶ 再生'}
               </button>
 
-              {/* Next button */}
               <button
                 onClick={handlePlayNext}
-                disabled={currentItemIndex === null || currentItemIndex >= items.length - 1}
+                disabled={currentItemIndex === null}
                 style={{
-                  padding: '8px 16px',
-                  background: currentItemIndex === null || currentItemIndex >= items.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(0,212,255,0.2)',
-                  border: '1px solid rgba(0,212,255,0.3)',
-                  borderRadius: '6px',
-                  color: currentItemIndex === null || currentItemIndex >= items.length - 1 ? 'rgba(255,255,255,0.3)' : '#00d4ff',
-                  fontSize: '12px',
+                  padding: '10px 18px',
+                  background: currentItemIndex === null ? 'rgba(255,255,255,0.07)' : 'rgba(0,212,255,0.15)',
+                  border: '1px solid rgba(0,212,255,0.25)',
+                  borderRadius: '8px',
+                  color: currentItemIndex === null ? 'rgba(255,255,255,0.25)' : '#00d4ff',
+                  fontSize: '14px',
                   fontWeight: 600,
-                  cursor: currentItemIndex === null || currentItemIndex >= items.length - 1 ? 'not-allowed' : 'pointer',
+                  cursor: currentItemIndex === null ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s'
                 }}
               >
@@ -852,79 +753,32 @@ export default function PlaylistPage() {
               </button>
             </div>
 
-            {/* Play mode */}
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              flexWrap: 'wrap'
-            }}>
-              <button
-                onClick={() => setPlayMode('auto')}
-                style={{
-                  padding: '8px 16px',
-                  background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  border: playMode === 'auto' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '6px',
-                  color: playMode === 'auto' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                順番に流れる
-              </button>
-
-              <button
-                onClick={() => setPlayMode('shuffle')}
-                style={{
-                  padding: '8px 16px',
-                  background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  border: playMode === 'shuffle' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '6px',
-                  color: playMode === 'shuffle' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                🎲 ランダム
-              </button>
-
-              <button
-                onClick={() => setPlayMode('once')}
-                style={{
-                  padding: '8px 16px',
-                  background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  border: playMode === 'once' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '6px',
-                  color: playMode === 'once' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                1曲だけ
-              </button>
-
-              <button
-                onClick={() => setPlayMode('repeat-one')}
-                style={{
-                  padding: '8px 16px',
-                  background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  border: playMode === 'repeat-one' ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '6px',
-                  color: playMode === 'repeat-one' ? '#00d4ff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                🔁 1曲リピート
-              </button>
+            {/* Play mode selector */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {([
+                { mode: 'auto', label: '順番に再生' },
+                { mode: 'shuffle', label: '🎲 ランダム' },
+                { mode: 'once', label: '1曲だけ' },
+                { mode: 'repeat-one', label: '🔁 1曲リピート' },
+              ] as const).map(({ mode, label }) => (
+                <button
+                  key={mode}
+                  onClick={() => setPlayMode(mode)}
+                  style={{
+                    padding: '7px 14px',
+                    background: playMode === mode ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.07)',
+                    border: playMode === mode ? '1px solid rgba(0,212,255,0.5)' : '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '6px',
+                    color: playMode === mode ? '#00d4ff' : 'rgba(255,255,255,0.45)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -963,7 +817,6 @@ export default function PlaylistPage() {
                     return;
                   }
                 } else if (data.trackId) {
-                  // REVOSONG楽曲を追加
                   itemData.track_id = data.trackId;
                 } else {
                   setError('楽曲またはURLを選択してください');
@@ -1000,7 +853,7 @@ export default function PlaylistPage() {
           />
         )}
 
-        {/* Items list */}
+        {/* Track list */}
         {items.length === 0 ? (
           <div style={{
             padding: '40px',
@@ -1012,10 +865,7 @@ export default function PlaylistPage() {
             </p>
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gap: '12px'
-          }}>
+          <div style={{ display: 'grid', gap: '10px' }}>
             {items.map((item, index) => (
               <div
                 key={item.id}
@@ -1027,8 +877,13 @@ export default function PlaylistPage() {
                 style={{
                   cursor: isOwner ? 'grab' : 'default',
                   opacity: draggedItemId === item.id ? 0.5 : 1,
-                  backgroundColor: currentItemIndex === index ? 'rgba(0, 212, 255, 0.1)' : dragOverItemId === item.id ? 'rgba(255, 45, 85, 0.1)' : 'transparent',
-                  transition: 'all 0.2s ease'
+                  backgroundColor: currentItemIndex === index
+                    ? 'rgba(0, 212, 255, 0.08)'
+                    : dragOverItemId === item.id
+                    ? 'rgba(255, 45, 85, 0.08)'
+                    : 'transparent',
+                  borderRadius: '8px',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <PlaylistItemCard

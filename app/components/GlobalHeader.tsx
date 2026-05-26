@@ -43,6 +43,12 @@ export function GlobalHeader() {
               殿堂入り
             </Link>
             <Link
+              href="/playlists"
+              className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
+            >
+              プレイリスト
+            </Link>
+            <Link
               href="/campaigns/about"
               className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
             >
@@ -102,6 +108,13 @@ export function GlobalHeader() {
               onClick={() => setIsMenuOpen(false)}
             >
               殿堂入り
+            </Link>
+            <Link
+              href="/playlists"
+              className="block py-2 px-0 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              プレイリスト
             </Link>
             <Link
               href="/campaigns/about"

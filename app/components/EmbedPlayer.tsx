@@ -71,11 +71,12 @@ export function EmbedPlayer({
 }: EmbedPlayerProps): ReactNode {
   const ytId = getYouTubeId(url);
   if (ytId) {
+    // enablejsapi=1 is required for postMessage-based end-of-video detection
     return (
       <iframe
         width="100%"
         height={height || 160}
-        src={`https://www.youtube.com/embed/${ytId}${autoplay ? '?autoplay=1' : ''}`}
+        src={`https://www.youtube.com/embed/${ytId}?enablejsapi=1${autoplay ? '&autoplay=1' : ''}`}
         allow="autoplay; encrypted-media"
         allowFullScreen
         style={{ border: 'none', borderRadius: 12 }}
