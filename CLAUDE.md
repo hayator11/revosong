@@ -162,6 +162,19 @@
 - キャンペーン終了後、テーマプロポーザーが受賞曲を選択するとページに自動表示されます
 - Awards ページとAPIは完全に動作可能な状態です
 
+## Social Sharing テスト & OGP 修正（2026-05-26）
+### 実施内容
+- ✅ Facebook Share Debugger でのテスト実施
+- ⚠️ 403 エラー検出（robots.txt が Facebook クローラーをブロック）
+- ✅ robots.txt ファイル作成
+  - facebookexternalhit を許可
+  - Twitterbot, LinkedInBot などを許可
+  - すべてのメジャーなソーシャルメディアクローラーに対応
+
+### デプロイ状況
+- コミット: `834e401` - robots.txt 追加
+- Vercel デプロイ: 進行中
+
 ## フェーズ6（Playlist 機能 & その他の機能）
 ### 計画中
 1. **Playlist 機能の実装**
