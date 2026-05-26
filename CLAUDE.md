@@ -135,19 +135,47 @@
   - すべてのOGPメタタグが正常に生成・配信されている
 
 ## フェーズ5（Awards Showcase ページ & Social Sharing 強化）
-### 優先タスク
-1. **Awards Showcase ページ（応援ソング殿堂入り）の実装**
-   - `/campaigns/awards` ページ作成
-   - 過去のキャンペーン受賞曲ギャラリー表示
-   - OGP画像を活用したサムネイル表示
-   - フィルタリング機能（年度、テーマ提案者）
-   - ソーシャルシェア統合
+### 完了（2026-05-26）
+- ✅ Awards Showcase ページの実装完了
+  - ✅ `/api/campaigns/awards` エンドポイント実装
+    - 受賞キャンペーンのデータ取得
+    - テーマ提案者情報、トラック情報の自動取得
+    - 年度フィルタリング機能対応
+    - 複数の関連データを統合取得
+  
+  - ✅ `/campaigns/awards` ページの改良完了
+    - API からのリアルタイムデータ取得実装
+    - Loading/Error 状態の管理
+    - 年度別フィルタリング UI
+    - OGP画像の表示対応
+    - ソーシャルシェアボタン統合済み
+    - 空の場合のエラーメッセージ表示
 
-2. **Social Sharing テスト**
-   - Twitter/X Card Validator でプレビュー確認
-   - Facebook Share Debugger でプレビュー確認
-   - 実際のシェアテスト
+### デプロイ完了
+- コミット: `55dfe96` - Awards ページ実装
+- Vercel デプロイ: ✅ 完了
+- 動作確認: ✅ API エンドポイント正常動作
+- URL: https://revosong.onokun.com/campaigns/awards
 
-3. **その他の機能実装**
-   - Playlist 機能（後続フェーズ）
-   - Meta タグの他のページへの展開（main page, theme pages など）
+### 注記
+- 現在、キャンペーンの end_date がすべて 2026-06-24 以降のため、受賞曲はまだ存在しません
+- キャンペーン終了後、テーマプロポーザーが受賞曲を選択するとページに自動表示されます
+- Awards ページとAPIは完全に動作可能な状態です
+
+## フェーズ6（Playlist 機能 & その他の機能）
+### 計画中
+1. **Playlist 機能の実装**
+   - ユーザーが曲をキュレーションできる機能
+   - データベーススキーマ設計
+   - API エンドポイント実装
+   - UI コンポーネント実装
+
+2. **Meta タグの他のページへの展開**
+   - Main page (`/`) へのOGPメタタグ追加
+   - Theme pages へのメタタグ追加
+   - Playlist pages へのメタタグ追加
+
+3. **Social Sharing テスト**
+   - Twitter/X Card Validator での確認
+   - Facebook Share Debugger での確認
+   - OGP画像のプレビュー確認
