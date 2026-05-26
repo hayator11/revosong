@@ -32,6 +32,7 @@ type Track = {
   last_play_count_at: string | null;
   artist_social_url: string | null;
   social_links?: Record<string, string>;
+  avatar_url?: string | null;
   username?: string | null;
   comment_count?: number;
   photo_url?: string | null;
@@ -374,6 +375,11 @@ export default function Home() {
   // 再生回数カウント済みトラックを追跡（1回のみ実行）
   const playCountedTrackIds = useRef<Set<number>>(new Set());
 
+  // YouTube IFrame API と SoundCloud Widget API のリファレンス
+  const youtubePlayerRef = useRef<any>(null);
+  const soundCloudPlayerRef = useRef<any>(null);
+  const autoplayTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
@@ -393,6 +399,36 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // YouTube IFrame API をロード
+  useEffect(() => {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.body.appendChild(tag);
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      console.log('YouTube IFrame API ready');
+    };
+
+    return () => {
+      if (document.body.contains(tag)) {
+        document.body.removeChild(tag);
+      }
+    };
+  }, []);
+
+  // SoundCloud Widget API をロード
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://w.soundcloud.com/player/api.js';
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
   const getPeriodStart = (p: string): string => {
     const now = new Date();
     if (p === "日間") now.setDate(now.getDate() - 1);
@@ -407,6 +443,29 @@ export default function Home() {
     setSelectedTrack(track);
     setSelectedTrackIndex(index);
     setIsPlaying(true);
+
+    // モバイル対応: 次のフレームで明示的に再生を開始
+    setTimeout(() => {
+      // YouTube IFrame API が利用可能な場合、playVideo() を呼び出す
+      if (youtubePlayerRef.current && youtubePlayerRef.current.playVideo) {
+        try {
+          youtubePlayerRef.current.playVideo();
+          console.log('YouTube playVideo() called');
+        } catch (err) {
+          console.log('YouTube playVideo error:', err);
+        }
+      }
+
+      // SoundCloud Widget API が利用可能な場合、play() を呼び出す
+      if (soundCloudPlayerRef.current && soundCloudPlayerRef.current.play) {
+        try {
+          soundCloudPlayerRef.current.play();
+          console.log('SoundCloud play() called');
+        } catch (err) {
+          console.log('SoundCloud play error:', err);
+        }
+      }
+    }, 100);
   };
 
   const handlePlayNext = () => {
@@ -485,12 +544,23 @@ export default function Home() {
       // ユーザー名、コメント数を取得
       const tracksWithExtra = await Promise.all(
         trackData.map(async (t: Record<string, unknown>) => {
-          // ユーザー名を取得
+          // ユーザー名 + SNS 情報 + アバターを取得
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("username")
+            .select("username, avatar_url, twitter_url, discord_url, instagram_url, youtube_url, tiktok_url, threads_url")
             .eq("id", t.user_id as string)
             .single();
+
+          // SNS リンクを構築
+          const socialLinks: Record<string, string> = {};
+          if (profileData) {
+            if (profileData.twitter_url) socialLinks['x'] = profileData.twitter_url;
+            if (profileData.discord_url) socialLinks['discord'] = profileData.discord_url;
+            if (profileData.instagram_url) socialLinks['instagram'] = profileData.instagram_url;
+            if (profileData.youtube_url) socialLinks['youtube'] = profileData.youtube_url;
+            if (profileData.tiktok_url) socialLinks['tiktok'] = profileData.tiktok_url;
+            if (profileData.threads_url) socialLinks['threads'] = profileData.threads_url;
+          }
 
           // コメント数を取得
           const { count: commentCount } = await supabase
@@ -535,8 +605,10 @@ export default function Home() {
             ...t,
             liked: likedIds.includes(t.id as number),
             username: profileData?.username,
+            avatar_url: profileData?.avatar_url,
             comment_count: commentCount || 0,
-            photo_url: photoUrl
+            photo_url: photoUrl,
+            social_links: socialLinks // プロフィールから取得したSNS情報
           };
         })
       );
@@ -736,12 +808,88 @@ export default function Home() {
       };
 
       fetchArtistProfile();
+
+      // YouTube IFrame API をセットアップ（自動遷移対応）
+      if (selectedTrack.external_url) {
+        const ytId = getYouTubeId(selectedTrack.external_url);
+        if (ytId) {
+          setTimeout(() => {
+            const iframe = document.querySelector(
+              'iframe[src*="youtube.com/embed"]'
+            ) as HTMLIFrameElement;
+
+            if (iframe && (window as any).YT && (window as any).YT.Player) {
+              try {
+                youtubePlayerRef.current = new (window as any).YT.Player(iframe, {
+                  events: {
+                    onStateChange: (event: any) => {
+                      // 0 = UNSTARTED, 1 = PLAYING, 2 = PAUSED, 3 = BUFFERING, 5 = VIDEO_CUED
+                      if (event.data === 0) {
+                        // 動画終了
+                        console.log('YouTube: 動画終了、次の曲に遷移');
+                        handleTrackEnd();
+                      }
+                    }
+                  }
+                });
+              } catch (err) {
+                console.log('YouTube API setup error:', err);
+              }
+            }
+          }, 500);
+        }
+
+        // SoundCloud Widget API をセットアップ（自動遷移対応）
+        if (isSoundCloudUrl(selectedTrack.external_url)) {
+          setTimeout(() => {
+            const iframe = document.querySelector(
+              'iframe[src*="soundcloud.com/player"]'
+            ) as HTMLIFrameElement;
+
+            if (iframe && (window as any).SC && (window as any).SC.Widget) {
+              try {
+                soundCloudPlayerRef.current = (window as any).SC.Widget(iframe);
+                soundCloudPlayerRef.current.bind((window as any).SC.Widget.Events.FINISH, () => {
+                  console.log('SoundCloud: トラック終了、次の曲に遷移');
+                  handleTrackEnd();
+                });
+              } catch (err) {
+                console.log('SoundCloud API setup error:', err);
+              }
+            }
+          }, 500);
+        }
+
+        // フォールバック: 約30秒後に自動で次の曲に進む（API が機能しない場合の対応）
+        // これにより、スマートフォンでも確実に連続再生が動作する
+        if (autoplayTimerRef.current) {
+          clearTimeout(autoplayTimerRef.current);
+        }
+
+        autoplayTimerRef.current = setTimeout(() => {
+          if (isPlaying && (playMode === 'auto' || playMode === 'shuffle')) {
+            console.log('Autoplay fallback: 次の曲に遷移');
+            handleTrackEnd();
+          }
+        }, 30000); // 30秒
+      }
     } else {
       setComments([]);
       setCommentInput("");
       setArtistProfile(null);
+      // タイマーをクリア
+      if (autoplayTimerRef.current) {
+        clearTimeout(autoplayTimerRef.current);
+      }
     }
-  }, [selectedTrack?.id]);
+
+    // クリーンアップ
+    return () => {
+      if (autoplayTimerRef.current) {
+        clearTimeout(autoplayTimerRef.current);
+      }
+    };
+  }, [selectedTrack?.id, isPlaying, playMode]);
 
   // トラック詳細が表示されたときに再生回数をカウント
   // (プレイヤーがマウントされた時点で、ユーザーが再生する意図があると判断)
@@ -1232,16 +1380,24 @@ export default function Home() {
         }
         .track-row {
           display: grid;
-          grid-template-columns: 36px 56px 1fr auto;
+          grid-template-columns: 36px 56px 1fr auto auto;
           align-items: center;
-          gap: 12px;
-          padding: 10px 14px;
+          gap: 8px;
+          padding: 10px 8px;
           border-radius: 12px;
           opacity: 0;
           cursor: pointer;
           transition: all 0.2s;
           border: 1px solid rgba(255,255,255,0.05);
           background: rgba(255,255,255,0.02);
+          min-width: 0; /* モバイル対応: flex/grid overflow を防ぐ */
+        }
+        @media (max-width: 768px) {
+          .track-row {
+            grid-template-columns: 28px 40px 1fr auto auto;
+            gap: 6px;
+            padding: 8px 6px;
+          }
         }
         .track-row:hover {
           background: rgba(255,255,255,0.05);
@@ -1314,11 +1470,12 @@ export default function Home() {
         .like-btn {
           display: flex;
           align-items: center;
-          gap: 5px;
+          gap: 4px;
           background: none;
           border: none;
           cursor: pointer;
-          padding: 4px;
+          padding: 2px;
+          flex-shrink: 0;
         }
         .like-btn:hover {
           transform: scale(1.1);
@@ -1327,6 +1484,16 @@ export default function Home() {
           font-size: 12px;
           font-weight: 600;
           color: rgba(255,255,255,0.5);
+          white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+          .like-count {
+            font-size: 10px;
+          }
+          .like-btn svg {
+            width: 14px;
+            height: 14px;
+          }
         }
         .like-count-active {
           color: #ff2d55;
@@ -2149,9 +2316,99 @@ export default function Home() {
                   </span>
 
                   {/* Artist Social Links with Profile Images */}
-                  <SocialLinksWithAvatars socialLinks={(track as any).social_links || {}} />
+                  {/* SNS リンクを表示 */}
+                  {Object.keys((track as any).social_links || {}).length > 0 && (
+                    <SocialLinksWithAvatars socialLinks={(track as any).social_links || {}} />
+                  )}
                 </div>
               </div>
+
+              {/* Right side: Avatar + SNS Icons */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                flexShrink: 0,
+                minWidth: 0
+              }}>
+                {/* プロフィール画像（モバイルではサイズを調整） */}
+                {(track as any).avatar_url && (
+                  <img
+                    src={(track as any).avatar_url}
+                    alt={track.artist_name}
+                    style={{
+                      width: window.innerWidth <= 768 ? '24px' : '28px',
+                      height: window.innerWidth <= 768 ? '24px' : '28px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                    title={track.artist_name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
+
+                {/* SNS アイコン（プロフィール右側に表示） */}
+                {Object.keys((track as any).social_links || {}).length > 0 && (
+                  <div style={{ display: 'inline-flex', gap: '2px', minWidth: 0 }}>
+                    {Object.entries((track as any).social_links || {}).map(([platform, url]: [string, any]) => {
+                      const platformLabels: Record<string, string> = {
+                        'x': 'X', 'twitter': 'X', 'instagram': 'Instagram',
+                        'facebook': 'Facebook', 'youtube': 'YouTube', 'tiktok': 'TikTok',
+                        'discord': 'Discord', 'threads': 'Threads'
+                      };
+                      const fallbackIcons: Record<string, string> = {
+                        'x': '𝕏', 'twitter': '𝕏', 'instagram': '📷',
+                        'facebook': 'f', 'youtube': '▶️', 'tiktok': '♪',
+                        'discord': '💬', 'threads': '@'
+                      };
+
+                      return (
+                        <a
+                          key={platform}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: window.innerWidth <= 768 ? '16px' : '18px',
+                            height: window.innerWidth <= 768 ? '16px' : '18px',
+                            borderRadius: '50%',
+                            background: 'rgba(255,45,85,0.1)',
+                            border: '1px solid rgba(255,45,85,0.2)',
+                            color: '#ff2d55',
+                            textDecoration: 'none',
+                            fontSize: window.innerWidth <= 768 ? '8px' : '9px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            flexShrink: 0
+                          }}
+                          title={platformLabels[platform] || platform}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget).style.background = 'rgba(255,45,85,0.2)';
+                            (e.currentTarget).style.transform = 'scale(1.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget).style.background = 'rgba(255,45,85,0.1)';
+                            (e.currentTarget).style.transform = 'scale(1)';
+                          }}
+                        >
+                          {fallbackIcons[platform] || '🔗'}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <button
                 className="like-btn"
                 onClick={(e) => {
@@ -2233,7 +2490,82 @@ export default function Home() {
             </div>
           </div>
           {selectedTrack.external_url ? (
-            <EmbedPlayer url={selectedTrack.external_url} />
+            <>
+              <EmbedPlayer url={selectedTrack.external_url} />
+              {/* プレイヤーコントロール（モバイル対応） */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 16px',
+                gap: '12px',
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                <button
+                  onClick={handlePlayPrevious}
+                  disabled={selectedTrackIndex === null || selectedTrackIndex === 0}
+                  style={{
+                    padding: '8px 16px',
+                    background: selectedTrackIndex !== null && selectedTrackIndex > 0 ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: selectedTrackIndex !== null && selectedTrackIndex > 0 ? '#ff2d55' : 'rgba(255,255,255,0.3)',
+                    cursor: selectedTrackIndex !== null && selectedTrackIndex > 0 ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    transition: 'all 0.2s',
+                  }}
+                  title="前の曲"
+                >
+                  ⏮ 前へ
+                </button>
+
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '12px',
+                  color: 'rgba(255,255,255,0.6)',
+                }}>
+                  <button
+                    onClick={() => setPlayMode(playMode === 'shuffle' ? 'auto' : 'shuffle')}
+                    style={{
+                      background: playMode === 'shuffle' ? 'rgba(255,149,0,0.2)' : 'rgba(255,255,255,0.05)',
+                      color: playMode === 'shuffle' ? '#ff9500' : 'rgba(255,255,255,0.4)',
+                      border: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                    }}
+                    title={playMode === 'shuffle' ? 'ランダムモード中' : 'ランダム再生にする'}
+                  >
+                    {playMode === 'shuffle' ? '🎲 ランダム中' : '順番再生'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={handlePlayNext}
+                  disabled={selectedTrackIndex === null || tracks.length === 0}
+                  style={{
+                    padding: '8px 16px',
+                    background: selectedTrackIndex !== null && tracks.length > 0 ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: selectedTrackIndex !== null && tracks.length > 0 ? '#ff2d55' : 'rgba(255,255,255,0.3)',
+                    cursor: selectedTrackIndex !== null && tracks.length > 0 ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    transition: 'all 0.2s',
+                  }}
+                  title="次の曲"
+                >
+                  次へ ⏭
+                </button>
+              </div>
+            </>
           ) : (
             <div className="no-url-msg">
               この楽曲にはURLが設定されていません
@@ -2720,6 +3052,7 @@ function UploadModal({
       prompt: form.music_type === "ai" ? (form.prompt || null) : null,
       external_url: form.external_url || null,
       artist_social_url: form.artist_social_url || null,
+      social_links: {}, // SNS リンク初期化（プロフィール更新時に設定）
     });
     setSubmitting(false);
     setDone(true);

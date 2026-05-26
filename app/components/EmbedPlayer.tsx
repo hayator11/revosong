@@ -75,7 +75,7 @@ export function EmbedPlayer({
       <iframe
         width="100%"
         height={height || 160}
-        src={`https://www.youtube.com/embed/${ytId}${autoplay ? '?autoplay=1' : ''}`}
+        src={`https://www.youtube.com/embed/${ytId}${autoplay ? '?autoplay=1&enablejsapi=1' : '?enablejsapi=1'}`}
         allow="autoplay; encrypted-media"
         allowFullScreen
         style={{ border: 'none', borderRadius: 12 }}
