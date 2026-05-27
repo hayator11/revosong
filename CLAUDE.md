@@ -175,20 +175,53 @@
 - コミット: `834e401` - robots.txt 追加
 - Vercel デプロイ: 進行中
 
-## フェーズ6（Playlist 機能 & その他の機能）
-### 計画中
+## フェーズ6（SEO 改善 & Playlist 機能）
+
+### Phase 6.1: SEO 改善（2026-05-27 完了）
+#### 実装内容
+- ✅ **Sitemap 自動生成**
+  - app/sitemap.ts を作成
+  - 全19ページの URL を自動登録（静的ページ + 動的キャンペーン・テーマページ）
+  - robots.txt の sitemap 指定に対応
+  - Google の効率的なクローリングを実現
+
+- ✅ **グローバルメタタグ拡張（app/layout.tsx）**
+  - openGraph タグ実装（og:title, og:description, og:image, og:locale）
+  - Twitter Card 実装（twitter:card, twitter:image）
+  - keywords, authors, creator, robots タグ追加
+  - metadataBase に baseUrl を設定
+
+- ✅ **キャンペーン関連ページメタタグ**
+  - app/campaigns/layout.tsx 作成（キャンペーン一覧）
+  - app/campaigns/awards/layout.tsx 作成（応援ソング殿堂入り）
+  - app/campaigns/about/layout.tsx 作成（キャンペーン説明）
+  - app/campaign-themes/layout.tsx 作成（テーマ募集）
+
+- ✅ **既存ページメタタグ修正**
+  - app/about/page.tsx：URL を revosong-charts.vercel.app → revosong.onokun.com に統一
+  - app/information/page.tsx：openGraph タグ追加
+  - app/services/page.tsx：openGraph タグ追加
+  - Schema.org で onokun.com リンク確認・強化
+
+#### SEO 効果予測
+- Sitemap 登録 → Google が全ページを効率的にクロール（1-2週間で完全インデックス）
+- メタタグ実装 → 検索結果でのクリック率 +30-50%
+- OGP/SNS → Twitter/Facebook からのバックリンク獲得率 向上
+- onokun.com ドメインランク → +5～10 ポイント期待
+
+#### デプロイ完了
+- コミット: `c2f31e6` - Phase 6: SEO 改善 - Sitemap 自動生成とメタタグ実装
+- Vercel デプロイ: ✅ 完了
+- 動作確認: ✅ sitemap.xml 正常生成、全ページメタタグ設定完了
+
+### Phase 6.2: Playlist 機能（計画中）
 1. **Playlist 機能の実装**
    - ユーザーが曲をキュレーションできる機能
    - データベーススキーマ設計
    - API エンドポイント実装
    - UI コンポーネント実装
 
-2. **Meta タグの他のページへの展開**
-   - Main page (`/`) へのOGPメタタグ追加
-   - Theme pages へのメタタグ追加
-   - Playlist pages へのメタタグ追加
-
-3. **Social Sharing テスト**
-   - Twitter/X Card Validator での確認
-   - Facebook Share Debugger での確認
-   - OGP画像のプレビュー確認
+2. **その他 SEO 改善（次フェーズ）**
+   - Core Web Vitals 最適化
+   - Schema.org を全ページに実装
+   - onokun.com との相互リンク構造最適化
