@@ -1,11 +1,37 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://revosong.onokun.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: "対応サービス・楽曲タイプ | MUSIC CHARTS",
   description:
     "MUSIC CHARTSはAI生成楽曲もオリジナル楽曲も投稿OK。対応している音楽・動画投稿サービスの詳細案内。YouTube・SoundCloud・Spotify・ニコニコ動画・Bandcamp・Audiomackへの投稿方法を解説します。",
   keywords: ["AI音楽", "オリジナル楽曲", "楽曲投稿", "シンガーソングライター", "DTM", "バンド", "YouTube", "SoundCloud", "Spotify", "ニコニコ動画", "Bandcamp"],
+  openGraph: {
+    title: "対応サービス・楽曲タイプ | MUSIC CHARTS",
+    description: "MUSIC CHARTSに投稿できるサービス一覧。YouTube、SoundCloud、Spotify、ニコニコ動画、Bandcamp、Audiomackに対応。",
+    type: "website",
+    url: `${baseUrl}/services`,
+    siteName: "MUSIC CHARTS",
+    locale: "ja_JP",
+    images: [
+      {
+        url: `${baseUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "対応サービス・楽曲タイプ | MUSIC CHARTS",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "対応サービス・楽曲タイプ | MUSIC CHARTS",
+    description: "MUSIC CHARTSに投稿できるサービス一覧。YouTube、SoundCloud、Spotify等に対応。",
+    images: [`${baseUrl}/og-image.png`],
+  },
 };
 
 const SERVICES = [

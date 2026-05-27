@@ -2,10 +2,36 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArtistsSection } from "@/app/information/artists-section";
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://revosong.onokun.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: "運営情報 | MUSIC CHARTS REVOSONG - おのくんのエコシステム",
   description: "東日本大震災後のボランティア経験から生まれたおのくんのエコシステム。レボリストLabを中心に、防災、音楽、アート、ファッション、クラウドファンディングなど複数の社会貢献プロジェクトが展開されています。",
   keywords: ["おのくん", "REVOSONG", "レボリスト", "社会貢献", "防災", "音楽", "アート", "東日本大震災", "ボランティア", "エコシステム", "レボリストLab"],
+  openGraph: {
+    title: "運営情報 | MUSIC CHARTS REVOSONG - おのくんのエコシステム",
+    description: "東日本大震災後のボランティア経験から生まれたおのくんのエコシステム。レボリストLabを中心に展開される社会貢献プロジェクト群。",
+    type: "website",
+    url: `${baseUrl}/information`,
+    siteName: "MUSIC CHARTS",
+    locale: "ja_JP",
+    images: [
+      {
+        url: `${baseUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "運営情報 | MUSIC CHARTS REVOSONG",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "運営情報 | MUSIC CHARTS REVOSONG",
+    description: "東日本大震災後のボランティア経験から生まれたおのくんのエコシステム。",
+    images: [`${baseUrl}/og-image.png`],
+  },
 };
 
 export default function InformationPage() {

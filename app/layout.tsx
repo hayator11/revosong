@@ -13,9 +13,63 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://revosong.onokun.com";
+
 export const metadata: Metadata = {
-  title: "MUSIC CHARTS - AI音楽ランキング",
-  description: "AI生成・オリジナル楽曲のランキングサイト。誰でも無料で投稿・視聴・投票できます。",
+  metadataBase: new URL(baseUrl),
+  title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
+  description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotify対応。誰でも無料で投稿・視聴・投票できるオープンなプラットフォーム。",
+  keywords: [
+    "MUSIC CHARTS",
+    "REVOSONG",
+    "AI音楽",
+    "AI生成楽曲",
+    "音楽ランキング",
+    "DTM",
+    "Suno",
+    "Udio",
+    "ランキングサイト",
+    "オリジナル楽曲",
+    "応援",
+  ],
+  authors: [{ name: "おのくん", url: "https://onokun.com/" }],
+  creator: "おのくん",
+  publisher: "REVOSONG",
+  openGraph: {
+    title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
+    description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotify対応。",
+    type: "website",
+    url: baseUrl,
+    siteName: "MUSIC CHARTS",
+    locale: "ja_JP",
+    images: [
+      {
+        url: `${baseUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
+    description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。",
+    images: [`${baseUrl}/og-image.png`],
+    creator: "@onokun_official",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({

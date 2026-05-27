@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://revosong.onokun.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: "About | MUSIC CHARTS - AI生成・オリジナル楽曲ランキング",
   description:
     "MUSIC CHARTS（REVOSONG）について。AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotifyなど複数プラットフォームに対応。誰でも無料で投稿・視聴・投票できるオープンなプラットフォーム。",
@@ -10,9 +13,25 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About | MUSIC CHARTS",
     description: "AI生成・オリジナル楽曲のランキングプラットフォーム「MUSIC CHARTS」について。",
-    url: "https://revosong-charts.vercel.app/about",
+    url: `${baseUrl}/about`,
     siteName: "MUSIC CHARTS",
     type: "website",
+    locale: "ja_JP",
+    images: [
+      {
+        url: `${baseUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "About | MUSIC CHARTS",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About | MUSIC CHARTS",
+    description: "AI生成・オリジナル楽曲のランキングプラットフォーム「MUSIC CHARTS」について。",
+    images: [`${baseUrl}/og-image.png`],
   },
 };
 
@@ -31,9 +50,9 @@ const jsonLd = {
     },
     {
       "@type": "WebSite",
-      "@id": "https://revosong-charts.vercel.app/#website",
+      "@id": `${baseUrl}/#website`,
       name: "MUSIC CHARTS",
-      url: "https://revosong-charts.vercel.app/",
+      url: `${baseUrl}/`,
       description: "AI生成・オリジナル楽曲のランキングサイト",
       author: {
         "@id": "https://onokun.com/#person",
@@ -44,10 +63,10 @@ const jsonLd = {
     },
     {
       "@type": "WebPage",
-      "@id": "https://revosong-charts.vercel.app/about",
-      url: "https://revosong-charts.vercel.app/about",
+      "@id": `${baseUrl}/about`,
+      url: `${baseUrl}/about`,
       name: "運営者情報・おのくん | MUSIC CHARTS",
-      isPartOf: { "@id": "https://revosong-charts.vercel.app/#website" },
+      isPartOf: { "@id": `${baseUrl}/#website` },
       about: { "@id": "https://onokun.com/#person" },
     },
   ],
