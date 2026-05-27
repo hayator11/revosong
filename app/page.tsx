@@ -399,34 +399,10 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // YouTube IFrame API をロード
-  useEffect(() => {
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    document.body.appendChild(tag);
-
-    (window as any).onYouTubeIframeAPIReady = () => {
-      console.log('YouTube IFrame API ready');
-    };
-
-    return () => {
-      if (document.body.contains(tag)) {
-        document.body.removeChild(tag);
-      }
-    };
-  }, []);
-
-  // SoundCloud Widget API をロード
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://w.soundcloud.com/player/api.js';
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
+  // External API を遅延読み込み（必要な時に読み込む）
+  const loadAPIsOnDemand = useCallback(async () => {
+    const { loadYouTubeAPI, loadSoundCloudAPI } = await import('@/lib/external-scripts');
+    await Promise.all([loadYouTubeAPI(), loadSoundCloudAPI()]);
   }, []);
 
   const getPeriodStart = (p: string): string => {
@@ -439,10 +415,13 @@ export default function Home() {
   };
 
   // Playback control functions
-  const handlePlayTrack = (track: Track, index: number) => {
+  const handlePlayTrack = async (track: Track, index: number) => {
     setSelectedTrack(track);
     setSelectedTrackIndex(index);
     setIsPlaying(true);
+
+    // API を遅延読み込み（初回のみ）
+    await loadAPIsOnDemand();
 
     // モバイル対応: 次のフレームで明示的に再生を開始
     setTimeout(() => {
