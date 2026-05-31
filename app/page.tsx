@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
-import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
+import { EmbedPlayer, getYouTubeId, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
 
@@ -375,10 +375,6 @@ export default function Home() {
   // 再生回数カウント済みトラックを追跡（1回のみ実行）
   const playCountedTrackIds = useRef<Set<number>>(new Set());
 
-  // YouTube IFrame API と SoundCloud Widget API のリファレンス
-  const youtubePlayerRef = useRef<any>(null);
-  const soundCloudPlayerRef = useRef<any>(null);
-
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
@@ -398,12 +394,6 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // External API を遅延読み込み（必要な時に読み込む）
-  const loadAPIsOnDemand = useCallback(async () => {
-    const { loadYouTubeAPI, loadSoundCloudAPI } = await import('@/lib/external-scripts');
-    await Promise.all([loadYouTubeAPI(), loadSoundCloudAPI()]);
-  }, []);
-
   const getPeriodStart = (p: string): string => {
     const now = new Date();
     if (p === "日間") now.setDate(now.getDate() - 1);
@@ -414,36 +404,10 @@ export default function Home() {
   };
 
   // Playback control functions
-  const handlePlayTrack = async (track: Track, index: number) => {
+  const handlePlayTrack = (track: Track, index: number) => {
     setSelectedTrack(track);
     setSelectedTrackIndex(index);
     setIsPlaying(true);
-
-    // API を遅延読み込み（初回のみ）
-    await loadAPIsOnDemand();
-
-    // モバイル対応: 次のフレームで明示的に再生を開始
-    setTimeout(() => {
-      // YouTube IFrame API が利用可能な場合、playVideo() を呼び出す
-      if (youtubePlayerRef.current && youtubePlayerRef.current.playVideo) {
-        try {
-          youtubePlayerRef.current.playVideo();
-          console.log('YouTube playVideo() called');
-        } catch (err) {
-          console.log('YouTube playVideo error:', err);
-        }
-      }
-
-      // SoundCloud Widget API が利用可能な場合、play() を呼び出す
-      if (soundCloudPlayerRef.current && soundCloudPlayerRef.current.play) {
-        try {
-          soundCloudPlayerRef.current.play();
-          console.log('SoundCloud play() called');
-        } catch (err) {
-          console.log('SoundCloud play error:', err);
-        }
-      }
-    }, 100);
   };
 
   const handlePlayNext = () => {
@@ -476,19 +440,6 @@ export default function Home() {
       setSelectedTrackIndex(selectedTrackIndex - 1);
       setSelectedTrack(tracks[selectedTrackIndex - 1]);
       setIsPlaying(true);
-    }
-  };
-
-  const handleTrackEnd = () => {
-    if (playMode === 'repeat-one' && selectedTrackIndex !== null) {
-      // Restart the current song
-      setIsPlaying(true);
-    } else if (playMode === 'once') {
-      // Stop after current song
-      setIsPlaying(false);
-    } else if (playMode === 'auto' || playMode === 'shuffle') {
-      // Play next song automatically
-      handlePlayNext();
     }
   };
 
@@ -787,57 +738,6 @@ export default function Home() {
 
       fetchArtistProfile();
 
-      // YouTube IFrame API をセットアップ（自動遷移対応）
-      if (selectedTrack.external_url) {
-        const ytId = getYouTubeId(selectedTrack.external_url);
-        if (ytId) {
-          setTimeout(() => {
-            const iframe = document.querySelector(
-              'iframe[src*="youtube.com/embed"]'
-            ) as HTMLIFrameElement;
-
-            if (iframe && (window as any).YT && (window as any).YT.Player) {
-              try {
-                youtubePlayerRef.current = new (window as any).YT.Player(iframe, {
-                  events: {
-                    onStateChange: (event: any) => {
-                      // 0 = UNSTARTED, 1 = PLAYING, 2 = PAUSED, 3 = BUFFERING, 5 = VIDEO_CUED
-                      if (event.data === 0) {
-                        // 動画終了
-                        console.log('YouTube: 動画終了、次の曲に遷移');
-                        handleTrackEnd();
-                      }
-                    }
-                  }
-                });
-              } catch (err) {
-                console.log('YouTube API setup error:', err);
-              }
-            }
-          }, 500);
-        }
-
-        // SoundCloud Widget API をセットアップ（自動遷移対応）
-        if (isSoundCloudUrl(selectedTrack.external_url)) {
-          setTimeout(() => {
-            const iframe = document.querySelector(
-              'iframe[src*="soundcloud.com/player"]'
-            ) as HTMLIFrameElement;
-
-            if (iframe && (window as any).SC && (window as any).SC.Widget) {
-              try {
-                soundCloudPlayerRef.current = (window as any).SC.Widget(iframe);
-                soundCloudPlayerRef.current.bind((window as any).SC.Widget.Events.FINISH, () => {
-                  console.log('SoundCloud: トラック終了、次の曲に遷移');
-                  handleTrackEnd();
-                });
-              } catch (err) {
-                console.log('SoundCloud API setup error:', err);
-              }
-            }
-          }, 500);
-        }
-      }
     } else {
       setComments([]);
       setCommentInput("");
