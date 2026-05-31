@@ -48,7 +48,6 @@ interface PlaylistItemPayload {
   external_title?: string;
   external_artist?: string;
   external_thumbnail_url?: string;
-  track_id?: number;
 }
 
 export default function PlaylistPage() {
@@ -59,6 +58,7 @@ export default function PlaylistPage() {
   const [items, setItems] = useState<PlaylistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
@@ -550,6 +550,20 @@ export default function PlaylistPage() {
           </div>
         )}
 
+        {notice && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(0,212,120,0.1)',
+            border: '1px solid rgba(0,212,120,0.3)',
+            borderRadius: '8px',
+            color: '#4ade80',
+            marginBottom: '20px',
+            fontSize: '14px'
+          }}>
+            {notice}
+          </div>
+        )}
+
         {/* Playback Controls */}
         {items.length > 0 && (
           <div style={{
@@ -830,6 +844,8 @@ export default function PlaylistPage() {
           <AddPlaylistItem
             onSubmit={async (data) => {
               try {
+                setError(null);
+                setNotice(null);
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) {
                   setError('Session expired');
@@ -840,52 +856,44 @@ export default function PlaylistPage() {
                   music_type: data.musicType || 'audio'
                 };
 
-                if (data.externalUrl) {
-                  const parsedUrl = parseTrackUrl(data.externalUrl);
-                  if (!parsedUrl) {
-                    setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
-                    return;
-                  }
-
-                  const alreadyExists = items.some((item) => {
-                    const existingUrl = item.url || item.external_url || '';
-                    if (parsedUrl.provider === 'youtube') {
-                      const existing = parseTrackUrl(existingUrl);
-                      return existing?.provider === 'youtube' &&
-                        existing.providerTrackId === parsedUrl.providerTrackId;
-                    }
-                    return existingUrl.trim() === parsedUrl.originalUrl;
-                  });
-
-                  if (alreadyExists) {
-                    setError('この曲はすでにプレイリストに入っています。');
-                    return;
-                  }
-
-                  try {
-                    const metadata = await fetchMetadataFromApi(data.externalUrl, session.access_token);
-                    itemData.external_url = parsedUrl.originalUrl;
-                    itemData.external_service = parsedUrl.provider;
-                    itemData.external_title =
-                      data.title || metadata.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
-                    itemData.external_artist = metadata.artist || '';
-                    itemData.external_thumbnail_url = metadata.thumbnail_url || '';
-                    itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
-                  } catch (err) {
-                    itemData.external_url = parsedUrl.originalUrl;
-                    itemData.external_service = parsedUrl.provider;
-                    itemData.external_title =
-                      data.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
-                    itemData.external_artist = '';
-                    itemData.external_thumbnail_url = '';
-                    itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
-                  }
-                } else if (data.trackId) {
+                const parsedUrl = parseTrackUrl(data.externalUrl);
+                if (!parsedUrl) {
                   setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
                   return;
-                } else {
-                  setError('URLを入力してください。');
+                }
+
+                const alreadyExists = items.some((item) => {
+                  const existingUrl = item.url || item.external_url || '';
+                  if (parsedUrl.provider === 'youtube') {
+                    const existing = parseTrackUrl(existingUrl);
+                    return existing?.provider === 'youtube' &&
+                      existing.providerTrackId === parsedUrl.providerTrackId;
+                  }
+                  return existingUrl.trim() === parsedUrl.originalUrl;
+                });
+
+                if (alreadyExists) {
+                  setError('この曲はすでにプレイリストに入っています。');
                   return;
+                }
+
+                try {
+                  const metadata = await fetchMetadataFromApi(data.externalUrl, session.access_token);
+                  itemData.external_url = parsedUrl.originalUrl;
+                  itemData.external_service = parsedUrl.provider;
+                  itemData.external_title =
+                    data.title || metadata.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
+                  itemData.external_artist = metadata.artist || '';
+                  itemData.external_thumbnail_url = metadata.thumbnail_url || '';
+                  itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
+                } catch (err) {
+                  itemData.external_url = parsedUrl.originalUrl;
+                  itemData.external_service = parsedUrl.provider;
+                  itemData.external_title =
+                    data.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
+                  itemData.external_artist = '';
+                  itemData.external_thumbnail_url = '';
+                  itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
                 }
 
                 const response = await fetch(`/api/playlists/${playlistId}/items`, {
@@ -905,7 +913,7 @@ export default function PlaylistPage() {
                 const newItem = await response.json();
                 setItems([...items, newItem]);
                 setShowAddForm(false);
-                setError('プレイリストに追加しました。');
+                setNotice('プレイリストに追加しました。');
               } catch (err) {
                 console.error('Error adding item:', err);
                 setError(err instanceof Error ? err.message : 'Failed to add item');
@@ -914,6 +922,7 @@ export default function PlaylistPage() {
             onCancel={() => {
               setShowAddForm(false);
               setError(null);
+              setNotice(null);
             }}
           />
         )}
