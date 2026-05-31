@@ -1,16 +1,15 @@
 'use client';
 
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { detectService, fetchMetadataFromApi } from '@/lib/playlist-utils';
+import { fetchMetadataFromApi } from '@/lib/playlist-utils';
 import { AddPlaylistItem } from '@/app/components/AddPlaylistItem';
 import { PlaylistItemCard } from '@/app/components/PlaylistItemCard';
 import { EmbedPlayer } from '@/app/components/EmbedPlayer';
-
-const SILENT_WAV =
-  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAAAA==';
+import { CONTINUOUS_PLAYBACK_STORAGE_KEY, unlockAutoplayForIOS } from '@/lib/autoplay-unlock';
+import { parseTrackUrl } from '@/lib/track-url-utils';
 
 interface Playlist {
   id: number;
@@ -64,12 +63,6 @@ export default function PlaylistPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
 
-  const [addFormData, setAddFormData] = useState({
-    url: '',
-    trackSearch: '',
-    selectedTrackId: null as number | null
-  });
-
   // Drag and drop state
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const [dragOverItemId, setDragOverItemId] = useState<number | null>(null);
@@ -80,43 +73,25 @@ export default function PlaylistPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playlistAutoplayEnabled, setPlaylistAutoplayEnabled] = useState(false);
   const [playerResetKey, setPlayerResetKey] = useState(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  const unlockAudio = useCallback(async () => {
-    try {
-      const audio = document.createElement('audio');
-      audio.src = SILENT_WAV;
-      audio.preload = 'auto';
-      audio.volume = 0.01;
-      await audio.play();
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
-    } catch {
-      // Some browsers reject silent audio, but AudioContext may still unlock below.
-    }
-
-    try {
-      const AudioContextClass =
-        window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-
-      audioContextRef.current ??= new AudioContextClass();
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-    } catch {
-      // Autoplay permission is best-effort and only available during user gestures.
-    }
-  }, []);
+  const [needsUserGesture, setNeedsUserGesture] = useState(false);
 
   const handleAutoplayToggle = async (checked: boolean) => {
-    if (checked) {
-      await unlockAudio();
+    if (!checked) {
+      localStorage.setItem(CONTINUOUS_PLAYBACK_STORAGE_KEY, 'false');
+      setPlaylistAutoplayEnabled(false);
+      setNeedsUserGesture(false);
+      return;
     }
 
-    setPlaylistAutoplayEnabled(checked);
+    const unlocked = await unlockAutoplayForIOS();
+    localStorage.setItem(CONTINUOUS_PLAYBACK_STORAGE_KEY, unlocked ? 'true' : 'false');
+    setPlaylistAutoplayEnabled(unlocked);
+    setNeedsUserGesture(!unlocked);
   };
+
+  useEffect(() => {
+    setPlaylistAutoplayEnabled(localStorage.getItem(CONTINUOUS_PLAYBACK_STORAGE_KEY) === 'true');
+  }, []);
 
   // Fetch current user and playlist
   useEffect(() => {
@@ -154,17 +129,17 @@ export default function PlaylistPage() {
 
   // Playback control functions
   const handlePlayItem = (index: number) => {
-    void unlockAudio();
     setCurrentItemIndex(index);
     setIsPlaying(true);
+    setNeedsUserGesture(false);
     setPlayerResetKey((key) => key + 1);
   };
 
   const handlePlayNext = useCallback(() => {
     if (currentItemIndex === null || items.length === 0) return;
 
-    void unlockAudio();
     setPlayerResetKey((key) => key + 1);
+    setNeedsUserGesture(false);
 
     if (playMode === 'shuffle') {
       // Random next song
@@ -182,13 +157,13 @@ export default function PlaylistPage() {
         setIsPlaying(false);
       }
     }
-  }, [currentItemIndex, items.length, playMode, unlockAudio]);
+  }, [currentItemIndex, items.length, playMode]);
 
   const handlePlayPrevious = () => {
     if (currentItemIndex === null) return;
 
-    void unlockAudio();
     setPlayerResetKey((key) => key + 1);
+    setNeedsUserGesture(false);
 
     if (currentItemIndex > 0) {
       setCurrentItemIndex(currentItemIndex - 1);
@@ -214,81 +189,6 @@ export default function PlaylistPage() {
       handlePlayNext();
     }
   }, [currentItemIndex, handlePlayNext, playMode, playlistAutoplayEnabled]);
-
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!addFormData.url && !addFormData.selectedTrackId) {
-      setError('URLまたはトラックを選択してください');
-      return;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Session expired');
-        return;
-      }
-
-      let itemData: PlaylistItemPayload = {
-        music_type: 'audio'
-      };
-
-      if (addFormData.url) {
-        // External URL
-        const service = detectService(addFormData.url);
-        if (!service) {
-          setError('サポートされていないURLです');
-          return;
-        }
-
-        try {
-          const metadata = await fetchMetadataFromApi(addFormData.url, session.access_token);
-          itemData = {
-            ...itemData,
-            external_url: addFormData.url,
-            external_service: metadata.service,
-            external_title: metadata.title,
-            external_artist: metadata.artist || '',
-            external_thumbnail_url: metadata.thumbnail_url || '',
-            music_type: service === 'youtube' || service === 'niconico' ? 'video' : 'audio'
-          };
-        } catch (err) {
-          setError('メタデータ取得に失敗しました');
-          return;
-        }
-      } else if (addFormData.selectedTrackId) {
-        // DB track
-        itemData = {
-          ...itemData,
-          track_id: addFormData.selectedTrackId
-        };
-      }
-
-      const response = await fetch(`/api/playlists/${playlistId}/items`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(itemData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add item');
-      }
-
-      const newItem = await response.json();
-      setItems([...items, newItem]);
-      setAddFormData({ url: '', trackSearch: '', selectedTrackId: null });
-      setShowAddForm(false);
-      setError(null);
-    } catch (err) {
-      console.error('Error adding item:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add item');
-    }
-  };
 
   const handleDeleteItem = async (itemId: number) => {
     if (!confirm('このアイテムを削除しますか？')) {
@@ -732,12 +632,21 @@ export default function PlaylistPage() {
                     cursor: 'pointer'
                   }}
                 />
-                連続再生
+                連続再生を許可する
               </label>
+              <div style={{
+                flex: '1 0 100%',
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: '11px',
+                textAlign: 'center',
+                marginTop: '-10px'
+              }}>
+                iOS対応のため、連続再生にはチェックが必要です。
+              </div>
 
               {/* Previous button */}
               <button
-                onClick={() => { void unlockAudio(); handlePlayPrevious(); }}
+                onClick={handlePlayPrevious}
                 disabled={currentItemIndex === null || currentItemIndex === 0}
                 style={{
                   padding: '8px 16px',
@@ -756,7 +665,7 @@ export default function PlaylistPage() {
 
               {/* Play/Pause button */}
               <button
-                onClick={() => { if (currentItemIndex !== null) { void unlockAudio(); setIsPlaying(!isPlaying); } }}
+                onClick={() => { if (currentItemIndex !== null) { setNeedsUserGesture(false); setIsPlaying(!isPlaying); } }}
                 disabled={currentItemIndex === null}
                 style={{
                   padding: '8px 16px',
@@ -775,7 +684,7 @@ export default function PlaylistPage() {
 
               {/* Next button */}
               <button
-                onClick={() => { void unlockAudio(); handlePlayNext(); }}
+                onClick={handlePlayNext}
                 disabled={currentItemIndex === null || currentItemIndex >= items.length - 1}
                 style={{
                   padding: '8px 16px',
@@ -800,7 +709,7 @@ export default function PlaylistPage() {
               flexWrap: 'wrap'
             }}>
               <button
-                onClick={() => { void unlockAudio(); setPlayMode('auto'); }}
+                onClick={() => { setPlayMode('auto'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -817,7 +726,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => { void unlockAudio(); setPlayMode('shuffle'); }}
+                onClick={() => { setPlayMode('shuffle'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -834,7 +743,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => { void unlockAudio(); setPlayMode('once'); }}
+                onClick={() => { setPlayMode('once'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -851,7 +760,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => { void unlockAudio(); setPlayMode('repeat-one'); }}
+                onClick={() => { setPlayMode('repeat-one'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -875,8 +784,42 @@ export default function PlaylistPage() {
                   autoplay={isPlaying}
                   height={items[currentItemIndex].music_type === 'video' ? 240 : 160}
                   onEnded={isPlaying ? handleTrackEnd : undefined}
+                  onAutoplayBlocked={() => setNeedsUserGesture(true)}
                   replaySignal={playerResetKey}
                 />
+                {needsUserGesture && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,149,0,0.14)',
+                    border: '1px solid rgba(255,149,0,0.35)',
+                    color: 'rgba(255,255,255,0.86)',
+                    fontSize: '13px'
+                  }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      ブラウザ制限により自動再生できませんでした。再生ボタンを押してください。
+                    </div>
+                    <button
+                      onClick={() => {
+                        setNeedsUserGesture(false);
+                        setIsPlaying(true);
+                        setPlayerResetKey((key) => key + 1);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#00d4ff',
+                        color: '#07111a',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ▶ この曲を再生する
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -898,28 +841,50 @@ export default function PlaylistPage() {
                 };
 
                 if (data.externalUrl) {
-                  const service = detectService(data.externalUrl);
-                  if (!service) {
-                    setError('サポートされていないURLです');
+                  const parsedUrl = parseTrackUrl(data.externalUrl);
+                  if (!parsedUrl) {
+                    setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
+                    return;
+                  }
+
+                  const alreadyExists = items.some((item) => {
+                    const existingUrl = item.url || item.external_url || '';
+                    if (parsedUrl.provider === 'youtube') {
+                      const existing = parseTrackUrl(existingUrl);
+                      return existing?.provider === 'youtube' &&
+                        existing.providerTrackId === parsedUrl.providerTrackId;
+                    }
+                    return existingUrl.trim() === parsedUrl.originalUrl;
+                  });
+
+                  if (alreadyExists) {
+                    setError('この曲はすでにプレイリストに入っています。');
                     return;
                   }
 
                   try {
                     const metadata = await fetchMetadataFromApi(data.externalUrl, session.access_token);
-                    itemData.external_url = data.externalUrl;
-                    itemData.external_service = metadata.service;
-                    itemData.external_title = metadata.title;
+                    itemData.external_url = parsedUrl.originalUrl;
+                    itemData.external_service = parsedUrl.provider;
+                    itemData.external_title =
+                      data.title || metadata.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
                     itemData.external_artist = metadata.artist || '';
                     itemData.external_thumbnail_url = metadata.thumbnail_url || '';
+                    itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
                   } catch (err) {
-                    setError('メタデータ取得に失敗しました');
-                    return;
+                    itemData.external_url = parsedUrl.originalUrl;
+                    itemData.external_service = parsedUrl.provider;
+                    itemData.external_title =
+                      data.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
+                    itemData.external_artist = '';
+                    itemData.external_thumbnail_url = '';
+                    itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
                   }
                 } else if (data.trackId) {
-                  // REVOSONG楽曲を追加
-                  itemData.track_id = data.trackId;
+                  setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
+                  return;
                 } else {
-                  setError('楽曲またはURLを選択してください');
+                  setError('URLを入力してください。');
                   return;
                 }
 
@@ -940,7 +905,7 @@ export default function PlaylistPage() {
                 const newItem = await response.json();
                 setItems([...items, newItem]);
                 setShowAddForm(false);
-                setError(null);
+                setError('プレイリストに追加しました。');
               } catch (err) {
                 console.error('Error adding item:', err);
                 setError(err instanceof Error ? err.message : 'Failed to add item');

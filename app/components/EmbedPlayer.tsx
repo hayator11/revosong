@@ -83,6 +83,7 @@ interface EmbedPlayerProps {
   autoplay?: boolean;
   height?: number;
   onEnded?: () => void;
+  onAutoplayBlocked?: () => void;
   replaySignal?: number;
 }
 
@@ -171,6 +172,7 @@ export function EmbedPlayer({
   autoplay = true,
   height,
   onEnded,
+  onAutoplayBlocked,
   replaySignal = 0
 }: EmbedPlayerProps): ReactNode {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -285,6 +287,7 @@ export function EmbedPlayer({
           };
         } catch {
           // SoundCloud finish events are best-effort; users can advance manually.
+          onAutoplayBlocked?.();
         }
         return;
       }
@@ -307,7 +310,7 @@ export function EmbedPlayer({
       cancelled = true;
       cleanup?.();
     };
-  }, [url]);
+  }, [onAutoplayBlocked, url]);
 
   const ytId = getYouTubeId(url);
   if (ytId) {
@@ -320,7 +323,7 @@ export function EmbedPlayer({
         width="100%"
         height={height || 160}
         src={`https://www.youtube.com/embed/${initialYtId}?enablejsapi=1&playsinline=1${pageOrigin ? `&origin=${encodeURIComponent(pageOrigin)}` : ''}${autoplay ? '&autoplay=1' : ''}`}
-        allow="autoplay; encrypted-media"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         allowFullScreen
         onLoad={() => {
           sendYouTubeCommand(iframeRef.current, 'addEventListener', ['onStateChange']);

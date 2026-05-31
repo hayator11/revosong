@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { EmbedPlayer, getServiceName } from './EmbedPlayer';
+import { parseTrackUrl } from '@/lib/track-url-utils';
 
 interface AddPlaylistItemProps {
   onSubmit: (data: {
     externalUrl?: string;
     trackId?: number;
     musicType?: string;
+    title?: string;
   }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -40,6 +42,7 @@ export function AddPlaylistItem({
 }: AddPlaylistItemProps) {
   const [mode, setMode] = useState<'url' | 'track'>('url');
   const [url, setUrl] = useState('');
+  const [title, setTitle] = useState('');
   const [metadata, setMetadata] = useState<MetadataPreview | null>(null);
   const [musicType, setMusicType] = useState('audio');
   const [error, setError] = useState<string | null>(null);
@@ -118,12 +121,18 @@ export function AddPlaylistItem({
   };
 
   const handleFetchMetadata = async () => {
-    if (!url.trim()) {
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
       setError('URLを入力してください');
       return;
     }
 
-    await extractMetadata(url);
+    if (!parseTrackUrl(trimmedUrl)) {
+      setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
+      return;
+    }
+
+    await extractMetadata(trimmedUrl);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,6 +145,11 @@ export function AddPlaylistItem({
         return;
       }
 
+      if (mode === 'url' && !parseTrackUrl(url)) {
+        setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
+        return;
+      }
+
       if (mode === 'track' && !selectedTrack) {
         setError('楽曲を選択してください');
         return;
@@ -144,11 +158,13 @@ export function AddPlaylistItem({
       await onSubmit({
         externalUrl: mode === 'url' ? url : undefined,
         trackId: mode === 'track' ? selectedTrack?.id : undefined,
-        musicType: musicType
+        musicType: musicType,
+        title: title.trim() || undefined
       });
 
       // リセット
       setUrl('');
+      setTitle('');
       setMetadata(null);
       setSearchQuery('');
       setSearchResults([]);
@@ -197,12 +213,15 @@ export function AddPlaylistItem({
             color: '#fff'
           }}
         >
-          プレイリストにアイテムを追加
+          曲を追加する
         </h2>
+        <p style={{ marginTop: '-12px', marginBottom: '20px', color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
+          YouTube / SoundCloud のURLを貼って、自分だけのプレイリストを作れます。
+        </p>
 
         <form onSubmit={handleSubmit}>
           {/* Mode Selection */}
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'none', marginBottom: '20px' }}>
             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
               <button
                 type="button"
@@ -474,13 +493,13 @@ export function AddPlaylistItem({
                     color: '#fff'
                   }}
                 >
-                  URL
+                  YouTube / SoundCloud URL
                 </label>
                 <input
                   type="text"
                   value={url}
                   onChange={handleUrlChange}
-                  placeholder="https://youtube.com/watch?v=... または他のサービスのURL"
+                  placeholder="https://www.youtube.com/watch?v=... または https://soundcloud.com/artist/track"
                   style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -499,6 +518,37 @@ export function AddPlaylistItem({
                   onBlur={(e) => {
                     (e.target as HTMLInputElement).style.background = 'rgba(255, 255, 255, 0.05)';
                     (e.target as HTMLInputElement).style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                  disabled={isLoading || isLoadingMetadata}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#fff'
+                  }}
+                >
+                  曲名（任意）
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="未入力の場合は仮タイトルを使います"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                   disabled={isLoading || isLoadingMetadata}
                 />
@@ -530,7 +580,7 @@ export function AddPlaylistItem({
                     if (!isLoading && !isLoadingMetadata) (e.target as HTMLButtonElement).style.opacity = '1';
                   }}
                 >
-                  {isLoadingMetadata ? '読み込み中...' : 'プレビューを読み込む'}
+                  {isLoadingMetadata ? '確認中...' : 'URLを確認する'}
                 </button>
               )}
 
@@ -739,7 +789,7 @@ export function AddPlaylistItem({
                 if (!isLoading && metadata) (e.target as HTMLButtonElement).style.opacity = '1';
               }}
             >
-              {isLoading ? '追加中...' : '追加'}
+              {isLoading ? '追加中...' : '＋ プレイリストに追加'}
             </button>
           </div>
         </form>
