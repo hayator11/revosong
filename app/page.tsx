@@ -371,7 +371,6 @@ export default function Home() {
   // YouTube IFrame API と SoundCloud Widget API のリファレンス
   const youtubePlayerRef = useRef<any>(null);
   const soundCloudPlayerRef = useRef<any>(null);
-  const autoplayTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -831,37 +830,13 @@ export default function Home() {
             }
           }, 500);
         }
-
-        // フォールバック: 約30秒後に自動で次の曲に進む（API が機能しない場合の対応）
-        // これにより、スマートフォンでも確実に連続再生が動作する
-        if (autoplayTimerRef.current) {
-          clearTimeout(autoplayTimerRef.current);
-        }
-
-        autoplayTimerRef.current = setTimeout(() => {
-          if (isPlaying && (playMode === 'auto' || playMode === 'shuffle')) {
-            console.log('Autoplay fallback: 次の曲に遷移');
-            handleTrackEnd();
-          }
-        }, 30000); // 30秒
       }
     } else {
       setComments([]);
       setCommentInput("");
       setArtistProfile(null);
-      // タイマーをクリア
-      if (autoplayTimerRef.current) {
-        clearTimeout(autoplayTimerRef.current);
-      }
     }
-
-    // クリーンアップ
-    return () => {
-      if (autoplayTimerRef.current) {
-        clearTimeout(autoplayTimerRef.current);
-      }
-    };
-  }, [selectedTrack?.id, isPlaying, playMode]);
+  }, [selectedTrack?.id]);
 
   // トラック詳細が表示されたときに再生回数をカウント
   // (プレイヤーがマウントされた時点で、ユーザーが再生する意図があると判断)
@@ -875,160 +850,6 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [selectedTrack?.id, incrementPlayCount]);
-
-  // Setup auto-play for YouTube and SoundCloud
-  useEffect(() => {
-    console.log('Auto-play effect triggered', {
-      trackTitle: selectedTrack?.title,
-      isPlaying,
-      playMode,
-      hasExternalUrl: !!selectedTrack?.external_url
-    });
-
-    if (!selectedTrack || !isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
-      console.log('Auto-play conditions not met', {
-        hasTrack: !!selectedTrack,
-        isPlaying,
-        playMode
-      });
-      return;
-    }
-
-    const url = selectedTrack.external_url;
-    console.log('Auto-play URL:', url);
-    if (!url) {
-      console.log('No URL found');
-      return;
-    }
-
-    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
-    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    // Add a small delay to allow iframe to render
-    const delayTimer = setTimeout(() => {
-      // YouTube auto-play detection
-      const ytId = getYouTubeId(url);
-      if (ytId) {
-        console.log('YouTube detected, setting up auto-play for:', ytId);
-        let checkCount = 0;
-        const maxChecks = 120; // 60 seconds (500ms * 120)
-
-        youtubeCheckInterval = setInterval(() => {
-          checkCount++;
-
-          // Look for YouTube iframe more carefully
-          const iframes = document.querySelectorAll('iframe');
-          let youtubeIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
-              youtubeIframe = iframe;
-              console.log(`YouTube iframe found on check ${checkCount}`);
-              break;
-            }
-          }
-
-          if (checkCount % 20 === 0) {
-            console.log('YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
-          }
-
-          // If iframe disappears or we hit timeout, play next track
-          if (!youtubeIframe) {
-            // Check if this is a timeout or just not rendered yet
-            if (checkCount >= 20) { // Give it at least 10 seconds to find iframe
-              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-              if (checkCount >= maxChecks) {
-                console.log('YouTube timeout - playing next track');
-                handleTrackEnd();
-              }
-            }
-          } else if (checkCount >= maxChecks) {
-            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-            console.log('YouTube maxChecks reached - playing next track');
-            handleTrackEnd();
-          }
-        }, 500);
-        return;
-      }
-
-      // SoundCloud auto-play detection
-      if (isSoundCloudUrl(url)) {
-        console.log('SoundCloud detected, setting up auto-play');
-
-        const setupSoundCloudListener = () => {
-          console.log('Setting up SoundCloud listener');
-          const iframes = document.querySelectorAll('iframe');
-          let scIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('soundcloud.com')) {
-              scIframe = iframe;
-              console.log('SoundCloud iframe found');
-              break;
-            }
-          }
-
-          console.log('SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
-
-          if (scIframe && window.SC) {
-            try {
-              console.log('Creating SoundCloud widget...');
-              const widget = window.SC.Widget(scIframe);
-              console.log('SoundCloud widget created successfully');
-
-              widget.bind(window.SC.Widget.Events.FINISH, () => {
-                console.log('SoundCloud track finished event - playing next');
-                handleTrackEnd();
-              });
-            } catch (e) {
-              console.log('SoundCloud API error, using timeout:', e);
-              // Fallback to timeout (average song length ~4 minutes)
-              soundCloudTimeout = setTimeout(() => {
-                if (isPlaying) {
-                  console.log('SoundCloud timeout - playing next track');
-                  handleTrackEnd();
-                }
-              }, 240000); // 4 minutes
-            }
-          } else {
-            console.log('Using SoundCloud timeout fallback (iframe or SC not available)');
-            // Fallback timeout
-            soundCloudTimeout = setTimeout(() => {
-              if (isPlaying) {
-                console.log('SoundCloud fallback timeout - playing next track');
-                handleTrackEnd();
-              }
-            }, 240000); // 4 minutes
-          }
-        };
-
-        // Load SoundCloud widget script if needed
-        if (!window.SC) {
-          console.log('Loading SoundCloud widget API');
-          const script = document.createElement('script');
-          script.src = 'https://w.soundcloud.com/player/api.js';
-          script.onload = () => {
-            console.log('SoundCloud API loaded');
-            setupSoundCloudListener();
-          };
-          script.onerror = () => {
-            console.log('Failed to load SoundCloud API, using timeout');
-            setupSoundCloudListener();
-          };
-          document.body.appendChild(script);
-        } else {
-          console.log('SoundCloud API already loaded');
-          setupSoundCloudListener();
-        }
-      }
-    }, 500); // Wait 500ms for iframe to render
-
-    return () => {
-      clearTimeout(delayTimer);
-      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
-    };
-  }, [selectedTrack?.external_url, isPlaying, playMode, handleTrackEnd]);
 
   // Helper function to detect music type (audio/video) based on URL
   const getMusicContentType = (track: Track): string => {
