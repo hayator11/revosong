@@ -1,20 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-// Type definitions for SoundCloud Widget
-declare global {
-  interface Window {
-    SC: any;
-  }
-}
-import { useRouter, useParams } from 'next/navigation';
+import { useCallback, useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { detectService, parseDefaultMetadata, fetchMetadataFromApi } from '@/lib/playlist-utils';
+import { detectService, fetchMetadataFromApi } from '@/lib/playlist-utils';
 import { AddPlaylistItem } from '@/app/components/AddPlaylistItem';
 import { PlaylistItemCard } from '@/app/components/PlaylistItemCard';
-import { EmbedPlayer, getYouTubeId, isSoundCloudUrl } from '@/app/components/EmbedPlayer';
+import { EmbedPlayer } from '@/app/components/EmbedPlayer';
+
+const PLAYLIST_AUTOPLAY_STORAGE_KEY = 'revosong:playlist-autoplay-enabled';
 
 interface Playlist {
   id: number;
@@ -46,8 +41,17 @@ interface PlaylistItem {
   thumbnail_url: string | null;
 }
 
+interface PlaylistItemPayload {
+  music_type: string;
+  external_url?: string;
+  external_service?: string;
+  external_title?: string;
+  external_artist?: string;
+  external_thumbnail_url?: string;
+  track_id?: number;
+}
+
 export default function PlaylistPage() {
-  const router = useRouter();
   const params = useParams();
   const playlistId = parseInt(params.id as string);
 
@@ -55,7 +59,6 @@ export default function PlaylistPage() {
   const [items, setItems] = useState<PlaylistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
@@ -74,15 +77,35 @@ export default function PlaylistPage() {
   const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
   const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playlistAutoplayEnabled, setPlaylistAutoplayEnabled] = useState(false);
+  const [hasLoadedAutoplayPreference, setHasLoadedAutoplayPreference] = useState(false);
+  const [playerResetKey, setPlayerResetKey] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPlaylistAutoplayEnabled(
+        window.localStorage.getItem(PLAYLIST_AUTOPLAY_STORAGE_KEY) === 'true'
+      );
+      setHasLoadedAutoplayPreference(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedAutoplayPreference) return;
+
+    window.localStorage.setItem(
+      PLAYLIST_AUTOPLAY_STORAGE_KEY,
+      playlistAutoplayEnabled ? 'true' : 'false'
+    );
+  }, [hasLoadedAutoplayPreference, playlistAutoplayEnabled]);
 
   // Fetch current user and playlist
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-        if (currentUser) {
-          setUser(currentUser);
-        }
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
 
         // Fetch playlist
         const response = await fetch(`/api/playlists/${playlistId}`);
@@ -116,9 +139,10 @@ export default function PlaylistPage() {
   const handlePlayItem = (index: number) => {
     setCurrentItemIndex(index);
     setIsPlaying(true);
+    setPlayerResetKey((key) => key + 1);
   };
 
-  const handlePlayNext = () => {
+  const handlePlayNext = useCallback(() => {
     if (currentItemIndex === null || items.length === 0) return;
 
     if (playMode === 'shuffle') {
@@ -137,7 +161,7 @@ export default function PlaylistPage() {
         setIsPlaying(false);
       }
     }
-  };
+  }, [currentItemIndex, items.length, playMode]);
 
   const handlePlayPrevious = () => {
     if (currentItemIndex === null) return;
@@ -148,10 +172,16 @@ export default function PlaylistPage() {
     }
   };
 
-  const handleTrackEnd = () => {
+  const handleTrackEnd = useCallback(() => {
+    if (!playlistAutoplayEnabled) {
+      setIsPlaying(false);
+      return;
+    }
+
     if (playMode === 'repeat-one' && currentItemIndex !== null) {
       // Restart the current song
       setIsPlaying(true);
+      setPlayerResetKey((key) => key + 1);
     } else if (playMode === 'once') {
       // Stop after current song
       setIsPlaying(false);
@@ -159,155 +189,7 @@ export default function PlaylistPage() {
       // Play next song automatically
       handlePlayNext();
     }
-  };
-
-  // Setup auto-play for YouTube and SoundCloud
-  useEffect(() => {
-    console.log('Playlist auto-play effect triggered', {
-      currentItemIndex,
-      isPlaying,
-      playMode,
-      hasItems: items.length > 0
-    });
-
-    if (currentItemIndex === null || !items[currentItemIndex]) {
-      console.log('Playlist auto-play: no current item');
-      return;
-    }
-
-    if (!isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
-      console.log('Playlist auto-play: not playing or wrong mode', { isPlaying, playMode });
-      return;
-    }
-
-    const item = items[currentItemIndex];
-    const url = item.url || item.external_url;
-
-    console.log('Playlist auto-play URL:', url);
-    if (!url) {
-      console.log('Playlist auto-play: no URL');
-      return;
-    }
-
-    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
-    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    // Add a small delay to allow iframe to render
-    const delayTimer = setTimeout(() => {
-      // YouTube auto-play detection
-      if (getYouTubeId(url)) {
-        console.log('Playlist YouTube detected, setting up auto-play');
-        let checkCount = 0;
-        const maxChecks = 120;
-
-        youtubeCheckInterval = setInterval(() => {
-          checkCount++;
-          const iframes = document.querySelectorAll('iframe');
-          let youtubeIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
-              youtubeIframe = iframe;
-              console.log(`Playlist YouTube iframe found on check ${checkCount}`);
-              break;
-            }
-          }
-
-          if (checkCount % 20 === 0) {
-            console.log('Playlist YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
-          }
-
-          if (!youtubeIframe) {
-            if (checkCount >= 20) {
-              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-              if (checkCount >= maxChecks) {
-                console.log('Playlist YouTube timeout - playing next track');
-                handleTrackEnd();
-              }
-            }
-          } else if (checkCount >= maxChecks) {
-            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-            console.log('Playlist YouTube maxChecks reached - playing next track');
-            handleTrackEnd();
-          }
-        }, 500);
-
-        return;
-      }
-
-      // SoundCloud auto-play detection
-      if (isSoundCloudUrl(url)) {
-        console.log('Playlist SoundCloud detected, setting up auto-play');
-        const setupSoundCloudListener = () => {
-          console.log('Playlist setting up SoundCloud listener');
-          const iframes = document.querySelectorAll('iframe');
-          let scIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('soundcloud.com')) {
-              scIframe = iframe;
-              console.log('Playlist SoundCloud iframe found');
-              break;
-            }
-          }
-
-          console.log('Playlist SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
-
-          if (scIframe && window.SC) {
-            try {
-              console.log('Playlist creating SoundCloud widget');
-              const widget = window.SC.Widget(scIframe);
-              console.log('Playlist SoundCloud widget created');
-              widget.bind(window.SC.Widget.Events.FINISH, () => {
-                console.log('Playlist SoundCloud track finished - playing next');
-                handleTrackEnd();
-              });
-            } catch (e) {
-              console.log('Playlist SoundCloud API error, using timeout:', e);
-              soundCloudTimeout = setTimeout(() => {
-                if (isPlaying) {
-                  console.log('Playlist SoundCloud timeout - playing next track');
-                  handleTrackEnd();
-                }
-              }, 240000);
-            }
-          } else {
-            console.log('Playlist using SoundCloud timeout fallback');
-            soundCloudTimeout = setTimeout(() => {
-              if (isPlaying) {
-                console.log('Playlist SoundCloud fallback timeout - playing next track');
-                handleTrackEnd();
-              }
-            }, 240000);
-          }
-        };
-
-        if (!window.SC) {
-          console.log('Playlist loading SoundCloud widget API');
-          const script = document.createElement('script');
-          script.src = 'https://w.soundcloud.com/player/api.js';
-          script.onload = () => {
-            console.log('Playlist SoundCloud API loaded');
-            setupSoundCloudListener();
-          };
-          script.onerror = () => {
-            console.log('Playlist failed to load SoundCloud API, using timeout');
-            setupSoundCloudListener();
-          };
-          document.body.appendChild(script);
-        } else {
-          console.log('Playlist SoundCloud API already loaded');
-          setupSoundCloudListener();
-        }
-      }
-    }, 500); // Wait 500ms for iframe to render
-
-    return () => {
-      clearTimeout(delayTimer);
-      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
-    };
-  }, [currentItemIndex, items, isPlaying, playMode, handleTrackEnd]);
+  }, [currentItemIndex, handlePlayNext, playMode, playlistAutoplayEnabled]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,7 +206,7 @@ export default function PlaylistPage() {
         return;
       }
 
-      let itemData: any = {
+      let itemData: PlaylistItemPayload = {
         music_type: 'audio'
       };
 
@@ -852,6 +734,70 @@ export default function PlaylistPage() {
               </button>
             </div>
 
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                padding: '12px 14px',
+                background: 'rgba(255,255,255,0.06)',
+                border: playlistAutoplayEnabled
+                  ? '1px solid rgba(0,212,255,0.45)'
+                  : '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                marginBottom: '20px'
+              }}
+            >
+              <span>
+                <span style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                  プレイリスト連続再生
+                </span>
+                <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>
+                  ONにすると曲の終了後に次の曲へ進みます
+                </span>
+              </span>
+              <span
+                style={{
+                  position: 'relative',
+                  width: '50px',
+                  height: '28px',
+                  borderRadius: '999px',
+                  background: playlistAutoplayEnabled ? '#00d4ff' : 'rgba(255,255,255,0.18)',
+                  transition: 'background 0.2s',
+                  flexShrink: 0
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={playlistAutoplayEnabled}
+                  onChange={(event) => setPlaylistAutoplayEnabled(event.target.checked)}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
+                  aria-label="プレイリスト連続再生"
+                />
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    left: playlistAutoplayEnabled ? '26px' : '4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: '#fff',
+                    transition: 'left 0.2s',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                    pointerEvents: 'none'
+                  }}
+                />
+              </span>
+            </label>
+
             {/* Play mode */}
             <div style={{
               display: 'flex',
@@ -926,6 +872,18 @@ export default function PlaylistPage() {
                 🔁 1曲リピート
               </button>
             </div>
+
+            {currentItemIndex !== null && currentItemIndex < items.length && (items[currentItemIndex].url || items[currentItemIndex].external_url) && (
+              <div style={{ marginTop: '20px' }}>
+                <EmbedPlayer
+                  key={`${items[currentItemIndex].id}-${playerResetKey}`}
+                  url={(items[currentItemIndex].url || items[currentItemIndex].external_url) as string}
+                  autoplay={isPlaying}
+                  height={items[currentItemIndex].music_type === 'video' ? 240 : 160}
+                  onEnded={isPlaying ? handleTrackEnd : undefined}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -940,7 +898,7 @@ export default function PlaylistPage() {
                   return;
                 }
 
-                const itemData: any = {
+                const itemData: PlaylistItemPayload = {
                   music_type: data.musicType || 'audio'
                 };
 

@@ -8,13 +8,6 @@ import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
 
-// Type definitions for SoundCloud Widget
-declare global {
-  interface Window {
-    SC: any;
-  }
-}
-
 type Track = {
   id: number;
   user_id: string;

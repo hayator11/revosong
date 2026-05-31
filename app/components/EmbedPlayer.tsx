@@ -1,6 +1,43 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useId, useRef } from 'react';
+
+type SoundCloudWidget = {
+  bind: (eventName: string, callback: () => void) => void;
+  unbind: (eventName: string) => void;
+};
+
+type SoundCloudApi = {
+  Widget: ((iframe: HTMLIFrameElement) => SoundCloudWidget) & {
+    Events: {
+      FINISH: string;
+    };
+  };
+};
+
+type YouTubeApi = {
+  PlayerState: {
+    ENDED: number;
+  };
+  Player: new (
+    iframe: HTMLIFrameElement,
+    config: {
+      events: {
+        onStateChange: (event: { data: number }) => void;
+      };
+    }
+  ) => {
+    destroy: () => void;
+  };
+};
+
+declare global {
+  interface Window {
+    SC?: SoundCloudApi;
+    YT?: YouTubeApi;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
 
 /**
  * Utility Functions for URL Detection
@@ -62,20 +99,208 @@ interface EmbedPlayerProps {
   url: string;
   autoplay?: boolean;
   height?: number;
+  onEnded?: () => void;
+}
+
+const YOUTUBE_API_SRC = 'https://www.youtube.com/iframe_api';
+const SOUNDCLOUD_API_SRC = 'https://w.soundcloud.com/player/api.js';
+
+function loadExternalScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === 'true') {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.body.appendChild(script);
+  });
+}
+
+function loadYouTubeApi(): Promise<void> {
+  if (window.YT?.Player) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const previousReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousReady?.();
+      resolve();
+    };
+
+    loadExternalScript(YOUTUBE_API_SRC).catch(reject);
+  });
+}
+
+function hasEndedMessage(data: unknown): boolean {
+  const values: unknown[] = [data];
+
+  if (typeof data === 'string') {
+    try {
+      values.push(JSON.parse(data));
+    } catch {
+      // Some providers post plain text events.
+    }
+  }
+
+  return values.some((value) => {
+    if (!value) return false;
+
+    if (typeof value === 'string') {
+      return /ended|finish|finished|complete|completed/i.test(value);
+    }
+
+    if (typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const eventText = [
+        record.event,
+        record.type,
+        record.name,
+        record.action,
+        record.status,
+        record.state
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return /ended|finish|finished|complete|completed/i.test(eventText);
+    }
+
+    return false;
+  });
+}
+
+function getFallbackEndDelay(url: string): number | null {
+  if (isSunoUrl(url) || isMurekaUrl(url)) {
+    return 4 * 60 * 1000;
+  }
+
+  return null;
 }
 
 export function EmbedPlayer({
   url,
   autoplay = true,
-  height
+  height,
+  onEnded
 }: EmbedPlayerProps): ReactNode {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const endedRef = useRef(false);
+  const reactId = useId();
+  const iframeId = `embed-player-${reactId.replace(/:/g, '')}`;
+  const pageOrigin = typeof window === 'undefined' ? '' : window.location.origin;
+
+  useEffect(() => {
+    endedRef.current = false;
+  }, [url]);
+
+  useEffect(() => {
+    if (!onEnded) return;
+
+    const notifyEnded = () => {
+      if (endedRef.current) return;
+      endedRef.current = true;
+      onEnded();
+    };
+
+    let cleanup: (() => void) | undefined;
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
+
+    const setup = async () => {
+      if (getYouTubeId(url)) {
+        try {
+          await loadYouTubeApi();
+          if (cancelled || !iframeRef.current || !window.YT?.Player) return;
+          const youTubeApi = window.YT;
+
+          const player = new youTubeApi.Player(iframeRef.current, {
+            events: {
+              onStateChange: (event: { data: number }) => {
+                if (event.data === youTubeApi.PlayerState.ENDED) {
+                  notifyEnded();
+                }
+              }
+            }
+          });
+
+          cleanup = () => {
+            try {
+              player.destroy();
+            } catch {
+              // The iframe may already be gone during route changes.
+            }
+          };
+        } catch {
+          // If the API is blocked, the player still renders; ending just cannot be observed.
+        }
+        return;
+      }
+
+      if (isSoundCloudUrl(url)) {
+        try {
+          await loadExternalScript(SOUNDCLOUD_API_SRC);
+          if (cancelled || !iframeRef.current || !window.SC?.Widget) return;
+
+          const widget = window.SC.Widget(iframeRef.current);
+          const finishEvent = window.SC.Widget.Events.FINISH;
+          widget.bind(finishEvent, notifyEnded);
+          cleanup = () => widget.unbind(finishEvent);
+        } catch {
+          fallbackTimer = setTimeout(notifyEnded, 4 * 60 * 1000);
+        }
+        return;
+      }
+
+      if (isSunoUrl(url) || isMurekaUrl(url)) {
+        const handleMessage = (event: MessageEvent) => {
+          if (event.source === iframeRef.current?.contentWindow && hasEndedMessage(event.data)) {
+            notifyEnded();
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+        cleanup = () => window.removeEventListener('message', handleMessage);
+
+        const fallbackDelay = getFallbackEndDelay(url);
+        if (fallbackDelay) {
+          fallbackTimer = setTimeout(notifyEnded, fallbackDelay);
+        }
+      }
+    };
+
+    setup();
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+    };
+  }, [url, onEnded]);
+
   const ytId = getYouTubeId(url);
   if (ytId) {
     return (
       <iframe
+        ref={iframeRef}
+        id={iframeId}
         width="100%"
         height={height || 160}
-        src={`https://www.youtube.com/embed/${ytId}${autoplay ? '?autoplay=1&enablejsapi=1' : '?enablejsapi=1'}`}
+        src={`https://www.youtube.com/embed/${ytId}?enablejsapi=1&playsinline=1${pageOrigin ? `&origin=${encodeURIComponent(pageOrigin)}` : ''}${autoplay ? '&autoplay=1' : ''}`}
         allow="autoplay; encrypted-media"
         allowFullScreen
         style={{ border: 'none', borderRadius: 12 }}
@@ -87,6 +312,8 @@ export function EmbedPlayer({
     const encoded = encodeURIComponent(url);
     return (
       <iframe
+        ref={iframeRef}
+        id={iframeId}
         width="100%"
         height={height || 120}
         scrolling="no"
@@ -171,9 +398,11 @@ export function EmbedPlayer({
   if (isSunoUrl(url)) {
     return (
       <iframe
+        ref={iframeRef}
+        id={iframeId}
         width="100%"
         height={height || 120}
-        src={url}
+        src={autoplay ? `${url}${url.includes('?') ? '&' : '?'}autoplay=1` : url}
         allow="autoplay; encrypted-media"
         style={{ border: 'none', borderRadius: 12 }}
       />
@@ -183,9 +412,11 @@ export function EmbedPlayer({
   if (isMurekaUrl(url)) {
     return (
       <iframe
+        ref={iframeRef}
+        id={iframeId}
         width="100%"
         height={height || 120}
-        src={url}
+        src={autoplay ? `${url}${url.includes('?') ? '&' : '?'}autoplay=1` : url}
         allow="autoplay; encrypted-media"
         style={{ border: 'none', borderRadius: 12 }}
       />

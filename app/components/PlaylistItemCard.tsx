@@ -53,6 +53,8 @@ export function PlaylistItemCard({
       niconico: '#000000',
       bandcamp: '#1da0c3',
       audiomack: '#ff3500',
+      suno: '#7c3aed',
+      mureka: '#00b8a9',
       REVOSONG: '#ff2d55'
     };
     return colors[service?.toLowerCase() || 'REVOSONG'] || '#666';
