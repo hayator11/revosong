@@ -62,6 +62,8 @@ export function PlaylistItemCard({
 
   return (
     <div
+      role={onPlay ? 'button' : undefined}
+      tabIndex={onPlay ? 0 : undefined}
       style={{
         display: 'flex',
         gap: '12px',
@@ -74,8 +76,16 @@ export function PlaylistItemCard({
         borderRadius: '8px',
         transition: 'all 0.2s ease',
         border: '1px solid transparent',
-        cursor: isDragging ? 'grabbing' : 'default',
+        cursor: isDragging ? 'grabbing' : onPlay ? 'pointer' : 'default',
         opacity: isDragging ? 0.6 : 1
+      }}
+      onClick={() => onPlay?.(item)}
+      onKeyDown={(event) => {
+        if (!onPlay) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPlay(item);
+        }
       }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -178,7 +188,10 @@ export function PlaylistItemCard({
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           {onPlay && (
             <button
-              onClick={() => onPlay(item)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onPlay(item);
+              }}
               style={{
                 padding: '6px 12px',
                 background: '#ff2d55',
@@ -203,7 +216,10 @@ export function PlaylistItemCard({
 
           {onPlay && (
             <button
-              onClick={() => onPlay(item)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onPlay(item);
+              }}
               style={{
                 padding: '6px 12px',
                 background: 'rgba(0, 212, 255, 0.6)',
@@ -228,7 +244,10 @@ export function PlaylistItemCard({
 
           {onEdit && (
             <button
-              onClick={() => onEdit(item)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(item);
+              }}
               style={{
                 padding: '6px 12px',
                 background: 'rgba(100, 150, 255, 0.6)',
@@ -253,7 +272,8 @@ export function PlaylistItemCard({
 
           {onDelete && (
             <button
-              onClick={() => {
+              onClick={(event) => {
+                event.stopPropagation();
                 if (confirm('このアイテムを削除しますか？')) {
                   onDelete(item.id);
                 }
