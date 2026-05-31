@@ -200,21 +200,25 @@ export function EmbedPlayer({
 }: EmbedPlayerProps): ReactNode {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const endedRef = useRef(false);
+  const onEndedRef = useRef<(() => void) | undefined>(undefined);
   const reactId = useId();
   const iframeId = `embed-player-${reactId.replace(/:/g, '')}`;
   const pageOrigin = typeof window === 'undefined' ? '' : window.location.origin;
 
+  // Keep ref in sync without adding onEnded to the setup effect's deps.
+  // This prevents the YouTube/SoundCloud player from being destroyed and recreated
+  // every time the callback identity changes (e.g. useCallback re-create).
   useEffect(() => {
-    endedRef.current = false;
-  }, [url]);
+    onEndedRef.current = onEnded;
+  });
 
   useEffect(() => {
-    if (!onEnded) return;
+    endedRef.current = false;
 
     const notifyEnded = () => {
       if (endedRef.current) return;
       endedRef.current = true;
-      onEnded();
+      onEndedRef.current?.();
     };
 
     let cleanup: (() => void) | undefined;
@@ -290,7 +294,9 @@ export function EmbedPlayer({
       cleanup?.();
       if (fallbackTimer) clearTimeout(fallbackTimer);
     };
-  }, [url, onEnded]);
+  // onEnded は ref 経由でアクセスするため依存配列から除外。url 変更時のみ再セットアップ。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
 
   const ytId = getYouTubeId(url);
   if (ytId) {

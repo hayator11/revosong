@@ -11,6 +11,18 @@ import { EmbedPlayer } from '@/app/components/EmbedPlayer';
 
 const PLAYLIST_AUTOPLAY_STORAGE_KEY = 'revosong:playlist-autoplay-enabled';
 
+function unlockAudio(): void {
+  try {
+    const AudioContextClass =
+      window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ac = new AudioContextClass();
+    ac.resume().finally(() => ac.close());
+  } catch {
+    // ignore
+  }
+}
+
 interface Playlist {
   id: number;
   user_id: string;
@@ -145,6 +157,9 @@ export default function PlaylistPage() {
   const handlePlayNext = useCallback(() => {
     if (currentItemIndex === null || items.length === 0) return;
 
+    // Force iframe remount so autoplay=1 takes effect on the next track (including iOS)
+    setPlayerResetKey((key) => key + 1);
+
     if (playMode === 'shuffle') {
       // Random next song
       const randomIndex = Math.floor(Math.random() * items.length);
@@ -165,6 +180,9 @@ export default function PlaylistPage() {
 
   const handlePlayPrevious = () => {
     if (currentItemIndex === null) return;
+
+    // Force iframe remount so autoplay=1 takes effect (including iOS)
+    setPlayerResetKey((key) => key + 1);
 
     if (currentItemIndex > 0) {
       setCurrentItemIndex(currentItemIndex - 1);
@@ -678,7 +696,7 @@ export default function PlaylistPage() {
             }}>
               {/* Previous button */}
               <button
-                onClick={handlePlayPrevious}
+                onClick={() => { unlockAudio(); handlePlayPrevious(); }}
                 disabled={currentItemIndex === null || currentItemIndex === 0}
                 style={{
                   padding: '8px 16px',
@@ -697,7 +715,7 @@ export default function PlaylistPage() {
 
               {/* Play/Pause button */}
               <button
-                onClick={() => currentItemIndex !== null ? setIsPlaying(!isPlaying) : null}
+                onClick={() => { if (currentItemIndex !== null) { unlockAudio(); setIsPlaying(!isPlaying); } }}
                 disabled={currentItemIndex === null}
                 style={{
                   padding: '8px 16px',
@@ -716,7 +734,7 @@ export default function PlaylistPage() {
 
               {/* Next button */}
               <button
-                onClick={handlePlayNext}
+                onClick={() => { unlockAudio(); handlePlayNext(); }}
                 disabled={currentItemIndex === null || currentItemIndex >= items.length - 1}
                 style={{
                   padding: '8px 16px',
@@ -805,7 +823,7 @@ export default function PlaylistPage() {
               flexWrap: 'wrap'
             }}>
               <button
-                onClick={() => setPlayMode('auto')}
+                onClick={() => { unlockAudio(); setPlayMode('auto'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -822,7 +840,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => setPlayMode('shuffle')}
+                onClick={() => { unlockAudio(); setPlayMode('shuffle'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -839,7 +857,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => setPlayMode('once')}
+                onClick={() => { unlockAudio(); setPlayMode('once'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -856,7 +874,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => setPlayMode('repeat-one')}
+                onClick={() => { unlockAudio(); setPlayMode('repeat-one'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
