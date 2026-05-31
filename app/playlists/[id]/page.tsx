@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
@@ -9,19 +9,8 @@ import { AddPlaylistItem } from '@/app/components/AddPlaylistItem';
 import { PlaylistItemCard } from '@/app/components/PlaylistItemCard';
 import { EmbedPlayer } from '@/app/components/EmbedPlayer';
 
-const PLAYLIST_AUTOPLAY_STORAGE_KEY = 'revosong:playlist-autoplay-enabled';
-
-function unlockAudio(): void {
-  try {
-    const AudioContextClass =
-      window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ac = new AudioContextClass();
-    ac.resume().finally(() => ac.close());
-  } catch {
-    // ignore
-  }
-}
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAAAA==';
 
 interface Playlist {
   id: number;
@@ -90,28 +79,44 @@ export default function PlaylistPage() {
   const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
   const [playlistAutoplayEnabled, setPlaylistAutoplayEnabled] = useState(false);
-  const [hasLoadedAutoplayPreference, setHasLoadedAutoplayPreference] = useState(false);
   const [playerResetKey, setPlayerResetKey] = useState(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setPlaylistAutoplayEnabled(
-        window.localStorage.getItem(PLAYLIST_AUTOPLAY_STORAGE_KEY) === 'true'
-      );
-      setHasLoadedAutoplayPreference(true);
-    }, 0);
+  const unlockAudio = useCallback(async () => {
+    try {
+      const audio = document.createElement('audio');
+      audio.src = SILENT_WAV;
+      audio.preload = 'auto';
+      audio.volume = 0.01;
+      await audio.play();
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    } catch {
+      // Some browsers reject silent audio, but AudioContext may still unlock below.
+    }
 
-    return () => window.clearTimeout(timer);
+    try {
+      const AudioContextClass =
+        window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      audioContextRef.current ??= new AudioContextClass();
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+    } catch {
+      // Autoplay permission is best-effort and only available during user gestures.
+    }
   }, []);
 
-  useEffect(() => {
-    if (!hasLoadedAutoplayPreference) return;
+  const handleAutoplayToggle = async (checked: boolean) => {
+    if (checked) {
+      await unlockAudio();
+    }
 
-    window.localStorage.setItem(
-      PLAYLIST_AUTOPLAY_STORAGE_KEY,
-      playlistAutoplayEnabled ? 'true' : 'false'
-    );
-  }, [hasLoadedAutoplayPreference, playlistAutoplayEnabled]);
+    setPlaylistAutoplayEnabled(checked);
+  };
 
   // Fetch current user and playlist
   useEffect(() => {
@@ -149,6 +154,7 @@ export default function PlaylistPage() {
 
   // Playback control functions
   const handlePlayItem = (index: number) => {
+    void unlockAudio();
     setCurrentItemIndex(index);
     setIsPlaying(true);
     setPlayerResetKey((key) => key + 1);
@@ -157,7 +163,7 @@ export default function PlaylistPage() {
   const handlePlayNext = useCallback(() => {
     if (currentItemIndex === null || items.length === 0) return;
 
-    // Force iframe remount so autoplay=1 takes effect on the next track (including iOS)
+    void unlockAudio();
     setPlayerResetKey((key) => key + 1);
 
     if (playMode === 'shuffle') {
@@ -176,12 +182,12 @@ export default function PlaylistPage() {
         setIsPlaying(false);
       }
     }
-  }, [currentItemIndex, items.length, playMode]);
+  }, [currentItemIndex, items.length, playMode, unlockAudio]);
 
   const handlePlayPrevious = () => {
     if (currentItemIndex === null) return;
 
-    // Force iframe remount so autoplay=1 takes effect (including iOS)
+    void unlockAudio();
     setPlayerResetKey((key) => key + 1);
 
     if (currentItemIndex > 0) {
@@ -696,7 +702,7 @@ export default function PlaylistPage() {
             }}>
               {/* Previous button */}
               <button
-                onClick={() => { unlockAudio(); handlePlayPrevious(); }}
+                onClick={() => { void unlockAudio(); handlePlayPrevious(); }}
                 disabled={currentItemIndex === null || currentItemIndex === 0}
                 style={{
                   padding: '8px 16px',
@@ -715,7 +721,7 @@ export default function PlaylistPage() {
 
               {/* Play/Pause button */}
               <button
-                onClick={() => { if (currentItemIndex !== null) { unlockAudio(); setIsPlaying(!isPlaying); } }}
+                onClick={() => { if (currentItemIndex !== null) { void unlockAudio(); setIsPlaying(!isPlaying); } }}
                 disabled={currentItemIndex === null}
                 style={{
                   padding: '8px 16px',
@@ -734,7 +740,7 @@ export default function PlaylistPage() {
 
               {/* Next button */}
               <button
-                onClick={() => { unlockAudio(); handlePlayNext(); }}
+                onClick={() => { void unlockAudio(); handlePlayNext(); }}
                 disabled={currentItemIndex === null || currentItemIndex >= items.length - 1}
                 style={{
                   padding: '8px 16px',
@@ -750,71 +756,39 @@ export default function PlaylistPage() {
               >
                 次曲 ⏭
               </button>
-            </div>
 
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '16px',
-                padding: '12px 14px',
-                background: 'rgba(255,255,255,0.06)',
-                border: playlistAutoplayEnabled
-                  ? '1px solid rgba(0,212,255,0.45)'
-                  : '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                marginBottom: '20px'
-              }}
-            >
-              <span>
-                <span style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#fff' }}>
-                  プレイリスト連続再生
-                </span>
-                <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>
-                  ONにすると曲の終了後に次の曲へ進みます
-                </span>
-              </span>
-              <span
+              <label
                 style={{
-                  position: 'relative',
-                  width: '50px',
-                  height: '28px',
-                  borderRadius: '999px',
-                  background: playlistAutoplayEnabled ? '#00d4ff' : 'rgba(255,255,255,0.18)',
-                  transition: 'background 0.2s',
-                  flexShrink: 0
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  background: playlistAutoplayEnabled ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.08)',
+                  border: playlistAutoplayEnabled ? '1px solid rgba(0,212,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: '6px',
+                  color: playlistAutoplayEnabled ? '#00d4ff' : 'rgba(255,255,255,0.75)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
                 }}
               >
                 <input
                   type="checkbox"
                   checked={playlistAutoplayEnabled}
-                  onChange={(event) => setPlaylistAutoplayEnabled(event.target.checked)}
+                  onChange={(event) => {
+                    void handleAutoplayToggle(event.target.checked);
+                  }}
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: 0,
+                    width: '14px',
+                    height: '14px',
+                    accentColor: '#00d4ff',
                     cursor: 'pointer'
                   }}
-                  aria-label="プレイリスト連続再生"
                 />
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '4px',
-                    left: playlistAutoplayEnabled ? '26px' : '4px',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: '#fff',
-                    transition: 'left 0.2s',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-                    pointerEvents: 'none'
-                  }}
-                />
-              </span>
-            </label>
+                連続再生
+              </label>
+            </div>
 
             {/* Play mode */}
             <div style={{
@@ -823,7 +797,7 @@ export default function PlaylistPage() {
               flexWrap: 'wrap'
             }}>
               <button
-                onClick={() => { unlockAudio(); setPlayMode('auto'); }}
+                onClick={() => { void unlockAudio(); setPlayMode('auto'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -840,7 +814,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => { unlockAudio(); setPlayMode('shuffle'); }}
+                onClick={() => { void unlockAudio(); setPlayMode('shuffle'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -857,7 +831,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => { unlockAudio(); setPlayMode('once'); }}
+                onClick={() => { void unlockAudio(); setPlayMode('once'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -874,7 +848,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => { unlockAudio(); setPlayMode('repeat-one'); }}
+                onClick={() => { void unlockAudio(); setPlayMode('repeat-one'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
