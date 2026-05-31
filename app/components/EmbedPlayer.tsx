@@ -12,7 +12,6 @@ type SoundCloudApi = {
     Events: {
       FINISH: string;
       PLAY: string;
-      PLAY_PROGRESS: string;
     };
   };
 };
@@ -120,41 +119,7 @@ function loadExternalScript(src: string): Promise<void> {
 }
 
 function hasEndedMessage(data: unknown): boolean {
-  const values: unknown[] = [data];
-
-  if (typeof data === 'string') {
-    try {
-      values.push(JSON.parse(data));
-    } catch {
-      // Some providers post plain text events.
-    }
-  }
-
-  return values.some((value) => {
-    if (!value) return false;
-
-    if (typeof value === 'string') {
-      return /ended|finish|finished|complete|completed/i.test(value);
-    }
-
-    if (typeof value === 'object') {
-      const record = value as Record<string, unknown>;
-      const eventText = [
-        record.event,
-        record.type,
-        record.name,
-        record.action,
-        record.status,
-        record.state
-      ]
-        .filter(Boolean)
-        .join(' ');
-
-      return /ended|finish|finished|complete|completed/i.test(eventText);
-    }
-
-    return false;
-  });
+  return typeof data === 'string' && /ended|finish/i.test(data);
 }
 
 function parseMessageData(data: unknown): unknown {
@@ -214,7 +179,7 @@ export function EmbedPlayer({
   const hasStartedRef = useRef(false);
   const currentYouTubeIdRef = useRef<string | null>(getYouTubeId(url));
   const previousReplaySignalRef = useRef(replaySignal);
-  const [youTubeIframeId, setYouTubeIframeId] = useState(() => getYouTubeId(url));
+  const [youTubeIframeId] = useState(() => getYouTubeId(url));
   const [initialAutoplay] = useState(autoplay);
   const reactId = useId();
   const iframeId = `embed-player-${reactId.replace(/:/g, '')}`;
@@ -231,14 +196,6 @@ export function EmbedPlayer({
     endedRef.current = false;
     hasStartedRef.current = false;
   }, [url]);
-
-  useEffect(() => {
-    const ytId = getYouTubeId(url);
-    if (!ytId || youTubeIframeId) return;
-
-    const timer = window.setTimeout(() => setYouTubeIframeId(ytId), 0);
-    return () => window.clearTimeout(timer);
-  }, [url, youTubeIframeId]);
 
   useEffect(() => {
     const ytId = getYouTubeId(url);
@@ -311,7 +268,6 @@ export function EmbedPlayer({
           const widget = window.SC.Widget(iframeRef.current);
           const finishEvent = window.SC.Widget.Events.FINISH;
           const playEvent = window.SC.Widget.Events.PLAY;
-          const progressEvent = window.SC.Widget.Events.PLAY_PROGRESS;
           const markStarted = () => {
             hasStartedRef.current = true;
             endedRef.current = false;
@@ -323,15 +279,13 @@ export function EmbedPlayer({
           };
 
           widget.bind(playEvent, markStarted);
-          widget.bind(progressEvent, markStarted);
           widget.bind(finishEvent, handleFinish);
           cleanup = () => {
             widget.unbind(playEvent);
-            widget.unbind(progressEvent);
             widget.unbind(finishEvent);
           };
         } catch {
-          // SoundCloud finish events are best-effort; avoid timer-based false positives.
+          // SoundCloud finish events are best-effort; users can advance manually.
         }
         return;
       }
