@@ -33,8 +33,6 @@ export function loadYouTubeAPI(): Promise<void> {
 
     document.body.appendChild(tag);
 
-    // タイムアウト（30秒）で強制的に resolve（読み込み失敗対策）
-    setTimeout(() => resolve(), 30000);
   });
 
   return youtubeAPIPromise;
@@ -70,8 +68,6 @@ export function loadSoundCloudAPI(): Promise<void> {
 
     document.body.appendChild(script);
 
-    // タイムアウト（30秒）で強制的に resolve
-    setTimeout(() => resolve(), 30000);
   });
 
   return soundCloudAPIPromise;
