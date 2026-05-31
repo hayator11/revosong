@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
-import { EmbedPlayer, getYouTubeId, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
+import { EmbedPlayer, getYouTubeId, isSoundCloudUrl, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
 
@@ -64,8 +64,6 @@ const FILTERS = ["すべて", "Suno", "Udio", "MusicLM", "Stable Audio"];
 const PERIODS = ["日間", "週間", "月間", "全期間"];
 const MUSIC_TYPES = ["すべて", "オリジナル楽曲", "AI生成楽曲"];
 const SITE_URL = "https://revosong-charts.vercel.app";
-const SILENT_WAV =
-  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQQAAAAAAA==';
 
 function formatNumber(n: number) {
   if (n >= 10000) return (n / 10000).toFixed(1) + "万";
@@ -357,8 +355,6 @@ export default function Home() {
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(null);
   const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
-  const [continuousPlaybackEnabled, setContinuousPlaybackEnabled] = useState(false);
-  const [playerResetKey, setPlayerResetKey] = useState(0);
 
   // アーティストプロフィール情報
   const [artistProfile, setArtistProfile] = useState<{ avatar_url?: string | null; username?: string | null } | null>(null);
@@ -371,7 +367,11 @@ export default function Home() {
 
   // 再生回数カウント済みトラックを追跡（1回のみ実行）
   const playCountedTrackIds = useRef<Set<number>>(new Set());
-  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // YouTube IFrame API と SoundCloud Widget API のリファレンス
+  const youtubePlayerRef = useRef<any>(null);
+  const soundCloudPlayerRef = useRef<any>(null);
+  const autoplayTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -392,41 +392,11 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const unlockAudio = useCallback(async () => {
-    try {
-      const audio = document.createElement('audio');
-      audio.src = SILENT_WAV;
-      audio.preload = 'auto';
-      audio.volume = 0.01;
-      await audio.play();
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
-    } catch {
-      // User gesture unlock is best-effort and browser-dependent.
-    }
-
-    try {
-      const AudioContextClass =
-        window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-
-      audioContextRef.current ??= new AudioContextClass();
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-    } catch {
-      // Some browsers reject unlock attempts unless they happen inside a direct tap.
-    }
+  // External API を遅延読み込み（必要な時に読み込む）
+  const loadAPIsOnDemand = useCallback(async () => {
+    const { loadYouTubeAPI, loadSoundCloudAPI } = await import('@/lib/external-scripts');
+    await Promise.all([loadYouTubeAPI(), loadSoundCloudAPI()]);
   }, []);
-
-  const handleContinuousToggle = async (checked: boolean) => {
-    if (checked) {
-      await unlockAudio();
-    }
-
-    setContinuousPlaybackEnabled(checked);
-  };
 
   const getPeriodStart = (p: string): string => {
     const now = new Date();
@@ -439,18 +409,39 @@ export default function Home() {
 
   // Playback control functions
   const handlePlayTrack = async (track: Track, index: number) => {
-    await unlockAudio();
     setSelectedTrack(track);
     setSelectedTrackIndex(index);
     setIsPlaying(true);
-    setPlayerResetKey((key) => key + 1);
+
+    // API を遅延読み込み（初回のみ）
+    await loadAPIsOnDemand();
+
+    // モバイル対応: 次のフレームで明示的に再生を開始
+    setTimeout(() => {
+      // YouTube IFrame API が利用可能な場合、playVideo() を呼び出す
+      if (youtubePlayerRef.current && youtubePlayerRef.current.playVideo) {
+        try {
+          youtubePlayerRef.current.playVideo();
+          console.log('YouTube playVideo() called');
+        } catch (err) {
+          console.log('YouTube playVideo error:', err);
+        }
+      }
+
+      // SoundCloud Widget API が利用可能な場合、play() を呼び出す
+      if (soundCloudPlayerRef.current && soundCloudPlayerRef.current.play) {
+        try {
+          soundCloudPlayerRef.current.play();
+          console.log('SoundCloud play() called');
+        } catch (err) {
+          console.log('SoundCloud play error:', err);
+        }
+      }
+    }, 100);
   };
 
   const handlePlayNext = () => {
     if (selectedTrackIndex === null || tracks.length === 0) return;
-
-    void unlockAudio();
-    setPlayerResetKey((key) => key + 1);
 
     if (playMode === 'shuffle') {
       // Random next song
@@ -476,8 +467,6 @@ export default function Home() {
     if (selectedTrackIndex === null) return;
 
     if (selectedTrackIndex > 0) {
-      void unlockAudio();
-      setPlayerResetKey((key) => key + 1);
       setSelectedTrackIndex(selectedTrackIndex - 1);
       setSelectedTrack(tracks[selectedTrackIndex - 1]);
       setIsPlaying(true);
@@ -485,14 +474,8 @@ export default function Home() {
   };
 
   const handleTrackEnd = () => {
-    if (!continuousPlaybackEnabled) {
-      setIsPlaying(false);
-      return;
-    }
-
     if (playMode === 'repeat-one' && selectedTrackIndex !== null) {
       // Restart the current song
-      setPlayerResetKey((key) => key + 1);
       setIsPlaying(true);
     } else if (playMode === 'once') {
       // Stop after current song
@@ -797,12 +780,88 @@ export default function Home() {
       };
 
       fetchArtistProfile();
+
+      // YouTube IFrame API をセットアップ（自動遷移対応）
+      if (selectedTrack.external_url) {
+        const ytId = getYouTubeId(selectedTrack.external_url);
+        if (ytId) {
+          setTimeout(() => {
+            const iframe = document.querySelector(
+              'iframe[src*="youtube.com/embed"]'
+            ) as HTMLIFrameElement;
+
+            if (iframe && (window as any).YT && (window as any).YT.Player) {
+              try {
+                youtubePlayerRef.current = new (window as any).YT.Player(iframe, {
+                  events: {
+                    onStateChange: (event: any) => {
+                      // 0 = UNSTARTED, 1 = PLAYING, 2 = PAUSED, 3 = BUFFERING, 5 = VIDEO_CUED
+                      if (event.data === 0) {
+                        // 動画終了
+                        console.log('YouTube: 動画終了、次の曲に遷移');
+                        handleTrackEnd();
+                      }
+                    }
+                  }
+                });
+              } catch (err) {
+                console.log('YouTube API setup error:', err);
+              }
+            }
+          }, 500);
+        }
+
+        // SoundCloud Widget API をセットアップ（自動遷移対応）
+        if (isSoundCloudUrl(selectedTrack.external_url)) {
+          setTimeout(() => {
+            const iframe = document.querySelector(
+              'iframe[src*="soundcloud.com/player"]'
+            ) as HTMLIFrameElement;
+
+            if (iframe && (window as any).SC && (window as any).SC.Widget) {
+              try {
+                soundCloudPlayerRef.current = (window as any).SC.Widget(iframe);
+                soundCloudPlayerRef.current.bind((window as any).SC.Widget.Events.FINISH, () => {
+                  console.log('SoundCloud: トラック終了、次の曲に遷移');
+                  handleTrackEnd();
+                });
+              } catch (err) {
+                console.log('SoundCloud API setup error:', err);
+              }
+            }
+          }, 500);
+        }
+
+        // フォールバック: 約30秒後に自動で次の曲に進む（API が機能しない場合の対応）
+        // これにより、スマートフォンでも確実に連続再生が動作する
+        if (autoplayTimerRef.current) {
+          clearTimeout(autoplayTimerRef.current);
+        }
+
+        autoplayTimerRef.current = setTimeout(() => {
+          if (isPlaying && (playMode === 'auto' || playMode === 'shuffle')) {
+            console.log('Autoplay fallback: 次の曲に遷移');
+            handleTrackEnd();
+          }
+        }, 30000); // 30秒
+      }
     } else {
       setComments([]);
       setCommentInput("");
       setArtistProfile(null);
+      // タイマーをクリア
+      if (autoplayTimerRef.current) {
+        clearTimeout(autoplayTimerRef.current);
+      }
     }
-  }, [selectedTrack]);
+
+    // クリーンアップ
+    return () => {
+      if (autoplayTimerRef.current) {
+        clearTimeout(autoplayTimerRef.current);
+      }
+    };
+  }, [selectedTrack?.id, isPlaying, playMode]);
 
   // トラック詳細が表示されたときに再生回数をカウント
   // (プレイヤーがマウントされた時点で、ユーザーが再生する意図があると判断)
@@ -816,6 +875,160 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [selectedTrack?.id, incrementPlayCount]);
+
+  // Setup auto-play for YouTube and SoundCloud
+  useEffect(() => {
+    console.log('Auto-play effect triggered', {
+      trackTitle: selectedTrack?.title,
+      isPlaying,
+      playMode,
+      hasExternalUrl: !!selectedTrack?.external_url
+    });
+
+    if (!selectedTrack || !isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
+      console.log('Auto-play conditions not met', {
+        hasTrack: !!selectedTrack,
+        isPlaying,
+        playMode
+      });
+      return;
+    }
+
+    const url = selectedTrack.external_url;
+    console.log('Auto-play URL:', url);
+    if (!url) {
+      console.log('No URL found');
+      return;
+    }
+
+    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
+    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    // Add a small delay to allow iframe to render
+    const delayTimer = setTimeout(() => {
+      // YouTube auto-play detection
+      const ytId = getYouTubeId(url);
+      if (ytId) {
+        console.log('YouTube detected, setting up auto-play for:', ytId);
+        let checkCount = 0;
+        const maxChecks = 120; // 60 seconds (500ms * 120)
+
+        youtubeCheckInterval = setInterval(() => {
+          checkCount++;
+
+          // Look for YouTube iframe more carefully
+          const iframes = document.querySelectorAll('iframe');
+          let youtubeIframe: HTMLIFrameElement | null = null;
+
+          for (const iframe of iframes) {
+            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
+              youtubeIframe = iframe;
+              console.log(`YouTube iframe found on check ${checkCount}`);
+              break;
+            }
+          }
+
+          if (checkCount % 20 === 0) {
+            console.log('YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
+          }
+
+          // If iframe disappears or we hit timeout, play next track
+          if (!youtubeIframe) {
+            // Check if this is a timeout or just not rendered yet
+            if (checkCount >= 20) { // Give it at least 10 seconds to find iframe
+              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+              if (checkCount >= maxChecks) {
+                console.log('YouTube timeout - playing next track');
+                handleTrackEnd();
+              }
+            }
+          } else if (checkCount >= maxChecks) {
+            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+            console.log('YouTube maxChecks reached - playing next track');
+            handleTrackEnd();
+          }
+        }, 500);
+        return;
+      }
+
+      // SoundCloud auto-play detection
+      if (isSoundCloudUrl(url)) {
+        console.log('SoundCloud detected, setting up auto-play');
+
+        const setupSoundCloudListener = () => {
+          console.log('Setting up SoundCloud listener');
+          const iframes = document.querySelectorAll('iframe');
+          let scIframe: HTMLIFrameElement | null = null;
+
+          for (const iframe of iframes) {
+            if (iframe.src && iframe.src.includes('soundcloud.com')) {
+              scIframe = iframe;
+              console.log('SoundCloud iframe found');
+              break;
+            }
+          }
+
+          console.log('SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
+
+          if (scIframe && window.SC) {
+            try {
+              console.log('Creating SoundCloud widget...');
+              const widget = window.SC.Widget(scIframe);
+              console.log('SoundCloud widget created successfully');
+
+              widget.bind(window.SC.Widget.Events.FINISH, () => {
+                console.log('SoundCloud track finished event - playing next');
+                handleTrackEnd();
+              });
+            } catch (e) {
+              console.log('SoundCloud API error, using timeout:', e);
+              // Fallback to timeout (average song length ~4 minutes)
+              soundCloudTimeout = setTimeout(() => {
+                if (isPlaying) {
+                  console.log('SoundCloud timeout - playing next track');
+                  handleTrackEnd();
+                }
+              }, 240000); // 4 minutes
+            }
+          } else {
+            console.log('Using SoundCloud timeout fallback (iframe or SC not available)');
+            // Fallback timeout
+            soundCloudTimeout = setTimeout(() => {
+              if (isPlaying) {
+                console.log('SoundCloud fallback timeout - playing next track');
+                handleTrackEnd();
+              }
+            }, 240000); // 4 minutes
+          }
+        };
+
+        // Load SoundCloud widget script if needed
+        if (!window.SC) {
+          console.log('Loading SoundCloud widget API');
+          const script = document.createElement('script');
+          script.src = 'https://w.soundcloud.com/player/api.js';
+          script.onload = () => {
+            console.log('SoundCloud API loaded');
+            setupSoundCloudListener();
+          };
+          script.onerror = () => {
+            console.log('Failed to load SoundCloud API, using timeout');
+            setupSoundCloudListener();
+          };
+          document.body.appendChild(script);
+        } else {
+          console.log('SoundCloud API already loaded');
+          setupSoundCloudListener();
+        }
+      }
+    }, 500); // Wait 500ms for iframe to render
+
+    return () => {
+      clearTimeout(delayTimer);
+      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
+      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
+    };
+  }, [selectedTrack?.external_url, isPlaying, playMode, handleTrackEnd]);
 
   // Helper function to detect music type (audio/video) based on URL
   const getMusicContentType = (track: Track): string => {
@@ -2250,55 +2463,16 @@ export default function Home() {
           </div>
           {selectedTrack.external_url ? (
             <>
-              <EmbedPlayer
-                url={selectedTrack.external_url}
-                autoplay={isPlaying}
-                onEnded={isPlaying ? handleTrackEnd : undefined}
-                replaySignal={playerResetKey}
-              />
+              <EmbedPlayer url={selectedTrack.external_url} />
               {/* プレイヤーコントロール（モバイル対応） */}
               <div style={{
                 display: 'flex',
-                flexWrap: 'wrap',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '12px 16px',
                 gap: '12px',
                 borderTop: '1px solid rgba(255,255,255,0.1)',
-                boxSizing: 'border-box',
               }}>
-                <label
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    flex: '1 0 100%',
-                    minHeight: '36px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    background: continuousPlaybackEnabled ? 'rgba(255,45,85,0.16)' : 'rgba(255,255,255,0.05)',
-                    border: continuousPlaybackEnabled ? '1px solid rgba(255,45,85,0.45)' : '1px solid rgba(255,255,255,0.12)',
-                    color: continuousPlaybackEnabled ? '#ff2d55' : 'rgba(255,255,255,0.72)',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={continuousPlaybackEnabled}
-                    onChange={(event) => { void handleContinuousToggle(event.target.checked); }}
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      accentColor: '#ff2d55',
-                      cursor: 'pointer',
-                    }}
-                  />
-                  連続再生
-                </label>
                 <button
                   onClick={handlePlayPrevious}
                   disabled={selectedTrackIndex === null || selectedTrackIndex === 0}
@@ -2326,10 +2500,7 @@ export default function Home() {
                   color: 'rgba(255,255,255,0.6)',
                 }}>
                   <button
-                    onClick={() => {
-                      void unlockAudio();
-                      setPlayMode(playMode === 'shuffle' ? 'auto' : 'shuffle');
-                    }}
+                    onClick={() => setPlayMode(playMode === 'shuffle' ? 'auto' : 'shuffle')}
                     style={{
                       background: playMode === 'shuffle' ? 'rgba(255,149,0,0.2)' : 'rgba(255,255,255,0.05)',
                       color: playMode === 'shuffle' ? '#ff9500' : 'rgba(255,255,255,0.4)',
