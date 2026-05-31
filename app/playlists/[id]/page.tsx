@@ -700,6 +700,41 @@ export default function PlaylistPage() {
               flexWrap: 'wrap',
               marginBottom: '20px'
             }}>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  flex: '1 0 100%',
+                  padding: '10px 12px',
+                  background: playlistAutoplayEnabled ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.08)',
+                  border: playlistAutoplayEnabled ? '1px solid rgba(0,212,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: '6px',
+                  color: playlistAutoplayEnabled ? '#00d4ff' : 'rgba(255,255,255,0.75)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={playlistAutoplayEnabled}
+                  onChange={(event) => {
+                    void handleAutoplayToggle(event.target.checked);
+                  }}
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    accentColor: '#00d4ff',
+                    cursor: 'pointer'
+                  }}
+                />
+                連続再生
+              </label>
+
               {/* Previous button */}
               <button
                 onClick={() => { void unlockAudio(); handlePlayPrevious(); }}
@@ -756,38 +791,6 @@ export default function PlaylistPage() {
               >
                 次曲 ⏭
               </button>
-
-              <label
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: playlistAutoplayEnabled ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.08)',
-                  border: playlistAutoplayEnabled ? '1px solid rgba(0,212,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: '6px',
-                  color: playlistAutoplayEnabled ? '#00d4ff' : 'rgba(255,255,255,0.75)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={playlistAutoplayEnabled}
-                  onChange={(event) => {
-                    void handleAutoplayToggle(event.target.checked);
-                  }}
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    accentColor: '#00d4ff',
-                    cursor: 'pointer'
-                  }}
-                />
-                連続再生
-              </label>
             </div>
 
             {/* Play mode */}

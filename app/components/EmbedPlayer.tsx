@@ -180,7 +180,6 @@ export function EmbedPlayer({
   const currentYouTubeIdRef = useRef<string | null>(getYouTubeId(url));
   const previousReplaySignalRef = useRef(replaySignal);
   const [youTubeIframeId] = useState(() => getYouTubeId(url));
-  const [initialAutoplay] = useState(autoplay);
   const reactId = useId();
   const iframeId = `embed-player-${reactId.replace(/:/g, '')}`;
   const pageOrigin = typeof window === 'undefined' ? '' : window.location.origin;
@@ -320,7 +319,7 @@ export function EmbedPlayer({
         id={iframeId}
         width="100%"
         height={height || 160}
-        src={`https://www.youtube.com/embed/${initialYtId}?enablejsapi=1&playsinline=1${pageOrigin ? `&origin=${encodeURIComponent(pageOrigin)}` : ''}${initialAutoplay ? '&autoplay=1' : ''}`}
+        src={`https://www.youtube.com/embed/${initialYtId}?enablejsapi=1&playsinline=1${pageOrigin ? `&origin=${encodeURIComponent(pageOrigin)}` : ''}${autoplay ? '&autoplay=1' : ''}`}
         allow="autoplay; encrypted-media"
         allowFullScreen
         onLoad={() => {
