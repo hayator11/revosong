@@ -1,19 +1,14 @@
 "use client";
 // Force redeploy trigger v3
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
 import { EmbedPlayer, getYouTubeId, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
-
-// Type definitions for SoundCloud Widget
-declare global {
-  interface Window {
-    SC: any;
-  }
-}
+import { parseTrackUrl } from "@/lib/track-url-utils";
+import { usePlaybackQueue } from "@/lib/hooks/usePlaybackQueue";
 
 type Track = {
   id: number;
@@ -772,6 +767,35 @@ export default function Home() {
            (musicTypeFilter === "すべて" ||
             (musicTypeFilter === "🎵 音源" ? getMusicContentType(t) === "audio" : getMusicContentType(t) === "video"))
   );
+  const rankingPlaybackTracks = useMemo(() => filtered
+    .map((track) => {
+      const parsedUrl = track.external_url ? parseTrackUrl(track.external_url) : null;
+      if (!parsedUrl) return null;
+      return {
+        id: String(track.id),
+        provider: parsedUrl.provider,
+        originalUrl: parsedUrl.originalUrl,
+        embedUrl: parsedUrl.embedUrl,
+        title: track.title,
+        providerTrackId: parsedUrl.providerTrackId
+      };
+    })
+    .filter((track): track is NonNullable<typeof track> => track !== null), [filtered]);
+  const rankingQueue = usePlaybackQueue({
+    tracks: rankingPlaybackTracks,
+    mode: 'ranking'
+  });
+  const queueSelectedTrack = rankingQueue.currentTrack
+    ? tracks.find((track) => String(track.id) === rankingQueue.currentTrack?.id) || null
+    : null;
+  const playerTrack =
+    rankingQueue.isContinuousAllowed && queueSelectedTrack ? queueSelectedTrack : selectedTrack;
+  useEffect(() => {
+    if (rankingQueue.isContinuousAllowed && queueSelectedTrack) {
+      setSelectedTrack(queueSelectedTrack);
+      setSelectedTrackIndex(tracks.findIndex((track) => track.id === queueSelectedTrack.id));
+    }
+  }, [queueSelectedTrack, rankingQueue.isContinuousAllowed, tracks]);
   const totalPlays = tracks.reduce((s, t) => s + t.play_count, 0);
   const totalLikes = tracks.reduce((s, t) => s + t.like_count, 0);
 
@@ -1869,6 +1893,50 @@ export default function Home() {
             {/* Play Mode Controls - integrated into Content section */}
             {filtered.length > 0 && (
               <>
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  background: rankingQueue.isContinuousAllowed ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.08)',
+                  border: rankingQueue.isContinuousAllowed ? '1px solid rgba(0,212,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: '6px',
+                  color: rankingQueue.isContinuousAllowed ? '#00d4ff' : 'rgba(255,255,255,0.75)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={rankingQueue.isContinuousAllowed}
+                    onChange={async (event) => {
+                      const allowed = await rankingQueue.setIsContinuousAllowed(event.target.checked);
+                      if (allowed && rankingQueue.continuousPlayableTracks.length > 0) {
+                        setSelectedTrack(null);
+                        setIsPlaying(true);
+                      }
+                    }}
+                    style={{ accentColor: '#00d4ff' }}
+                  />
+                  連続再生を許可する
+                </label>
+                <div style={{
+                  flex: '1 0 100%',
+                  color: 'rgba(255,255,255,0.52)',
+                  fontSize: '11px',
+                  lineHeight: 1.5
+                }}>
+                  iOS対応のため、連続再生にはチェックが必要です。連続再生では YouTube / SoundCloud の曲だけを順番に再生します。その他のサービスは自動でスキップされます。
+                </div>
+                {rankingQueue.isContinuousAllowed && rankingQueue.continuousPlayableTracks.length === 0 && (
+                  <div style={{
+                    flex: '1 0 100%',
+                    color: '#ff9500',
+                    fontSize: '12px'
+                  }}>
+                    このランキングには、連続再生できる YouTube / SoundCloud の曲がありません。
+                  </div>
+                )}
                 <button
                   onClick={() => setPlayMode('shuffle')}
                   style={{
@@ -2155,27 +2223,27 @@ export default function Home() {
       </div>
       </div>
 
-      {selectedTrack && (
+      {playerTrack && (
         <div className="player-bar">
           <div className="player-header">
             <div>
-              <div className="player-title">{selectedTrack.title}</div>
+              <div className="player-title">{playerTrack.title}</div>
               <div className="player-artist">
-                {selectedTrack.artist_name} · {selectedTrack.music_type === "ai" && selectedTrack.ai_tool ? selectedTrack.ai_tool : (selectedTrack.external_url ? getServiceName(selectedTrack.external_url) : "")}
+                {playerTrack.artist_name} · {playerTrack.music_type === "ai" && playerTrack.ai_tool ? playerTrack.ai_tool : (playerTrack.external_url ? getServiceName(playerTrack.external_url) : "")}
               </div>
             </div>
             <div className="player-buttons">
-              {user && user.id === selectedTrack.user_id && (
+              {user && user.id === playerTrack.user_id && (
                 <>
                   <button
                     className="player-edit-btn"
-                    onClick={() => setEditTrack(selectedTrack)}
+                    onClick={() => setEditTrack(playerTrack)}
                   >
                     ✏️ 編集
                   </button>
                   <button
                     className="player-delete-btn"
-                    onClick={() => deleteTrack(selectedTrack.id)}
+                    onClick={() => deleteTrack(playerTrack.id)}
                   >
                     🗑 削除
                   </button>
@@ -2183,15 +2251,55 @@ export default function Home() {
               )}
               <button
                 className="player-close"
-                onClick={() => setSelectedTrack(null)}
+                onClick={() => {
+                  setSelectedTrack(null);
+                  rankingQueue.setCurrentIndex(null);
+                  setIsPlaying(false);
+                }}
               >
                 ✕
               </button>
             </div>
           </div>
-          {selectedTrack.external_url ? (
+          {playerTrack.external_url ? (
             <>
-              <EmbedPlayer url={selectedTrack.external_url} />
+              <EmbedPlayer
+                url={playerTrack.external_url}
+                autoplay={rankingQueue.isContinuousAllowed ? isPlaying : true}
+                onEnded={rankingQueue.isContinuousAllowed ? rankingQueue.handleEnded : undefined}
+                replaySignal={rankingQueue.replaySignal}
+                onAutoplayBlocked={() => rankingQueue.setNeedsUserGesture(true)}
+              />
+              {rankingQueue.needsUserGesture && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'rgba(255,149,0,0.14)',
+                  borderTop: '1px solid rgba(255,149,0,0.35)',
+                  color: 'rgba(255,255,255,0.86)',
+                  fontSize: '13px'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    ブラウザ制限により自動再生できませんでした。再生ボタンを押してください。
+                  </div>
+                  <button
+                    onClick={() => {
+                      rankingQueue.setNeedsUserGesture(false);
+                      setIsPlaying(true);
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      background: '#ff9500',
+                      color: '#111',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ▶ この曲を再生する
+                  </button>
+                </div>
+              )}
               {/* プレイヤーコントロール（モバイル対応） */}
               <div style={{
                 display: 'flex',
@@ -2202,15 +2310,15 @@ export default function Home() {
                 borderTop: '1px solid rgba(255,255,255,0.1)',
               }}>
                 <button
-                  onClick={handlePlayPrevious}
-                  disabled={selectedTrackIndex === null || selectedTrackIndex === 0}
+                  onClick={rankingQueue.isContinuousAllowed ? rankingQueue.goPrev : handlePlayPrevious}
+                  disabled={rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex === null || rankingQueue.currentIndex === 0 : selectedTrackIndex === null || selectedTrackIndex === 0}
                   style={{
                     padding: '8px 16px',
-                    background: selectedTrackIndex !== null && selectedTrackIndex > 0 ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
+                    background: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex > 0 : selectedTrackIndex !== null && selectedTrackIndex > 0) ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
                     border: 'none',
                     borderRadius: '6px',
-                    color: selectedTrackIndex !== null && selectedTrackIndex > 0 ? '#ff2d55' : 'rgba(255,255,255,0.3)',
-                    cursor: selectedTrackIndex !== null && selectedTrackIndex > 0 ? 'pointer' : 'not-allowed',
+                    color: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex > 0 : selectedTrackIndex !== null && selectedTrackIndex > 0) ? '#ff2d55' : 'rgba(255,255,255,0.3)',
+                    cursor: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex > 0 : selectedTrackIndex !== null && selectedTrackIndex > 0) ? 'pointer' : 'not-allowed',
                     fontSize: '12px',
                     fontWeight: 600,
                     transition: 'all 0.2s',
@@ -2247,15 +2355,15 @@ export default function Home() {
                 </div>
 
                 <button
-                  onClick={handlePlayNext}
-                  disabled={selectedTrackIndex === null || tracks.length === 0}
+                  onClick={rankingQueue.isContinuousAllowed ? rankingQueue.goNext : handlePlayNext}
+                  disabled={rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex === null || rankingQueue.currentIndex >= rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex === null || tracks.length === 0}
                   style={{
                     padding: '8px 16px',
-                    background: selectedTrackIndex !== null && tracks.length > 0 ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
+                    background: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex < rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex !== null && tracks.length > 0) ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
                     border: 'none',
                     borderRadius: '6px',
-                    color: selectedTrackIndex !== null && tracks.length > 0 ? '#ff2d55' : 'rgba(255,255,255,0.3)',
-                    cursor: selectedTrackIndex !== null && tracks.length > 0 ? 'pointer' : 'not-allowed',
+                    color: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex < rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex !== null && tracks.length > 0) ? '#ff2d55' : 'rgba(255,255,255,0.3)',
+                    cursor: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex < rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex !== null && tracks.length > 0) ? 'pointer' : 'not-allowed',
                     fontSize: '12px',
                     fontWeight: 600,
                     transition: 'all 0.2s',
@@ -2271,22 +2379,22 @@ export default function Home() {
               この楽曲にはURLが設定されていません
             </div>
           )}
-          <ShareButtons track={selectedTrack} />
+          <ShareButtons track={playerTrack} />
 
           {/* アーティストのSNSリンク */}
-          {selectedTrack && (
+          {playerTrack && (
             <ArtistFollowSection
-              socialLinks={(selectedTrack as any).social_links || {}}
-              artist_social_url={selectedTrack.artist_social_url}
+              socialLinks={(playerTrack as any).social_links || {}}
+              artist_social_url={playerTrack.artist_social_url}
               avatarUrl={artistProfile?.avatar_url}
-              artistName={artistProfile?.username || selectedTrack.artist_name}
+              artistName={artistProfile?.username || playerTrack.artist_name}
             />
           )}
 
-          {selectedTrack.prompt && (
+          {playerTrack.prompt && (
             <div className="player-prompt">
               <div className="player-prompt-label">Prompt</div>
-              {selectedTrack.prompt}
+              {playerTrack.prompt}
             </div>
           )}
 

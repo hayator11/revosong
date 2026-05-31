@@ -3,7 +3,7 @@
  * Helper functions for service detection, metadata extraction, and URL parsing
  */
 
-export type SupportedService = 'youtube' | 'spotify' | 'soundcloud' | 'niconico' | 'bandcamp' | 'audiomack';
+export type SupportedService = 'youtube' | 'spotify' | 'soundcloud' | 'niconico' | 'bandcamp' | 'audiomack' | 'suno' | 'mureka';
 export type MusicType = 'audio' | 'video';
 
 export interface ExtractedMetadata {
@@ -42,6 +42,12 @@ export function detectService(url: string): SupportedService | null {
     }
     if (lowerUrl.includes('audiomack.com')) {
       return 'audiomack';
+    }
+    if (lowerUrl.includes('suno.com')) {
+      return 'suno';
+    }
+    if (lowerUrl.includes('mureka.ai')) {
+      return 'mureka';
     }
 
     return null;
@@ -176,7 +182,14 @@ export function detectMusicType(service: SupportedService, url?: string): MusicT
   }
 
   // Services that are primarily audio
-  if (service === 'spotify' || service === 'soundcloud' || service === 'bandcamp' || service === 'audiomack') {
+  if (
+    service === 'spotify' ||
+    service === 'soundcloud' ||
+    service === 'bandcamp' ||
+    service === 'audiomack' ||
+    service === 'suno' ||
+    service === 'mureka'
+  ) {
     return 'audio';
   }
 
@@ -216,6 +229,10 @@ export function generateThumbnailUrl(service: SupportedService, identifier: stri
     }
     case 'audiomack': {
       // Audiomack doesn't provide simple thumbnails without API
+      return null;
+    }
+    case 'suno':
+    case 'mureka': {
       return null;
     }
     default:
@@ -352,7 +369,9 @@ export function isSupportedService(value: unknown): value is SupportedService {
     value === 'soundcloud' ||
     value === 'niconico' ||
     value === 'bandcamp' ||
-    value === 'audiomack';
+    value === 'audiomack' ||
+    value === 'suno' ||
+    value === 'mureka';
 }
 
 // ============================================================================
@@ -365,7 +384,9 @@ export const SUPPORTED_SERVICES: Record<SupportedService, string> = {
   soundcloud: 'SoundCloud',
   niconico: 'Niconico',
   bandcamp: 'Bandcamp',
-  audiomack: 'Audiomack'
+  audiomack: 'Audiomack',
+  suno: 'SUNO',
+  mureka: 'Mureka'
 };
 
 export const SERVICE_COLORS: Record<SupportedService, string> = {
@@ -374,5 +395,7 @@ export const SERVICE_COLORS: Record<SupportedService, string> = {
   soundcloud: '#ff7700',
   niconico: '#131621',
   bandcamp: '#1ea0c3',
-  audiomack: '#ff0000'
+  audiomack: '#ff0000',
+  suno: '#7c3aed',
+  mureka: '#00b8a9'
 };

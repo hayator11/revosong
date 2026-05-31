@@ -249,8 +249,8 @@ export default function PlaylistsPage() {
               lineHeight: 1.6,
               margin: 0
             }}>
-              REVOSONGランキングのトラックと、YouTube・Spotify・SoundCloudなどの外部URLを組み合わせて、自分だけのプレイリストを作成できます。
-              曲を並べ替えたり、公開・非公開を設定することも可能です。
+              YouTube / SoundCloud のURLを登録して、自分だけのプレイリストを作成できます。
+              登録した曲は一覧から再生・削除でき、公開・非公開を設定することも可能です。
             </p>
           </div>
         </div>
