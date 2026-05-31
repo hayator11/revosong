@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useId, useRef } from 'react';
+import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 type SoundCloudWidget = {
   bind: (eventName: string, callback: () => void) => void;
@@ -11,31 +11,15 @@ type SoundCloudApi = {
   Widget: ((iframe: HTMLIFrameElement) => SoundCloudWidget) & {
     Events: {
       FINISH: string;
+      PLAY: string;
+      PLAY_PROGRESS: string;
     };
-  };
-};
-
-type YouTubeApi = {
-  PlayerState: {
-    ENDED: number;
-  };
-  Player: new (
-    iframe: HTMLIFrameElement,
-    config: {
-      events: {
-        onStateChange: (event: { data: number }) => void;
-      };
-    }
-  ) => {
-    destroy: () => void;
   };
 };
 
 declare global {
   interface Window {
     SC?: SoundCloudApi;
-    YT?: YouTubeApi;
-    onYouTubeIframeAPIReady?: () => void;
   }
 }
 
@@ -100,10 +84,15 @@ interface EmbedPlayerProps {
   autoplay?: boolean;
   height?: number;
   onEnded?: () => void;
+  replaySignal?: number;
 }
 
-const YOUTUBE_API_SRC = 'https://www.youtube.com/iframe_api';
 const SOUNDCLOUD_API_SRC = 'https://w.soundcloud.com/player/api.js';
+const YOUTUBE_STATE = {
+  ENDED: 0,
+  PLAYING: 1,
+  BUFFERING: 3
+} as const;
 
 function loadExternalScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -127,22 +116,6 @@ function loadExternalScript(src: string): Promise<void> {
     };
     script.onerror = () => reject(new Error(`Failed to load ${src}`));
     document.body.appendChild(script);
-  });
-}
-
-function loadYouTubeApi(): Promise<void> {
-  if (window.YT?.Player) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const previousReady = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      previousReady?.();
-      resolve();
-    };
-
-    loadExternalScript(YOUTUBE_API_SRC).catch(reject);
   });
 }
 
@@ -184,23 +157,65 @@ function hasEndedMessage(data: unknown): boolean {
   });
 }
 
-function getFallbackEndDelay(url: string): number | null {
-  if (isSunoUrl(url) || isMurekaUrl(url)) {
-    return 4 * 60 * 1000;
+function parseMessageData(data: unknown): unknown {
+  if (typeof data !== 'string') return data;
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data;
+  }
+}
+
+function getYouTubeMessageState(data: unknown): number | null {
+  const parsed = parseMessageData(data);
+  if (!parsed || typeof parsed !== 'object') return null;
+
+  const record = parsed as Record<string, unknown>;
+  if (record.event !== 'onStateChange') return null;
+
+  if (typeof record.info === 'number') {
+    return record.info;
+  }
+
+  if (typeof record.info === 'string') {
+    const state = Number(record.info);
+    return Number.isNaN(state) ? null : state;
   }
 
   return null;
+}
+
+function sendYouTubeCommand(
+  iframe: HTMLIFrameElement | null,
+  func: string,
+  args: unknown[] = []
+): void {
+  iframe?.contentWindow?.postMessage(
+    JSON.stringify({
+      event: 'command',
+      func,
+      args
+    }),
+    'https://www.youtube.com'
+  );
 }
 
 export function EmbedPlayer({
   url,
   autoplay = true,
   height,
-  onEnded
+  onEnded,
+  replaySignal = 0
 }: EmbedPlayerProps): ReactNode {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const endedRef = useRef(false);
   const onEndedRef = useRef<(() => void) | undefined>(undefined);
+  const hasStartedRef = useRef(false);
+  const currentYouTubeIdRef = useRef<string | null>(getYouTubeId(url));
+  const previousReplaySignalRef = useRef(replaySignal);
+  const [youTubeIframeId, setYouTubeIframeId] = useState(() => getYouTubeId(url));
+  const [initialAutoplay] = useState(autoplay);
   const reactId = useId();
   const iframeId = `embed-player-${reactId.replace(/:/g, '')}`;
   const pageOrigin = typeof window === 'undefined' ? '' : window.location.origin;
@@ -214,7 +229,46 @@ export function EmbedPlayer({
 
   useEffect(() => {
     endedRef.current = false;
+    hasStartedRef.current = false;
+  }, [url]);
 
+  useEffect(() => {
+    const ytId = getYouTubeId(url);
+    if (!ytId || youTubeIframeId) return;
+
+    const timer = window.setTimeout(() => setYouTubeIframeId(ytId), 0);
+    return () => window.clearTimeout(timer);
+  }, [url, youTubeIframeId]);
+
+  useEffect(() => {
+    const ytId = getYouTubeId(url);
+    if (!ytId || !iframeRef.current) return;
+
+    const shouldLoad =
+      currentYouTubeIdRef.current !== ytId ||
+      previousReplaySignalRef.current !== replaySignal;
+
+    currentYouTubeIdRef.current = ytId;
+    previousReplaySignalRef.current = replaySignal;
+    endedRef.current = false;
+    hasStartedRef.current = false;
+
+    if (!shouldLoad) return;
+
+    sendYouTubeCommand(
+      iframeRef.current,
+      autoplay ? 'loadVideoById' : 'cueVideoById',
+      [ytId]
+    );
+  }, [autoplay, replaySignal, url]);
+
+  useEffect(() => {
+    if (!getYouTubeId(url) || !iframeRef.current) return;
+
+    sendYouTubeCommand(iframeRef.current, autoplay ? 'playVideo' : 'pauseVideo');
+  }, [autoplay, url]);
+
+  useEffect(() => {
     const notifyEnded = () => {
       if (endedRef.current) return;
       endedRef.current = true;
@@ -222,36 +276,30 @@ export function EmbedPlayer({
     };
 
     let cleanup: (() => void) | undefined;
-    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
     let cancelled = false;
 
     const setup = async () => {
       if (getYouTubeId(url)) {
-        try {
-          await loadYouTubeApi();
-          if (cancelled || !iframeRef.current || !window.YT?.Player) return;
-          const youTubeApi = window.YT;
+        const handleMessage = (event: MessageEvent) => {
+          if (event.source !== iframeRef.current?.contentWindow) return;
 
-          const player = new youTubeApi.Player(iframeRef.current, {
-            events: {
-              onStateChange: (event: { data: number }) => {
-                if (event.data === youTubeApi.PlayerState.ENDED) {
-                  notifyEnded();
-                }
-              }
-            }
-          });
+          const state = getYouTubeMessageState(event.data);
+          if (state === null) return;
 
-          cleanup = () => {
-            try {
-              player.destroy();
-            } catch {
-              // The iframe may already be gone during route changes.
-            }
-          };
-        } catch {
-          // If the API is blocked, the player still renders; ending just cannot be observed.
-        }
+          if (state === YOUTUBE_STATE.PLAYING || state === YOUTUBE_STATE.BUFFERING) {
+            hasStartedRef.current = true;
+            endedRef.current = false;
+            return;
+          }
+
+          if (state === YOUTUBE_STATE.ENDED && hasStartedRef.current) {
+            notifyEnded();
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+        sendYouTubeCommand(iframeRef.current, 'addEventListener', ['onStateChange']);
+        cleanup = () => window.removeEventListener('message', handleMessage);
         return;
       }
 
@@ -262,10 +310,28 @@ export function EmbedPlayer({
 
           const widget = window.SC.Widget(iframeRef.current);
           const finishEvent = window.SC.Widget.Events.FINISH;
-          widget.bind(finishEvent, notifyEnded);
-          cleanup = () => widget.unbind(finishEvent);
+          const playEvent = window.SC.Widget.Events.PLAY;
+          const progressEvent = window.SC.Widget.Events.PLAY_PROGRESS;
+          const markStarted = () => {
+            hasStartedRef.current = true;
+            endedRef.current = false;
+          };
+          const handleFinish = () => {
+            if (hasStartedRef.current) {
+              notifyEnded();
+            }
+          };
+
+          widget.bind(playEvent, markStarted);
+          widget.bind(progressEvent, markStarted);
+          widget.bind(finishEvent, handleFinish);
+          cleanup = () => {
+            widget.unbind(playEvent);
+            widget.unbind(progressEvent);
+            widget.unbind(finishEvent);
+          };
         } catch {
-          fallbackTimer = setTimeout(notifyEnded, 4 * 60 * 1000);
+          // SoundCloud finish events are best-effort; avoid timer-based false positives.
         }
         return;
       }
@@ -279,11 +345,6 @@ export function EmbedPlayer({
 
         window.addEventListener('message', handleMessage);
         cleanup = () => window.removeEventListener('message', handleMessage);
-
-        const fallbackDelay = getFallbackEndDelay(url);
-        if (fallbackDelay) {
-          fallbackTimer = setTimeout(notifyEnded, fallbackDelay);
-        }
       }
     };
 
@@ -292,23 +353,33 @@ export function EmbedPlayer({
     return () => {
       cancelled = true;
       cleanup?.();
-      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
-  // onEnded は ref 経由でアクセスするため依存配列から除外。url 変更時のみ再セットアップ。
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
   const ytId = getYouTubeId(url);
   if (ytId) {
+    const initialYtId = youTubeIframeId || ytId;
+
     return (
       <iframe
         ref={iframeRef}
         id={iframeId}
         width="100%"
         height={height || 160}
-        src={`https://www.youtube.com/embed/${ytId}?enablejsapi=1&playsinline=1${pageOrigin ? `&origin=${encodeURIComponent(pageOrigin)}` : ''}${autoplay ? '&autoplay=1' : ''}`}
+        src={`https://www.youtube.com/embed/${initialYtId}?enablejsapi=1&playsinline=1${pageOrigin ? `&origin=${encodeURIComponent(pageOrigin)}` : ''}${initialAutoplay ? '&autoplay=1' : ''}`}
         allow="autoplay; encrypted-media"
         allowFullScreen
+        onLoad={() => {
+          sendYouTubeCommand(iframeRef.current, 'addEventListener', ['onStateChange']);
+
+          if (currentYouTubeIdRef.current && currentYouTubeIdRef.current !== initialYtId) {
+            sendYouTubeCommand(
+              iframeRef.current,
+              autoplay ? 'loadVideoById' : 'cueVideoById',
+              [currentYouTubeIdRef.current]
+            );
+          }
+        }}
         style={{ border: 'none', borderRadius: 12 }}
       />
     );

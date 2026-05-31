@@ -894,11 +894,11 @@ export default function PlaylistPage() {
             {currentItemIndex !== null && currentItemIndex < items.length && (items[currentItemIndex].url || items[currentItemIndex].external_url) && (
               <div style={{ marginTop: '20px' }}>
                 <EmbedPlayer
-                  key={`${items[currentItemIndex].id}-${playerResetKey}`}
                   url={(items[currentItemIndex].url || items[currentItemIndex].external_url) as string}
                   autoplay={isPlaying}
                   height={items[currentItemIndex].music_type === 'video' ? 240 : 160}
                   onEnded={isPlaying ? handleTrackEnd : undefined}
+                  replaySignal={playerResetKey}
                 />
               </div>
             )}
