@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { GlobalHeader } from "@/app/components/GlobalHeader";
 
@@ -14,6 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://revosong.onokun.com";
+const googleAnalyticsId =
+  process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || "G-Y70ES6P0WL";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -86,6 +89,18 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${googleAnalyticsId}');
+          `}
+        </Script>
         <GlobalHeader />
         {children}
       </body>
