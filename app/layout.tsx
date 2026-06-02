@@ -35,6 +35,9 @@ export const metadata: Metadata = {
   authors: [{ name: "おのくん", url: "https://onokun.com/" }],
   creator: "おのくん",
   publisher: "REVOSONG",
+  verification: {
+    google: "R_e8E9Ga3FSMDd3Z_H1SpU8hkM8lMW25IpkPWFbMAxM",
+  },
   openGraph: {
     title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
     description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotify対応。",
