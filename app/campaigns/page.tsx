@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BackButton } from '@/app/components/BackButton';
 import { Breadcrumb } from '@/app/components/Breadcrumb';
 import { SocialShareButtons } from '@/app/components/SocialShareButtons';
+import { REVOSONG_CORE_MESSAGE_LINES } from '@/lib/brand-copy';
 
 interface Campaign {
   id: number;
@@ -71,6 +72,13 @@ export default function CampaignsPage() {
           <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-xl p-8 text-white mb-8">
             <h1 className="text-4xl font-bold mb-2">✨ REVOSONG キャンペーン ✨</h1>
             <p className="text-lg mb-4">「応援の力で、音楽が生まれる」</p>
+            <div className="bg-white/15 border border-white/25 rounded-lg p-5 mb-5 leading-relaxed">
+              {REVOSONG_CORE_MESSAGE_LINES.map((line, index) => (
+                <p key={line} className={index === 0 ? 'font-bold text-lg' : 'text-base'}>
+                  {line}
+                </p>
+              ))}
+            </div>
             <p className="text-sm opacity-90">
               あなたが提案したテーマが、<br />
               新しいキャンペーンになるかもしれない！

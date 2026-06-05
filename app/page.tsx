@@ -7,6 +7,7 @@ import { checkCommentSafety } from "@/lib/comment-filter";
 import { EmbedPlayer, getYouTubeId, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
+import { REVOSONG_CORE_MESSAGE_LINES } from "@/lib/brand-copy";
 
 // Type definitions for SoundCloud Widget
 declare global {
@@ -828,6 +829,24 @@ export default function Home() {
           font-size: 13px;
           color: rgba(255,255,255,0.75);
           letter-spacing: 2px;
+        }
+        .brand-statement {
+          position: relative;
+          z-index: 1;
+          width: min(680px, calc(100% - 32px));
+          margin: 22px auto 0;
+          padding: 18px 20px;
+          border-top: 1px solid rgba(0,212,255,0.22);
+          border-bottom: 1px solid rgba(255,45,85,0.18);
+          color: rgba(255,255,255,0.82);
+          font-size: 15px;
+          line-height: 1.9;
+          letter-spacing: 0.04em;
+          text-shadow: 0 0 18px rgba(0,212,255,0.16);
+        }
+        .brand-statement strong {
+          color: #fff;
+          font-weight: 700;
         }
         .hero-type-badges {
           display: flex;
@@ -1716,6 +1735,13 @@ export default function Home() {
         <h1 className="hero-title" style={{ fontSize: "5.5rem", letterSpacing: "2px" }}>MUSIC CHARTS</h1>
         <p style={{ margin: "8px 0 16px", fontSize: "2.5rem", fontWeight: "bold", color: "#00d4ff", letterSpacing: "1px" }}>REVOSONG</p>
         <p className="hero-sub" style={{ fontSize: "1.8rem", fontWeight: "600" }}>みんなの音楽ランキング</p>
+        <section className="brand-statement" aria-label="REVOSONGの共通メッセージ">
+          {REVOSONG_CORE_MESSAGE_LINES.map((line, index) => (
+            <p key={line} style={{ margin: 0 }}>
+              {index === 0 ? <strong>{line}</strong> : line}
+            </p>
+          ))}
+        </section>
         {/* ナビゲーションメニュー */}
         <nav style={{
           textAlign: 'center',

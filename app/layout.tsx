@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { GlobalHeader } from "@/app/components/GlobalHeader";
+import { REVOSONG_CORE_DESCRIPTION } from "@/lib/brand-copy";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +22,7 @@ const googleAnalyticsId =
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
-  description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotify対応。誰でも無料で投稿・視聴・投票できるオープンなプラットフォーム。",
+  description: `${REVOSONG_CORE_DESCRIPTION} AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotify対応。`,
   keywords: [
     "MUSIC CHARTS",
     "REVOSONG",
@@ -34,6 +35,8 @@ export const metadata: Metadata = {
     "ランキングサイト",
     "オリジナル楽曲",
     "応援",
+    "応援ソング",
+    "音楽キャンペーン",
   ],
   authors: [{ name: "おのくん", url: "https://onokun.com/" }],
   creator: "おのくん",
@@ -43,7 +46,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
-    description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。YouTube、SoundCloud、Spotify対応。",
+    description: REVOSONG_CORE_DESCRIPTION,
     type: "website",
     url: baseUrl,
     siteName: "MUSIC CHARTS",
@@ -61,7 +64,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "MUSIC CHARTS - AI生成・オリジナル楽曲のランキング",
-    description: "AI生成楽曲とオリジナル楽曲を、みんなの「いいね」でランキング。",
+    description: REVOSONG_CORE_DESCRIPTION,
     images: [`${baseUrl}/og-image.png`],
     creator: "@onokun_official",
   },
