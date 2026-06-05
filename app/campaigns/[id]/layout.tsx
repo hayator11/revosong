@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { REVOSONG_CORE_DESCRIPTION } from '@/lib/brand-copy';
 
 interface CampaignData {
   id: number;
@@ -37,7 +38,7 @@ export async function generateMetadata(
     if (error || !campaign) {
       return {
         title: 'キャンペーン - REVOSONG',
-        description: 'REVOSONGのキャンペーン詳細ページです',
+        description: REVOSONG_CORE_DESCRIPTION,
       };
     }
 
@@ -45,13 +46,17 @@ export async function generateMetadata(
     const ogpImageUrl = campaign.ogp_image_url || `/api/og/campaigns/${campaignId}`;
     const fullOgpUrl = ogpImageUrl.startsWith('http') ? ogpImageUrl : `${baseUrl}${ogpImageUrl}`;
 
+    const description = campaign.description
+      ? `${campaign.description} ${REVOSONG_CORE_DESCRIPTION}`
+      : REVOSONG_CORE_DESCRIPTION;
+
     return {
       title: `${campaign.title} - REVOSONG`,
-      description: campaign.description || 'REVOSONGのキャンペーンに参加しよう！',
+      description,
       metadataBase: new URL(baseUrl),
       openGraph: {
         title: campaign.title,
-        description: campaign.description || 'REVOSONGのキャンペーンに参加しよう！',
+        description,
         type: 'website',
         images: [
           {
@@ -66,7 +71,7 @@ export async function generateMetadata(
       twitter: {
         card: 'summary_large_image',
         title: campaign.title,
-        description: campaign.description || 'REVOSONGのキャンペーンに参加しよう！',
+        description,
         images: [fullOgpUrl],
       },
     };
@@ -74,7 +79,7 @@ export async function generateMetadata(
     console.error('Error generating metadata:', error);
     return {
       title: 'キャンペーン - REVOSONG',
-      description: 'REVOSONGのキャンペーン詳細ページです',
+      description: REVOSONG_CORE_DESCRIPTION,
     };
   }
 }

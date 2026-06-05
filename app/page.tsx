@@ -9,6 +9,7 @@ import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
 import { parseTrackUrl } from "@/lib/track-url-utils";
 import { usePlaybackQueue } from "@/lib/hooks/usePlaybackQueue";
+import { REVOSONG_CORE_MESSAGE_LINES } from "@/lib/brand-copy";
 
 type Track = {
   id: number;
@@ -852,6 +853,24 @@ export default function Home() {
           font-size: 13px;
           color: rgba(255,255,255,0.75);
           letter-spacing: 2px;
+        }
+        .brand-statement {
+          position: relative;
+          z-index: 1;
+          width: min(680px, calc(100% - 32px));
+          margin: 22px auto 0;
+          padding: 18px 20px;
+          border-top: 1px solid rgba(0,212,255,0.22);
+          border-bottom: 1px solid rgba(255,45,85,0.18);
+          color: rgba(255,255,255,0.82);
+          font-size: 15px;
+          line-height: 1.9;
+          letter-spacing: 0.04em;
+          text-shadow: 0 0 18px rgba(0,212,255,0.16);
+        }
+        .brand-statement strong {
+          color: #fff;
+          font-weight: 700;
         }
         .hero-type-badges {
           display: flex;
@@ -1740,6 +1759,13 @@ export default function Home() {
         <h1 className="hero-title" style={{ fontSize: "5.5rem", letterSpacing: "2px" }}>MUSIC CHARTS</h1>
         <p style={{ margin: "8px 0 16px", fontSize: "2.5rem", fontWeight: "bold", color: "#00d4ff", letterSpacing: "1px" }}>REVOSONG</p>
         <p className="hero-sub" style={{ fontSize: "1.8rem", fontWeight: "600" }}>みんなの音楽ランキング</p>
+        <section className="brand-statement" aria-label="REVOSONGの共通メッセージ">
+          {REVOSONG_CORE_MESSAGE_LINES.map((line, index) => (
+            <p key={line} style={{ margin: 0 }}>
+              {index === 0 ? <strong>{line}</strong> : line}
+            </p>
+          ))}
+        </section>
         {/* ナビゲーションメニュー */}
         <nav style={{
           textAlign: 'center',
@@ -2209,9 +2235,18 @@ export default function Home() {
         <div style={{ marginBottom: 10 }}>
           MUSIC CHARTS — みんなの音楽ランキング
         </div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 6 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 6, flexWrap: "wrap" }}>
           <a href="/services" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
             🎵 対応サービス一覧
+          </a>
+          <a href="/campaigns" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            応援ソングキャンペーン
+          </a>
+          <a href="/campaign-themes" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            応援テーマを見る
+          </a>
+          <a href="/campaigns/awards" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            応援ソング殿堂入り
           </a>
           <a href="/about" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
             👤 運営者情報

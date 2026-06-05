@@ -43,6 +43,12 @@ export function GlobalHeader() {
               殿堂入り
             </Link>
             <Link
+              href="/services"
+              className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
+            >
+              対応サービス
+            </Link>
+            <Link
               href="/campaigns/about"
               className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
             >
@@ -102,6 +108,13 @@ export function GlobalHeader() {
               onClick={() => setIsMenuOpen(false)}
             >
               殿堂入り
+            </Link>
+            <Link
+              href="/services"
+              className="block py-2 px-0 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              対応サービス
             </Link>
             <Link
               href="/campaigns/about"

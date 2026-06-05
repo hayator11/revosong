@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import Link from 'next/link';
+import { EmbedPlayer } from '@/app/components/EmbedPlayer';
 import { TrackCard } from '@/app/components/TrackCard';
 import { CampaignComment } from '@/app/components/CampaignComment';
 import { BackButton } from '@/app/components/BackButton';
@@ -11,6 +12,8 @@ import { ThemeProposerChoice } from '@/app/components/ThemeProposerChoice';
 import { AwardCommentForm } from '@/app/components/AwardCommentForm';
 import { CampaignAwardCard } from '@/app/components/CampaignAwardCard';
 import { supabase } from '@/lib/supabase';
+import { usePlaybackQueue } from '@/lib/hooks/usePlaybackQueue';
+import { parseTrackUrl } from '@/lib/track-url-utils';
 
 interface CampaignData {
   id: number;
@@ -84,6 +87,33 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [campaignEnded, setCampaignEnded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedAwardId, setSelectedAwardId] = useState<number | null>(null);
+  const [campaignPlayerResetKey, setCampaignPlayerResetKey] = useState(0);
+  const campaignPlaybackTracks = useMemo(() => rankings
+    .map((item) => {
+      const parsedUrl = item.track.external_url ? parseTrackUrl(item.track.external_url) : null;
+      if (!parsedUrl) return null;
+      return {
+        id: String(item.track.id),
+        provider: parsedUrl.provider,
+        originalUrl: parsedUrl.originalUrl,
+        embedUrl: parsedUrl.embedUrl,
+        title: item.track.title,
+        providerTrackId: parsedUrl.providerTrackId,
+      };
+    })
+    .filter((track): track is NonNullable<typeof track> => track !== null), [rankings]);
+  const playbackQueue = usePlaybackQueue({
+    tracks: campaignPlaybackTracks,
+    mode: 'ranking',
+  });
+  const queuedRankingItem = playbackQueue.currentTrack
+    ? rankings.find((item) => String(item.track.id) === playbackQueue.currentTrack?.id) || null
+    : null;
+  const manualSelectedRankingItem = selectedTrack
+    ? rankings.find((item) => item.track.id === selectedTrack) || null
+    : null;
+  const playerRankingItem =
+    playbackQueue.isContinuousAllowed && queuedRankingItem ? queuedRankingItem : manualSelectedRankingItem;
 
   useEffect(() => {
     const fetchCampaignData = async () => {
@@ -217,6 +247,17 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const handlePlayTrack = (trackId: number) => {
+    const playableIndex = campaignPlaybackTracks.findIndex((track) => track.id === String(trackId));
+
+    if (playbackQueue.isContinuousAllowed && playableIndex !== -1) {
+      setSelectedTrack(null);
+      playbackQueue.setNeedsUserGesture(false);
+      playbackQueue.setCurrentIndex(playableIndex);
+      return;
+    }
+
+    playbackQueue.setCurrentIndex(null);
+    playbackQueue.setNeedsUserGesture(false);
     setSelectedTrack(trackId);
   };
 
@@ -303,6 +344,88 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             </ul>
           </div>
         </section>
+
+        {/* 連続再生 */}
+        {rankings.length > 0 && (
+          <section className="bg-slate-900 text-white rounded-lg shadow-md p-5 mb-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-lg font-bold mb-2">連続再生</h2>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  iOS対応のため、連続再生にはチェックが必要です。連続再生では YouTube / SoundCloud の曲だけを順番に再生します。その他のサービスは一覧に残したまま、自動再生キューからは外します。
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-4 py-3 text-sm font-bold text-cyan-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={playbackQueue.isContinuousAllowed}
+                  onChange={async (event) => {
+                    const allowed = await playbackQueue.setIsContinuousAllowed(event.target.checked);
+                    if (allowed && playbackQueue.continuousPlayableTracks.length > 0) {
+                      setSelectedTrack(null);
+                    }
+                  }}
+                  className="h-4 w-4 accent-cyan-400"
+                />
+                連続再生を許可する
+              </label>
+            </div>
+
+            {playbackQueue.isContinuousAllowed && playbackQueue.continuousPlayableTracks.length === 0 && (
+              <p className="mt-4 rounded-md border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-200">
+                このキャンペーンランキングには、連続再生できる YouTube / SoundCloud の曲がありません。
+              </p>
+            )}
+          </section>
+        )}
+
+        {playerRankingItem?.track.external_url && (
+          <section className="bg-white rounded-lg shadow-md p-5 mb-8">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Now Playing</p>
+                <h2 className="text-xl font-bold text-slate-900">{playerRankingItem.track.title}</h2>
+                <p className="text-sm text-slate-600">{playerRankingItem.track.artist_name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTrack(null);
+                  playbackQueue.setCurrentIndex(null);
+                  playbackQueue.setNeedsUserGesture(false);
+                }}
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600 hover:bg-slate-200"
+              >
+                閉じる
+              </button>
+            </div>
+
+            <EmbedPlayer
+              key={`${playerRankingItem.track.id}-${campaignPlayerResetKey}`}
+              url={playerRankingItem.track.external_url}
+              autoplay
+              onEnded={playbackQueue.isContinuousAllowed ? playbackQueue.handleEnded : undefined}
+              replaySignal={playbackQueue.replaySignal}
+              onAutoplayBlocked={() => playbackQueue.setNeedsUserGesture(true)}
+            />
+
+            {playbackQueue.needsUserGesture && (
+              <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-900">
+                <p className="mb-3">ブラウザ制限により自動再生できませんでした。再生ボタンを押してください。</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playbackQueue.setNeedsUserGesture(false);
+                    setCampaignPlayerResetKey((value) => value + 1);
+                  }}
+                  className="rounded-lg bg-yellow-500 px-4 py-2 font-bold text-white hover:bg-yellow-600"
+                >
+                  ▶ この曲を再生する
+                </button>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ランキング */}
         <section className="mb-8">
