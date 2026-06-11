@@ -313,7 +313,7 @@ export function ArtistsSection() {
       {/* リンクボタン */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '32px' }}>
         <a
-          href="https://revolist.earth/revolist-lab"
+          href="https://onokun.com/revolist-lab/"
           target="_blank"
           rel="noopener noreferrer"
           style={{

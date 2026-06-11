@@ -77,7 +77,7 @@ export default function InformationPage() {
                 資金と人を集めながら「循環」させ続ける、次世代型のクラウドファンディング。創造的で社会貢献的なプロジェクトの資金調達を支援し、アイデアを実現させるための仕組みを提供します。
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                <a href="https://hayator11.github.io/revofunding/index.html" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(138,43,226,0.2)", border: "1px solid rgba(138,43,226,0.4)", borderRadius: "6px", color: "#8a2be2", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                <a href="https://revofunding.onokun.com/" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(138,43,226,0.2)", border: "1px solid rgba(138,43,226,0.4)", borderRadius: "6px", color: "#8a2be2", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   公式サイト
                 </a>
                 <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
@@ -95,7 +95,7 @@ export default function InformationPage() {
                 廃棄ペンキの利活用など、被災地や過疎地の課題を「アート力」で支える活動。デジタルアートとクリエイター向けプラットフォーム。アーティストの作品発表と相互支援を通じて、創造的コミュニティを育成します。
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                <a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(255,20,147,0.2)", border: "1px solid rgba(255,20,147,0.4)", borderRadius: "6px", color: "#ff1493", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                <a href="https://revofunding.onokun.com/revo-art.html" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(255,20,147,0.2)", border: "1px solid rgba(255,20,147,0.4)", borderRadius: "6px", color: "#ff1493", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   公式サイト
                 </a>
                 <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
@@ -113,7 +113,7 @@ export default function InformationPage() {
                 社会貢献型広告収入モデル。「普通の買い物が、誰かの応援になる仕組み」を実現。消費者が特別なコストを負担せず、日常の購買行為が防災教育やコミュニティ事業を支援します。助成金に頼らない持続可能な基盤を構築。
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                <a href="https://onokun.com/socially-responsible-sponsorship/" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(50,205,50,0.2)", border: "1px solid rgba(50,205,50,0.4)", borderRadius: "6px", color: "#32cd32", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                <a href="https://onokun.com/revolink" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(50,205,50,0.2)", border: "1px solid rgba(50,205,50,0.4)", borderRadius: "6px", color: "#32cd32", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   公式サイト
                 </a>
                 <a href="https://x.com/onokun" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
@@ -131,7 +131,7 @@ export default function InformationPage() {
                 ハットを通じた防災意識向上プロジェクト。華やかでカラフルなハットで心理的な変容をもたらし、堅苦しい避難訓練をエンターテインメント化。全国約20万校、605万人の小学生へのリーチを目指し、災害時の相互支援体制構築を推進しています。
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                <a href="https://revolist.earth/bosai-bosai" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(220,20,60,0.2)", border: "1px solid rgba(220,20,60,0.4)", borderRadius: "6px", color: "#dc143c", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                <a href="https://onokun.com/bosai/" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(220,20,60,0.2)", border: "1px solid rgba(220,20,60,0.4)", borderRadius: "6px", color: "#dc143c", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
                   公式サイト
                 </a>
                 <a href="https://x.com/Bosai_Bosai_" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", color: "#fff", textDecoration: "none", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
@@ -159,7 +159,7 @@ export default function InformationPage() {
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
-            <a href="https://revolist.earth/revolist-lab" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(255,165,0,0.15)", border: "1px solid rgba(255,165,0,0.3)", borderRadius: "8px", color: "#ffa500", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
+            <a href="https://onokun.com/revolist-lab/" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(255,165,0,0.15)", border: "1px solid rgba(255,165,0,0.3)", borderRadius: "8px", color: "#ffa500", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
               🌐 公式サイト
             </a>
             <a href="https://x.com/REVOLIST11" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 16px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600, textAlign: "center" }}>
@@ -231,7 +231,7 @@ export default function InformationPage() {
           <p style={{ marginBottom: "8px", fontSize: "12px", fontStyle: "italic", color: "rgba(255,255,255,0.3)" }}>
             Produced by @hayator
           </p>
-          <p>&copy; 2025 REVOSONG — 運営: <a href="https://onokun.com/" target="_blank" rel="author" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>おのくん</a></p>
+          <p>&copy; 2025 REVOSONG — 運営: <a href="https://onokun.com/" target="_blank" rel="author noopener noreferrer" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>おのくん</a></p>
           <p style={{ marginTop: "12px" }}>
             <Link href="/" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>トップ</Link>
             {" · "}

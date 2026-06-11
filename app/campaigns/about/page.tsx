@@ -540,8 +540,8 @@ export default function CampaignsAboutPage() {
             <div>
               <h4 className="font-bold mb-3">📚 参考</h4>
               <ul className="text-sm space-y-1 opacity-75">
-                <li><a href="https://hayator11.github.io/revofunding/revo-art.html" target="_blank" rel="noopener noreferrer" className="hover:opacity-100">Revo Art</a></li>
-                <li><a href="https://onokun.com/art-project/" target="_blank" rel="noopener noreferrer" className="hover:opacity-100">Onokun Art</a></li>
+                <li><a href="https://revofunding.onokun.com/revo-art.html" target="_blank" rel="noopener noreferrer" className="hover:opacity-100">Revo Art</a></li>
+                <li><a href="https://revofunding.onokun.com/revo-art.html" target="_blank" rel="noopener noreferrer" className="hover:opacity-100">Onokun Art</a></li>
               </ul>
             </div>
             <div>
