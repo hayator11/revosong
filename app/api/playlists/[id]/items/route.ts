@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseTrackUrl } from '@/lib/track-url-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,7 +8,6 @@ const supabase = createClient(
 );
 
 interface AddPlaylistItemRequest {
-  track_id?: number;
   external_url?: string;
   external_title?: string;
   external_artist?: string;
@@ -68,17 +68,17 @@ export async function POST(
     // Parse request body
     const body: AddPlaylistItemRequest = await request.json();
 
-    // Validate input - must have either track_id or external_url
-    if (!body.track_id && !body.external_url) {
+    if ('track_id' in body) {
       return NextResponse.json(
-        { error: 'Either track_id or external_url is required' },
+        { error: '現在登録できるのは YouTube と SoundCloud のURLのみです。' },
         { status: 400 }
       );
     }
 
-    if (body.track_id && body.external_url) {
+    // Validate input - must have external_url
+    if (!body.external_url) {
       return NextResponse.json(
-        { error: 'Cannot have both track_id and external_url' },
+        { error: 'URLを入力してください。' },
         { status: 400 }
       );
     }
@@ -92,10 +92,10 @@ export async function POST(
         );
       }
 
-      const validServices = ['youtube', 'spotify', 'soundcloud', 'niconico', 'bandcamp', 'audiomack'];
-      if (!validServices.includes(body.external_service)) {
+      const parsedUrl = parseTrackUrl(body.external_url);
+      if (!parsedUrl || body.external_service !== parsedUrl.provider) {
         return NextResponse.json(
-          { error: 'Invalid external_service' },
+          { error: '現在登録できるのは YouTube と SoundCloud のURLのみです。' },
           { status: 400 }
         );
       }
@@ -103,6 +103,27 @@ export async function POST(
       if (!body.external_title) {
         return NextResponse.json(
           { error: 'external_title is required for external URLs' },
+          { status: 400 }
+        );
+      }
+
+      const duplicateQuery = supabase
+        .from('playlist_items')
+        .select('id, external_url')
+        .eq('playlist_id', playlistId)
+        .eq('external_service', parsedUrl.provider);
+
+      const { data: existingItems } = await duplicateQuery;
+      const duplicate = (existingItems || []).some((item) => {
+        if (parsedUrl.provider === 'youtube') {
+          return parseTrackUrl(item.external_url || '')?.providerTrackId === parsedUrl.providerTrackId;
+        }
+        return (item.external_url || '').trim() === parsedUrl.originalUrl;
+      });
+
+      if (duplicate) {
+        return NextResponse.json(
+          { error: 'この曲はすでにプレイリストに入っています。' },
           { status: 400 }
         );
       }
@@ -126,15 +147,11 @@ export async function POST(
       music_type: body.music_type || 'audio'
     };
 
-    if (body.track_id) {
-      itemData.track_id = body.track_id;
-    } else {
-      itemData.external_url = body.external_url;
-      itemData.external_title = body.external_title;
-      itemData.external_artist = body.external_artist || null;
-      itemData.external_thumbnail_url = body.external_thumbnail_url || null;
-      itemData.external_service = body.external_service;
-    }
+    itemData.external_url = body.external_url;
+    itemData.external_title = body.external_title;
+    itemData.external_artist = body.external_artist || null;
+    itemData.external_thumbnail_url = body.external_thumbnail_url || null;
+    itemData.external_service = body.external_service;
 
     const { data: item, error: insertError } = await supabase
       .from('playlist_items')

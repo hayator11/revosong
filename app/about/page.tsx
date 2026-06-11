@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { REVOSONG_SITE_URL } from "@/lib/revo-links";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://revosong.onokun.com";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || REVOSONG_SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -350,7 +351,7 @@ export default function AboutPage() {
           <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", letterSpacing: "2px", marginBottom: "16px" }}>onokun</p>
           <a
             href="https://onokun.com/"
-            rel="author"
+            rel="author noopener noreferrer"
             target="_blank"
             style={{ display: "inline-block", padding: "8px 16px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "16px", color: "#ff2d55", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}
           >
@@ -371,7 +372,7 @@ export default function AboutPage() {
               </li>
               <li className="site-detail-item">
                 <span className="site-detail-key">URL</span>
-                <span>https://revosong-charts.vercel.app/</span>
+                <span>{REVOSONG_SITE_URL}/</span>
               </li>
               <li className="site-detail-item">
                 <span className="site-detail-key">コンセプト</span>
@@ -604,7 +605,7 @@ export default function AboutPage() {
         <footer className="page-footer">
           <p>
             &copy; 2025 MUSIC CHARTS — 運営：
-            <a href="https://onokun.com/" rel="author" target="_blank">
+            <a href="https://onokun.com/" rel="author noopener noreferrer" target="_blank">
               おのくん
             </a>
           </p>

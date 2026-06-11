@@ -1,20 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-// Type definitions for SoundCloud Widget
-declare global {
-  interface Window {
-    SC: any;
-  }
-}
-import { useRouter, useParams } from 'next/navigation';
+import { useCallback, useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { detectService, parseDefaultMetadata, fetchMetadataFromApi } from '@/lib/playlist-utils';
+import { fetchMetadataFromApi } from '@/lib/playlist-utils';
 import { AddPlaylistItem } from '@/app/components/AddPlaylistItem';
 import { PlaylistItemCard } from '@/app/components/PlaylistItemCard';
-import { EmbedPlayer, getYouTubeId, isSoundCloudUrl } from '@/app/components/EmbedPlayer';
+import { EmbedPlayer } from '@/app/components/EmbedPlayer';
+import { CONTINUOUS_PLAYBACK_STORAGE_KEY, unlockAutoplayForIOS } from '@/lib/autoplay-unlock';
+import { parseTrackUrl } from '@/lib/track-url-utils';
 
 interface Playlist {
   id: number;
@@ -46,8 +41,16 @@ interface PlaylistItem {
   thumbnail_url: string | null;
 }
 
+interface PlaylistItemPayload {
+  music_type: string;
+  external_url?: string;
+  external_service?: string;
+  external_title?: string;
+  external_artist?: string;
+  external_thumbnail_url?: string;
+}
+
 export default function PlaylistPage() {
-  const router = useRouter();
   const params = useParams();
   const playlistId = parseInt(params.id as string);
 
@@ -55,16 +58,10 @@ export default function PlaylistPage() {
   const [items, setItems] = useState<PlaylistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
-
-  const [addFormData, setAddFormData] = useState({
-    url: '',
-    trackSearch: '',
-    selectedTrackId: null as number | null
-  });
 
   // Drag and drop state
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
@@ -74,15 +71,33 @@ export default function PlaylistPage() {
   const [currentItemIndex, setCurrentItemIndex] = useState<number | null>(null);
   const [playMode, setPlayMode] = useState<'auto' | 'shuffle' | 'once' | 'repeat-one'>('shuffle');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playlistAutoplayEnabled, setPlaylistAutoplayEnabled] = useState(false);
+  const [playerResetKey, setPlayerResetKey] = useState(0);
+  const [needsUserGesture, setNeedsUserGesture] = useState(false);
+
+  const handleAutoplayToggle = async (checked: boolean) => {
+    if (!checked) {
+      localStorage.setItem(CONTINUOUS_PLAYBACK_STORAGE_KEY, 'false');
+      setPlaylistAutoplayEnabled(false);
+      setNeedsUserGesture(false);
+      return;
+    }
+
+    const unlocked = await unlockAutoplayForIOS();
+    localStorage.setItem(CONTINUOUS_PLAYBACK_STORAGE_KEY, unlocked ? 'true' : 'false');
+    setPlaylistAutoplayEnabled(unlocked);
+    setNeedsUserGesture(!unlocked);
+  };
+
+  useEffect(() => {
+    setPlaylistAutoplayEnabled(localStorage.getItem(CONTINUOUS_PLAYBACK_STORAGE_KEY) === 'true');
+  }, []);
 
   // Fetch current user and playlist
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-        if (currentUser) {
-          setUser(currentUser);
-        }
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
 
         // Fetch playlist
         const response = await fetch(`/api/playlists/${playlistId}`);
@@ -116,10 +131,15 @@ export default function PlaylistPage() {
   const handlePlayItem = (index: number) => {
     setCurrentItemIndex(index);
     setIsPlaying(true);
+    setNeedsUserGesture(false);
+    setPlayerResetKey((key) => key + 1);
   };
 
-  const handlePlayNext = () => {
+  const handlePlayNext = useCallback(() => {
     if (currentItemIndex === null || items.length === 0) return;
+
+    setPlayerResetKey((key) => key + 1);
+    setNeedsUserGesture(false);
 
     if (playMode === 'shuffle') {
       // Random next song
@@ -137,10 +157,13 @@ export default function PlaylistPage() {
         setIsPlaying(false);
       }
     }
-  };
+  }, [currentItemIndex, items.length, playMode]);
 
   const handlePlayPrevious = () => {
     if (currentItemIndex === null) return;
+
+    setPlayerResetKey((key) => key + 1);
+    setNeedsUserGesture(false);
 
     if (currentItemIndex > 0) {
       setCurrentItemIndex(currentItemIndex - 1);
@@ -148,10 +171,16 @@ export default function PlaylistPage() {
     }
   };
 
-  const handleTrackEnd = () => {
+  const handleTrackEnd = useCallback(() => {
+    if (!playlistAutoplayEnabled) {
+      setIsPlaying(false);
+      return;
+    }
+
     if (playMode === 'repeat-one' && currentItemIndex !== null) {
       // Restart the current song
       setIsPlaying(true);
+      setPlayerResetKey((key) => key + 1);
     } else if (playMode === 'once') {
       // Stop after current song
       setIsPlaying(false);
@@ -159,230 +188,7 @@ export default function PlaylistPage() {
       // Play next song automatically
       handlePlayNext();
     }
-  };
-
-  // Setup auto-play for YouTube and SoundCloud
-  useEffect(() => {
-    console.log('Playlist auto-play effect triggered', {
-      currentItemIndex,
-      isPlaying,
-      playMode,
-      hasItems: items.length > 0
-    });
-
-    if (currentItemIndex === null || !items[currentItemIndex]) {
-      console.log('Playlist auto-play: no current item');
-      return;
-    }
-
-    if (!isPlaying || (playMode !== 'auto' && playMode !== 'shuffle')) {
-      console.log('Playlist auto-play: not playing or wrong mode', { isPlaying, playMode });
-      return;
-    }
-
-    const item = items[currentItemIndex];
-    const url = item.url || item.external_url;
-
-    console.log('Playlist auto-play URL:', url);
-    if (!url) {
-      console.log('Playlist auto-play: no URL');
-      return;
-    }
-
-    let youtubeCheckInterval: ReturnType<typeof setInterval> | null = null;
-    let soundCloudTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    // Add a small delay to allow iframe to render
-    const delayTimer = setTimeout(() => {
-      // YouTube auto-play detection
-      if (getYouTubeId(url)) {
-        console.log('Playlist YouTube detected, setting up auto-play');
-        let checkCount = 0;
-        const maxChecks = 120;
-
-        youtubeCheckInterval = setInterval(() => {
-          checkCount++;
-          const iframes = document.querySelectorAll('iframe');
-          let youtubeIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('youtube.com/embed')) {
-              youtubeIframe = iframe;
-              console.log(`Playlist YouTube iframe found on check ${checkCount}`);
-              break;
-            }
-          }
-
-          if (checkCount % 20 === 0) {
-            console.log('Playlist YouTube check', { checkCount, found: !!youtubeIframe, totalIframes: iframes.length });
-          }
-
-          if (!youtubeIframe) {
-            if (checkCount >= 20) {
-              if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-              if (checkCount >= maxChecks) {
-                console.log('Playlist YouTube timeout - playing next track');
-                handleTrackEnd();
-              }
-            }
-          } else if (checkCount >= maxChecks) {
-            if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-            console.log('Playlist YouTube maxChecks reached - playing next track');
-            handleTrackEnd();
-          }
-        }, 500);
-
-        return;
-      }
-
-      // SoundCloud auto-play detection
-      if (isSoundCloudUrl(url)) {
-        console.log('Playlist SoundCloud detected, setting up auto-play');
-        const setupSoundCloudListener = () => {
-          console.log('Playlist setting up SoundCloud listener');
-          const iframes = document.querySelectorAll('iframe');
-          let scIframe: HTMLIFrameElement | null = null;
-
-          for (const iframe of iframes) {
-            if (iframe.src && iframe.src.includes('soundcloud.com')) {
-              scIframe = iframe;
-              console.log('Playlist SoundCloud iframe found');
-              break;
-            }
-          }
-
-          console.log('Playlist SoundCloud iframe found:', !!scIframe, 'SC available:', !!window.SC);
-
-          if (scIframe && window.SC) {
-            try {
-              console.log('Playlist creating SoundCloud widget');
-              const widget = window.SC.Widget(scIframe);
-              console.log('Playlist SoundCloud widget created');
-              widget.bind(window.SC.Widget.Events.FINISH, () => {
-                console.log('Playlist SoundCloud track finished - playing next');
-                handleTrackEnd();
-              });
-            } catch (e) {
-              console.log('Playlist SoundCloud API error, using timeout:', e);
-              soundCloudTimeout = setTimeout(() => {
-                if (isPlaying) {
-                  console.log('Playlist SoundCloud timeout - playing next track');
-                  handleTrackEnd();
-                }
-              }, 240000);
-            }
-          } else {
-            console.log('Playlist using SoundCloud timeout fallback');
-            soundCloudTimeout = setTimeout(() => {
-              if (isPlaying) {
-                console.log('Playlist SoundCloud fallback timeout - playing next track');
-                handleTrackEnd();
-              }
-            }, 240000);
-          }
-        };
-
-        if (!window.SC) {
-          console.log('Playlist loading SoundCloud widget API');
-          const script = document.createElement('script');
-          script.src = 'https://w.soundcloud.com/player/api.js';
-          script.onload = () => {
-            console.log('Playlist SoundCloud API loaded');
-            setupSoundCloudListener();
-          };
-          script.onerror = () => {
-            console.log('Playlist failed to load SoundCloud API, using timeout');
-            setupSoundCloudListener();
-          };
-          document.body.appendChild(script);
-        } else {
-          console.log('Playlist SoundCloud API already loaded');
-          setupSoundCloudListener();
-        }
-      }
-    }, 500); // Wait 500ms for iframe to render
-
-    return () => {
-      clearTimeout(delayTimer);
-      if (youtubeCheckInterval) clearInterval(youtubeCheckInterval);
-      if (soundCloudTimeout) clearTimeout(soundCloudTimeout);
-    };
-  }, [currentItemIndex, items, isPlaying, playMode, handleTrackEnd]);
-
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!addFormData.url && !addFormData.selectedTrackId) {
-      setError('URLまたはトラックを選択してください');
-      return;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Session expired');
-        return;
-      }
-
-      let itemData: any = {
-        music_type: 'audio'
-      };
-
-      if (addFormData.url) {
-        // External URL
-        const service = detectService(addFormData.url);
-        if (!service) {
-          setError('サポートされていないURLです');
-          return;
-        }
-
-        try {
-          const metadata = await fetchMetadataFromApi(addFormData.url, session.access_token);
-          itemData = {
-            ...itemData,
-            external_url: addFormData.url,
-            external_service: metadata.service,
-            external_title: metadata.title,
-            external_artist: metadata.artist || '',
-            external_thumbnail_url: metadata.thumbnail_url || '',
-            music_type: service === 'youtube' || service === 'niconico' ? 'video' : 'audio'
-          };
-        } catch (err) {
-          setError('メタデータ取得に失敗しました');
-          return;
-        }
-      } else if (addFormData.selectedTrackId) {
-        // DB track
-        itemData = {
-          ...itemData,
-          track_id: addFormData.selectedTrackId
-        };
-      }
-
-      const response = await fetch(`/api/playlists/${playlistId}/items`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(itemData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add item');
-      }
-
-      const newItem = await response.json();
-      setItems([...items, newItem]);
-      setAddFormData({ url: '', trackSearch: '', selectedTrackId: null });
-      setShowAddForm(false);
-      setError(null);
-    } catch (err) {
-      console.error('Error adding item:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add item');
-    }
-  };
+  }, [currentItemIndex, handlePlayNext, playMode, playlistAutoplayEnabled]);
 
   const handleDeleteItem = async (itemId: number) => {
     if (!confirm('このアイテムを削除しますか？')) {
@@ -744,6 +550,20 @@ export default function PlaylistPage() {
           </div>
         )}
 
+        {notice && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(0,212,120,0.1)',
+            border: '1px solid rgba(0,212,120,0.3)',
+            borderRadius: '8px',
+            color: '#4ade80',
+            marginBottom: '20px',
+            fontSize: '14px'
+          }}>
+            {notice}
+          </div>
+        )}
+
         {/* Playback Controls */}
         {items.length > 0 && (
           <div style={{
@@ -794,6 +614,50 @@ export default function PlaylistPage() {
               flexWrap: 'wrap',
               marginBottom: '20px'
             }}>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  flex: '1 0 100%',
+                  padding: '10px 12px',
+                  background: playlistAutoplayEnabled ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.08)',
+                  border: playlistAutoplayEnabled ? '1px solid rgba(0,212,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: '6px',
+                  color: playlistAutoplayEnabled ? '#00d4ff' : 'rgba(255,255,255,0.75)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={playlistAutoplayEnabled}
+                  onChange={(event) => {
+                    void handleAutoplayToggle(event.target.checked);
+                  }}
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    accentColor: '#00d4ff',
+                    cursor: 'pointer'
+                  }}
+                />
+                連続再生を許可する
+              </label>
+              <div style={{
+                flex: '1 0 100%',
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: '11px',
+                textAlign: 'center',
+                marginTop: '-10px'
+              }}>
+                iOS対応のため、連続再生にはチェックが必要です。
+              </div>
+
               {/* Previous button */}
               <button
                 onClick={handlePlayPrevious}
@@ -815,7 +679,7 @@ export default function PlaylistPage() {
 
               {/* Play/Pause button */}
               <button
-                onClick={() => currentItemIndex !== null ? setIsPlaying(!isPlaying) : null}
+                onClick={() => { if (currentItemIndex !== null) { setNeedsUserGesture(false); setIsPlaying(!isPlaying); } }}
                 disabled={currentItemIndex === null}
                 style={{
                   padding: '8px 16px',
@@ -859,7 +723,7 @@ export default function PlaylistPage() {
               flexWrap: 'wrap'
             }}>
               <button
-                onClick={() => setPlayMode('auto')}
+                onClick={() => { setPlayMode('auto'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'auto' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -876,7 +740,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => setPlayMode('shuffle')}
+                onClick={() => { setPlayMode('shuffle'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'shuffle' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -893,7 +757,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => setPlayMode('once')}
+                onClick={() => { setPlayMode('once'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'once' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -910,7 +774,7 @@ export default function PlaylistPage() {
               </button>
 
               <button
-                onClick={() => setPlayMode('repeat-one')}
+                onClick={() => { setPlayMode('repeat-one'); }}
                 style={{
                   padding: '8px 16px',
                   background: playMode === 'repeat-one' ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.1)',
@@ -926,6 +790,52 @@ export default function PlaylistPage() {
                 🔁 1曲リピート
               </button>
             </div>
+
+            {currentItemIndex !== null && currentItemIndex < items.length && (items[currentItemIndex].url || items[currentItemIndex].external_url) && (
+              <div style={{ marginTop: '20px' }}>
+                <EmbedPlayer
+                  url={(items[currentItemIndex].url || items[currentItemIndex].external_url) as string}
+                  autoplay={isPlaying}
+                  height={items[currentItemIndex].music_type === 'video' ? 240 : 160}
+                  onEnded={isPlaying ? handleTrackEnd : undefined}
+                  onAutoplayBlocked={() => setNeedsUserGesture(true)}
+                  replaySignal={playerResetKey}
+                />
+                {needsUserGesture && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,149,0,0.14)',
+                    border: '1px solid rgba(255,149,0,0.35)',
+                    color: 'rgba(255,255,255,0.86)',
+                    fontSize: '13px'
+                  }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      ブラウザ制限により自動再生できませんでした。再生ボタンを押してください。
+                    </div>
+                    <button
+                      onClick={() => {
+                        setNeedsUserGesture(false);
+                        setIsPlaying(true);
+                        setPlayerResetKey((key) => key + 1);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#00d4ff',
+                        color: '#07111a',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ▶ この曲を再生する
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -934,40 +844,56 @@ export default function PlaylistPage() {
           <AddPlaylistItem
             onSubmit={async (data) => {
               try {
+                setError(null);
+                setNotice(null);
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) {
                   setError('Session expired');
                   return;
                 }
 
-                const itemData: any = {
+                const itemData: PlaylistItemPayload = {
                   music_type: data.musicType || 'audio'
                 };
 
-                if (data.externalUrl) {
-                  const service = detectService(data.externalUrl);
-                  if (!service) {
-                    setError('サポートされていないURLです');
-                    return;
-                  }
-
-                  try {
-                    const metadata = await fetchMetadataFromApi(data.externalUrl, session.access_token);
-                    itemData.external_url = data.externalUrl;
-                    itemData.external_service = metadata.service;
-                    itemData.external_title = metadata.title;
-                    itemData.external_artist = metadata.artist || '';
-                    itemData.external_thumbnail_url = metadata.thumbnail_url || '';
-                  } catch (err) {
-                    setError('メタデータ取得に失敗しました');
-                    return;
-                  }
-                } else if (data.trackId) {
-                  // REVOSONG楽曲を追加
-                  itemData.track_id = data.trackId;
-                } else {
-                  setError('楽曲またはURLを選択してください');
+                const parsedUrl = parseTrackUrl(data.externalUrl);
+                if (!parsedUrl) {
+                  setError('現在登録できるのは YouTube と SoundCloud のURLのみです。');
                   return;
+                }
+
+                const alreadyExists = items.some((item) => {
+                  const existingUrl = item.url || item.external_url || '';
+                  if (parsedUrl.provider === 'youtube') {
+                    const existing = parseTrackUrl(existingUrl);
+                    return existing?.provider === 'youtube' &&
+                      existing.providerTrackId === parsedUrl.providerTrackId;
+                  }
+                  return existingUrl.trim() === parsedUrl.originalUrl;
+                });
+
+                if (alreadyExists) {
+                  setError('この曲はすでにプレイリストに入っています。');
+                  return;
+                }
+
+                try {
+                  const metadata = await fetchMetadataFromApi(data.externalUrl, session.access_token);
+                  itemData.external_url = parsedUrl.originalUrl;
+                  itemData.external_service = parsedUrl.provider;
+                  itemData.external_title =
+                    data.title || metadata.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
+                  itemData.external_artist = metadata.artist || '';
+                  itemData.external_thumbnail_url = metadata.thumbnail_url || '';
+                  itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
+                } catch (err) {
+                  itemData.external_url = parsedUrl.originalUrl;
+                  itemData.external_service = parsedUrl.provider;
+                  itemData.external_title =
+                    data.title || (parsedUrl.provider === 'youtube' ? 'YouTubeの曲' : 'SoundCloudの曲');
+                  itemData.external_artist = '';
+                  itemData.external_thumbnail_url = '';
+                  itemData.music_type = parsedUrl.provider === 'youtube' ? 'video' : 'audio';
                 }
 
                 const response = await fetch(`/api/playlists/${playlistId}/items`, {
@@ -987,7 +913,7 @@ export default function PlaylistPage() {
                 const newItem = await response.json();
                 setItems([...items, newItem]);
                 setShowAddForm(false);
-                setError(null);
+                setNotice('プレイリストに追加しました。');
               } catch (err) {
                 console.error('Error adding item:', err);
                 setError(err instanceof Error ? err.message : 'Failed to add item');
@@ -996,6 +922,7 @@ export default function PlaylistPage() {
             onCancel={() => {
               setShowAddForm(false);
               setError(null);
+              setNotice(null);
             }}
           />
         )}

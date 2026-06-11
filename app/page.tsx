@@ -1,20 +1,16 @@
 "use client";
 // Force redeploy trigger v3
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { checkCommentSafety } from "@/lib/comment-filter";
 import { EmbedPlayer, getYouTubeId, getNiconicoId, getSpotifyId, getServiceName } from "@/app/components/EmbedPlayer";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { SocialAvatarLink } from "@/app/components/SocialAvatarLink";
+import { parseTrackUrl } from "@/lib/track-url-utils";
+import { usePlaybackQueue } from "@/lib/hooks/usePlaybackQueue";
 import { REVOSONG_CORE_MESSAGE_LINES } from "@/lib/brand-copy";
-
-// Type definitions for SoundCloud Widget
-declare global {
-  interface Window {
-    SC: any;
-  }
-}
+import { REVO_SERIES_LINKS, REVOSONG_SITE_URL } from "@/lib/revo-links";
 
 type Track = {
   id: number;
@@ -71,7 +67,7 @@ const GENRES = [
 const FILTERS = ["すべて", "Suno", "Udio", "MusicLM", "Stable Audio"];
 const PERIODS = ["日間", "週間", "月間", "全期間"];
 const MUSIC_TYPES = ["すべて", "オリジナル楽曲", "AI生成楽曲"];
-const SITE_URL = "https://revosong-charts.vercel.app";
+const SITE_URL = REVOSONG_SITE_URL;
 
 function formatNumber(n: number) {
   if (n >= 10000) return (n / 10000).toFixed(1) + "万";
@@ -235,6 +231,81 @@ function ShareButtons({ track }: { track: Track }) {
           <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
         </a>
         <button onClick={copyLink} className="share-sns-btn share-sns-copy">
+          {copied ? (
+            <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff" stroke="#fff" strokeWidth="0"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          ) : (
+            <svg className="share-sns-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TopPageShareButtons() {
+  const [copied, setCopied] = useState(false);
+  const shareTitle = "REVOSONG - みんなの音楽ランキング";
+  const shareDescription = "孤独な挑戦者を、減らしたい。だから、想いを音楽に変える。";
+  const shareUrl = SITE_URL + "/";
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(`${shareTitle}\n${shareDescription}\n${shareUrl}`);
+  const encodedTitle = encodeURIComponent(shareTitle);
+
+  const copyLink = async () => {
+    await navigator.clipboard?.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="top-share" aria-label="トップページを共有">
+      <div className="share-row">
+        <a
+          href={`https://x.com/intent/post?text=${encodedText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="share-sns-btn share-sns-x"
+          title="Xで共有"
+          aria-label="Xで共有"
+        >
+          <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a
+          href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="share-sns-btn share-sns-fb"
+          title="Facebookで共有"
+          aria-label="Facebookで共有"
+        >
+          <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <a
+          href={`https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodeURIComponent(shareTitle)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="share-sns-btn share-sns-line"
+          title="LINEで共有"
+          aria-label="LINEで共有"
+        >
+          <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 5.82 2 10.5c0 3.69 3.08 6.79 7.24 7.84.28.06.66.19.75.43.09.22.06.56.03.78l-.12.73c-.04.22-.17.86.75.47s4.98-2.94 6.8-5.03C19.62 13.27 22 11.18 22 10.5 22 5.82 17.52 2 12 2zm-3.5 11.5h-2a.5.5 0 01-.5-.5V8.5a.5.5 0 011 0V12h1.5a.5.5 0 010 1zm1.5-.5a.5.5 0 01-1 0v-4a.5.5 0 011 0v4zm4.5.5h-2a.5.5 0 01-.5-.5V8.5a.5.5 0 011 0v3.29l1.78-2.54a.5.5 0 01.82.58L13.5 11.5l1.6 2.28a.5.5 0 01-.82.58L12.5 12v1a.5.5 0 01-.5.5zm4-3h-1V12h1a.5.5 0 010 1h-1.5a.5.5 0 01-.5-.5v-4a.5.5 0 01.5-.5H17a.5.5 0 010 1h-1v1h1a.5.5 0 010 1z"/></svg>
+        </a>
+        <a
+          href={`https://b.hatena.ne.jp/entry/panel/?url=${encodedUrl}&title=${encodedTitle}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="share-sns-btn share-sns-hatena"
+          title="はてなブックマークに追加"
+          aria-label="はてなブックマークに追加"
+        >
+          <span className="share-sns-letter">B!</span>
+        </a>
+        <button
+          onClick={copyLink}
+          className="share-sns-btn share-sns-copy"
+          title={copied ? "コピーしました" : "リンクをコピー"}
+          aria-label={copied ? "リンクをコピーしました" : "リンクをコピー"}
+        >
           {copied ? (
             <svg className="share-sns-icon" viewBox="0 0 24 24" fill="#fff" stroke="#fff" strokeWidth="0"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
           ) : (
@@ -773,6 +844,35 @@ export default function Home() {
            (musicTypeFilter === "すべて" ||
             (musicTypeFilter === "🎵 音源" ? getMusicContentType(t) === "audio" : getMusicContentType(t) === "video"))
   );
+  const rankingPlaybackTracks = useMemo(() => filtered
+    .map((track) => {
+      const parsedUrl = track.external_url ? parseTrackUrl(track.external_url) : null;
+      if (!parsedUrl) return null;
+      return {
+        id: String(track.id),
+        provider: parsedUrl.provider,
+        originalUrl: parsedUrl.originalUrl,
+        embedUrl: parsedUrl.embedUrl,
+        title: track.title,
+        providerTrackId: parsedUrl.providerTrackId
+      };
+    })
+    .filter((track): track is NonNullable<typeof track> => track !== null), [filtered]);
+  const rankingQueue = usePlaybackQueue({
+    tracks: rankingPlaybackTracks,
+    mode: 'ranking'
+  });
+  const queueSelectedTrack = rankingQueue.currentTrack
+    ? tracks.find((track) => String(track.id) === rankingQueue.currentTrack?.id) || null
+    : null;
+  const playerTrack =
+    rankingQueue.isContinuousAllowed && queueSelectedTrack ? queueSelectedTrack : selectedTrack;
+  useEffect(() => {
+    if (rankingQueue.isContinuousAllowed && queueSelectedTrack) {
+      setSelectedTrack(queueSelectedTrack);
+      setSelectedTrackIndex(tracks.findIndex((track) => track.id === queueSelectedTrack.id));
+    }
+  }, [queueSelectedTrack, rankingQueue.isContinuousAllowed, tracks]);
   const totalPlays = tracks.reduce((s, t) => s + t.play_count, 0);
   const totalLikes = tracks.reduce((s, t) => s + t.like_count, 0);
 
@@ -1328,6 +1428,13 @@ export default function Home() {
         .share-container {
           margin: 12px 0 4px;
         }
+        .top-share {
+          display: flex;
+          justify-content: center;
+          margin: 18px 0 0;
+          position: relative;
+          z-index: 1;
+        }
         .share-row {
           display: flex;
           gap: 10px;
@@ -1365,6 +1472,15 @@ export default function Home() {
         }
         .share-sns-fb {
           background: #1877F2;
+        }
+        .share-sns-hatena {
+          background: #00a4de;
+        }
+        .share-sns-letter {
+          color: #fff;
+          font-size: 15px;
+          font-weight: 800;
+          line-height: 1;
         }
         .share-sns-copy {
           background: rgba(255,255,255,0.15);
@@ -1742,6 +1858,7 @@ export default function Home() {
             </p>
           ))}
         </section>
+        <TopPageShareButtons />
         {/* ナビゲーションメニュー */}
         <nav style={{
           textAlign: 'center',
@@ -1751,11 +1868,11 @@ export default function Home() {
           borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
           <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-            <a href="/about" className="menu-link">About</a>
-            <a href="/information" className="menu-link">Information</a>
-            <a href="/playlists" className="menu-link">Playlist</a>
-            <a href="/campaigns" className="menu-link" style={{ color: '#FF6B9D', fontWeight: 'bold' }}>🎵 キャンペーン</a>
-            <a href="/campaign-themes/submit" className="menu-link" style={{ color: '#FFD700', fontWeight: 'bold' }}>💬 テーマ申請</a>
+            <Link href="/about" className="menu-link">About</Link>
+            <Link href="/information" className="menu-link">Information</Link>
+            <Link href="/playlists" className="menu-link">Playlist</Link>
+            <Link href="/campaigns" className="menu-link" style={{ color: '#FF6B9D', fontWeight: 'bold' }}>🎵 キャンペーン</Link>
+            <Link href="/campaign-themes/submit" className="menu-link" style={{ color: '#FFD700', fontWeight: 'bold' }}>💬 テーマ申請</Link>
           </div>
         </nav>
 
@@ -1895,6 +2012,50 @@ export default function Home() {
             {/* Play Mode Controls - integrated into Content section */}
             {filtered.length > 0 && (
               <>
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  background: rankingQueue.isContinuousAllowed ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.08)',
+                  border: rankingQueue.isContinuousAllowed ? '1px solid rgba(0,212,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: '6px',
+                  color: rankingQueue.isContinuousAllowed ? '#00d4ff' : 'rgba(255,255,255,0.75)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={rankingQueue.isContinuousAllowed}
+                    onChange={async (event) => {
+                      const allowed = await rankingQueue.setIsContinuousAllowed(event.target.checked);
+                      if (allowed && rankingQueue.continuousPlayableTracks.length > 0) {
+                        setSelectedTrack(null);
+                        setIsPlaying(true);
+                      }
+                    }}
+                    style={{ accentColor: '#00d4ff' }}
+                  />
+                  連続再生を許可する
+                </label>
+                <div style={{
+                  flex: '1 0 100%',
+                  color: 'rgba(255,255,255,0.52)',
+                  fontSize: '11px',
+                  lineHeight: 1.5
+                }}>
+                  iOS対応のため、連続再生にはチェックが必要です。連続再生では YouTube / SoundCloud の曲だけを順番に再生します。その他のサービスは自動でスキップされます。
+                </div>
+                {rankingQueue.isContinuousAllowed && rankingQueue.continuousPlayableTracks.length === 0 && (
+                  <div style={{
+                    flex: '1 0 100%',
+                    color: '#ff9500',
+                    fontSize: '12px'
+                  }}>
+                    このランキングには、連続再生できる YouTube / SoundCloud の曲がありません。
+                  </div>
+                )}
                 <button
                   onClick={() => setPlayMode('shuffle')}
                   style={{
@@ -2164,44 +2325,74 @@ export default function Home() {
       </div>
 
       <div className="footer">
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 6, color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 700 }}>
+            REVOシリーズ 関連プロジェクト
+          </div>
+          <div style={{ marginBottom: 10, color: "rgba(255,255,255,0.24)", fontSize: 11, lineHeight: 1.7 }}>
+            revosongは、おのくんから広がった応援の活動を、音楽で届けるプロジェクトです。
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 8, flexWrap: "wrap" }}>
+            {REVO_SERIES_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
         <div style={{ marginBottom: 10 }}>
           MUSIC CHARTS — みんなの音楽ランキング
         </div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 6 }}>
-          <a href="/services" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 6, flexWrap: "wrap" }}>
+          <Link href="/services" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
             🎵 対応サービス一覧
-          </a>
-          <a href="/about" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+          </Link>
+          <Link href="/campaigns" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            応援ソングキャンペーン
+          </Link>
+          <Link href="/campaign-themes" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            応援テーマを見る
+          </Link>
+          <Link href="/campaigns/awards" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
+            応援ソング殿堂入り
+          </Link>
+          <Link href="/about" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", fontSize: 12 }}>
             👤 運営者情報
-          </a>
+          </Link>
         </div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.18)", marginTop: 4 }}>
-          運営：<a href="https://onokun.com/" rel="author" target="_blank" style={{ color: "rgba(255,45,85,0.5)", textDecoration: "none" }}>おのくん</a>
+          運営：<a href="https://onokun.com/" rel="author noopener noreferrer" target="_blank" style={{ color: "rgba(255,45,85,0.5)", textDecoration: "none" }}>おのくん</a>
         </div>
       </div>
       </div>
 
-      {selectedTrack && (
+      {playerTrack && (
         <div className="player-bar">
           <div className="player-header">
             <div>
-              <div className="player-title">{selectedTrack.title}</div>
+              <div className="player-title">{playerTrack.title}</div>
               <div className="player-artist">
-                {selectedTrack.artist_name} · {selectedTrack.music_type === "ai" && selectedTrack.ai_tool ? selectedTrack.ai_tool : (selectedTrack.external_url ? getServiceName(selectedTrack.external_url) : "")}
+                {playerTrack.artist_name} · {playerTrack.music_type === "ai" && playerTrack.ai_tool ? playerTrack.ai_tool : (playerTrack.external_url ? getServiceName(playerTrack.external_url) : "")}
               </div>
             </div>
             <div className="player-buttons">
-              {user && user.id === selectedTrack.user_id && (
+              {user && user.id === playerTrack.user_id && (
                 <>
                   <button
                     className="player-edit-btn"
-                    onClick={() => setEditTrack(selectedTrack)}
+                    onClick={() => setEditTrack(playerTrack)}
                   >
                     ✏️ 編集
                   </button>
                   <button
                     className="player-delete-btn"
-                    onClick={() => deleteTrack(selectedTrack.id)}
+                    onClick={() => deleteTrack(playerTrack.id)}
                   >
                     🗑 削除
                   </button>
@@ -2209,15 +2400,55 @@ export default function Home() {
               )}
               <button
                 className="player-close"
-                onClick={() => setSelectedTrack(null)}
+                onClick={() => {
+                  setSelectedTrack(null);
+                  rankingQueue.setCurrentIndex(null);
+                  setIsPlaying(false);
+                }}
               >
                 ✕
               </button>
             </div>
           </div>
-          {selectedTrack.external_url ? (
+          {playerTrack.external_url ? (
             <>
-              <EmbedPlayer url={selectedTrack.external_url} />
+              <EmbedPlayer
+                url={playerTrack.external_url}
+                autoplay={rankingQueue.isContinuousAllowed ? isPlaying : true}
+                onEnded={rankingQueue.isContinuousAllowed ? rankingQueue.handleEnded : undefined}
+                replaySignal={rankingQueue.replaySignal}
+                onAutoplayBlocked={() => rankingQueue.setNeedsUserGesture(true)}
+              />
+              {rankingQueue.needsUserGesture && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'rgba(255,149,0,0.14)',
+                  borderTop: '1px solid rgba(255,149,0,0.35)',
+                  color: 'rgba(255,255,255,0.86)',
+                  fontSize: '13px'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    ブラウザ制限により自動再生できませんでした。再生ボタンを押してください。
+                  </div>
+                  <button
+                    onClick={() => {
+                      rankingQueue.setNeedsUserGesture(false);
+                      setIsPlaying(true);
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      background: '#ff9500',
+                      color: '#111',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ▶ この曲を再生する
+                  </button>
+                </div>
+              )}
               {/* プレイヤーコントロール（モバイル対応） */}
               <div style={{
                 display: 'flex',
@@ -2228,15 +2459,15 @@ export default function Home() {
                 borderTop: '1px solid rgba(255,255,255,0.1)',
               }}>
                 <button
-                  onClick={handlePlayPrevious}
-                  disabled={selectedTrackIndex === null || selectedTrackIndex === 0}
+                  onClick={rankingQueue.isContinuousAllowed ? rankingQueue.goPrev : handlePlayPrevious}
+                  disabled={rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex === null || rankingQueue.currentIndex === 0 : selectedTrackIndex === null || selectedTrackIndex === 0}
                   style={{
                     padding: '8px 16px',
-                    background: selectedTrackIndex !== null && selectedTrackIndex > 0 ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
+                    background: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex > 0 : selectedTrackIndex !== null && selectedTrackIndex > 0) ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
                     border: 'none',
                     borderRadius: '6px',
-                    color: selectedTrackIndex !== null && selectedTrackIndex > 0 ? '#ff2d55' : 'rgba(255,255,255,0.3)',
-                    cursor: selectedTrackIndex !== null && selectedTrackIndex > 0 ? 'pointer' : 'not-allowed',
+                    color: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex > 0 : selectedTrackIndex !== null && selectedTrackIndex > 0) ? '#ff2d55' : 'rgba(255,255,255,0.3)',
+                    cursor: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex > 0 : selectedTrackIndex !== null && selectedTrackIndex > 0) ? 'pointer' : 'not-allowed',
                     fontSize: '12px',
                     fontWeight: 600,
                     transition: 'all 0.2s',
@@ -2273,15 +2504,15 @@ export default function Home() {
                 </div>
 
                 <button
-                  onClick={handlePlayNext}
-                  disabled={selectedTrackIndex === null || tracks.length === 0}
+                  onClick={rankingQueue.isContinuousAllowed ? rankingQueue.goNext : handlePlayNext}
+                  disabled={rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex === null || rankingQueue.currentIndex >= rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex === null || tracks.length === 0}
                   style={{
                     padding: '8px 16px',
-                    background: selectedTrackIndex !== null && tracks.length > 0 ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
+                    background: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex < rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex !== null && tracks.length > 0) ? 'rgba(255,45,85,0.2)' : 'rgba(255,255,255,0.05)',
                     border: 'none',
                     borderRadius: '6px',
-                    color: selectedTrackIndex !== null && tracks.length > 0 ? '#ff2d55' : 'rgba(255,255,255,0.3)',
-                    cursor: selectedTrackIndex !== null && tracks.length > 0 ? 'pointer' : 'not-allowed',
+                    color: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex < rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex !== null && tracks.length > 0) ? '#ff2d55' : 'rgba(255,255,255,0.3)',
+                    cursor: (rankingQueue.isContinuousAllowed ? rankingQueue.currentIndex !== null && rankingQueue.currentIndex < rankingQueue.continuousPlayableTracks.length - 1 : selectedTrackIndex !== null && tracks.length > 0) ? 'pointer' : 'not-allowed',
                     fontSize: '12px',
                     fontWeight: 600,
                     transition: 'all 0.2s',
@@ -2297,22 +2528,22 @@ export default function Home() {
               この楽曲にはURLが設定されていません
             </div>
           )}
-          <ShareButtons track={selectedTrack} />
+          <ShareButtons track={playerTrack} />
 
           {/* アーティストのSNSリンク */}
-          {selectedTrack && (
+          {playerTrack && (
             <ArtistFollowSection
-              socialLinks={(selectedTrack as any).social_links || {}}
-              artist_social_url={selectedTrack.artist_social_url}
+              socialLinks={(playerTrack as any).social_links || {}}
+              artist_social_url={playerTrack.artist_social_url}
               avatarUrl={artistProfile?.avatar_url}
-              artistName={artistProfile?.username || selectedTrack.artist_name}
+              artistName={artistProfile?.username || playerTrack.artist_name}
             />
           )}
 
-          {selectedTrack.prompt && (
+          {playerTrack.prompt && (
             <div className="player-prompt">
               <div className="player-prompt-label">Prompt</div>
-              {selectedTrack.prompt}
+              {playerTrack.prompt}
             </div>
           )}
 
