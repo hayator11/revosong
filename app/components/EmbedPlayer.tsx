@@ -16,12 +16,6 @@ type SoundCloudApi = {
   };
 };
 
-declare global {
-  interface Window {
-    SC?: SoundCloudApi;
-  }
-}
-
 /**
  * Utility Functions for URL Detection
  */
@@ -264,11 +258,12 @@ export function EmbedPlayer({
       if (isSoundCloudUrl(url)) {
         try {
           await loadExternalScript(SOUNDCLOUD_API_SRC);
-          if (cancelled || !iframeRef.current || !window.SC?.Widget) return;
+          const soundCloudApi = (window as Window & { SC?: SoundCloudApi }).SC;
+          if (cancelled || !iframeRef.current || !soundCloudApi?.Widget) return;
 
-          const widget = window.SC.Widget(iframeRef.current);
-          const finishEvent = window.SC.Widget.Events.FINISH;
-          const playEvent = window.SC.Widget.Events.PLAY;
+          const widget = soundCloudApi.Widget(iframeRef.current);
+          const finishEvent = soundCloudApi.Widget.Events.FINISH;
+          const playEvent = soundCloudApi.Widget.Events.PLAY;
           const markStarted = () => {
             hasStartedRef.current = true;
             endedRef.current = false;
